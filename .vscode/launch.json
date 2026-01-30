@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Android: Run (AVD)",
+      "type": "android",
+      "request": "launch",
+      "noDebug": true,
+      "preLaunchTask": "Android: Run (AVD)"
+    }
+  ]
+}

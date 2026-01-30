@@ -1,0 +1,43 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Android: Ensure AVD Running",
+      "type": "shell",
+      "command": "bash",
+      "args": ["scripts/start-avd.sh"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Android: Install Debug",
+      "type": "shell",
+      "command": "./gradlew",
+      "args": ["installDebug"],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Android: Launch App",
+      "type": "shell",
+      "command": "adb",
+      "args": ["shell", "am", "start", "-n", "com.aeu.boxapplication/.MainActivity"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Android: Run (AVD)",
+      "dependsOn": [
+        "Android: Ensure AVD Running",
+        "Android: Install Debug",
+        "Android: Launch App"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "Android: Refresh (Reinstall + Relaunch)",
+      "dependsOn": ["Android: Install Debug", "Android: Launch App"],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    }
+  ]
+}

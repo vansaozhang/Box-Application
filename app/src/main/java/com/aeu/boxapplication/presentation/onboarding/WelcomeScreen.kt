@@ -2,10 +2,13 @@ package com.aeu.boxapplication.presentation.onboarding
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -107,17 +110,17 @@ fun WelcomeScreen(
                     fontSize = 14.sp,
                     color = Color.White.copy(alpha = 0.8f)
                 )
-                TextButton(
-                    onClick = onLoginClick,
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Text(
-                        text = "Login",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFFB74D)
+                Text(
+                    text = "Login",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFFB74D),
+                    modifier = Modifier.clickable(
+                        onClick = onLoginClick,
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
                     )
-                }
+                )
             }
             
             Spacer(modifier = Modifier.height(32.dp))

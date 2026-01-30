@@ -1,0 +1,18 @@
+{
+    // Suppress Kotlin language server diagnostics for Android projects
+    "kotlin.languageServer.enabled": false,
+    // Use Java language server for better Android support
+    "java.configuration.updateBuildConfiguration": "automatic",
+    // Suppress problem matchers that might show false errors
+    "kotlin.compiler.warn": false,
+    // File associations
+    "files.associations": {
+        "*.kt": "kotlin",
+        "*.kts": "kotlin"
+    },
+    // Exclude build directories from file watching
+    "files.watcherExclude": {
+        "**/build/**": true,
+        "**/.gradle/**": true
+    }
+}

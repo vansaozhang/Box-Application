@@ -1,6 +1,10 @@
 package com.aeu.boxapplication.presentation.navigation
 
 sealed class Screen(val route: String) {
+    // Onboarding
+    object Welcome : Screen("welcome")
+    object Loading : Screen("loading")
+
     // Auth
     object Login : Screen("login")
     object Register : Screen("register")
@@ -17,6 +21,9 @@ sealed class Screen(val route: String) {
     
     // Subscription
     object SubscriptionPlans : Screen("subscription_plans")
+    object SubscriptionsEmpty : Screen("subscriptions_empty")
+    object ExplorePlans : Screen("explore_plans")
+    object ConfirmSubscription : Screen("confirm_subscription")
     object PlanDetails : Screen("plan_details/{planId}") {
         fun createRoute(planId: String) = "plan_details/$planId"
     }
@@ -30,6 +37,8 @@ sealed class Screen(val route: String) {
     object PaymentHistory : Screen("payment_history")
     object PaymentMethods : Screen("payment_methods")
     object AddPaymentMethod : Screen("add_payment_method")
+    object PaymentDetails : Screen("payment_details")
+    object PaymentConfirmation : Screen("payment_confirmation")
     
     // Inventory
     object InventoryList : Screen("inventory_list")
