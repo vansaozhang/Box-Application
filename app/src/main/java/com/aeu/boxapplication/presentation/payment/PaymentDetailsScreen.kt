@@ -38,11 +38,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aeu.boxapplication.ui.components.AppPrimaryButton
+import java.time.YearMonth
 
 @Composable
 fun PaymentDetailsScreen(
@@ -51,17 +54,18 @@ fun PaymentDetailsScreen(
 ) {
     val (cardNumber, setCardNumber) = remember { mutableStateOf("") }
     val (cardholderName, setCardholderName) = remember { mutableStateOf("") }
-    val (expiryDate, setExpiryDate) = remember { mutableStateOf("") }
+    val (expiryDate, setExpiryDate) = remember { mutableStateOf(TextFieldValue("")) }
     val (cvv, setCvv) = remember { mutableStateOf("") }
     val cardNumberDigits = cardNumber.filter { it.isDigit() }
     val cvvDigits = cvv.filter { it.isDigit() }
     val isCardNumberValid = cardNumberDigits.length == 16
     val isCardholderValid = cardholderName.trim().length >= 2
-    val isExpiryValid = isValidExpiry(expiryDate)
+    val isExpiryValid = isValidExpiry(expiryDate.text)
     val isCvvValid = cvvDigits.length in 3..4
     val showCardNumberError = cardNumber.isNotEmpty() && !isCardNumberValid
     val showCardholderError = cardholderName.isNotEmpty() && !isCardholderValid
-    val showExpiryError = expiryDate.isNotEmpty() && !isExpiryValid
+    val expiryError = expiryErrorMessage(expiryDate.text)
+    val showExpiryError = expiryError != null
     val showCvvError = cvv.isNotEmpty() && !isCvvValid
     val isFormValid = isCardNumberValid && isCardholderValid && isExpiryValid && isCvvValid
 
@@ -244,7 +248,15 @@ fun PaymentDetailsScreen(
                     FormLabel(text = "Expiry Date")
                     OutlinedTextField(
                         value = expiryDate,
-                        onValueChange = { setExpiryDate(it) },
+                        onValueChange = { newValue ->
+                            val formatted = formatExpiryInput(newValue.text)
+                            setExpiryDate(
+                                newValue.copy(
+                                    text = formatted,
+                                    selection = TextRange(formatted.length)
+                                )
+                            )
+                        },
                         placeholder = {
                             Text(
                                 text = "MM/YY",
@@ -270,7 +282,7 @@ fun PaymentDetailsScreen(
                         supportingText = {
                             if (showExpiryError) {
                                 Text(
-                                    text = "Use MM/YY",
+                                    text = expiryError ?: "Invalid expiry date",
                                     fontSize = 11.sp,
                                     color = Color(0xFFE11D2A)
                                 )
@@ -436,5 +448,31 @@ private fun SummaryRow(label: String, value: String) {
 private fun isValidExpiry(value: String): Boolean {
     if (!value.matches(Regex("\\d{2}/\\d{2}"))) return false
     val month = value.substring(0, 2).toIntOrNull() ?: return false
-    return month in 1..12
+    if (month !in 1..12) return false
+    val year = value.substring(3, 5).toIntOrNull() ?: return false
+    val fullYear = 2000 + year
+    val expiry = YearMonth.of(fullYear, month)
+    val current = YearMonth.now()
+    return !expiry.isBefore(current)
+}
+
+private fun expiryErrorMessage(value: String): String? {
+    if (value.isEmpty()) return null
+    if (!value.matches(Regex("\\d{2}/\\d{2}"))) return "Use MM/YY"
+    val month = value.substring(0, 2).toIntOrNull() ?: return "Use MM/YY"
+    if (month !in 1..12) return "Enter a valid month"
+    val year = value.substring(3, 5).toIntOrNull() ?: return "Use MM/YY"
+    val fullYear = 2000 + year
+    val expiry = YearMonth.of(fullYear, month)
+    val current = YearMonth.now()
+    return if (expiry.isBefore(current)) "Card expired" else null
+}
+
+private fun formatExpiryInput(input: String): String {
+    val digits = input.filter { it.isDigit() }.take(4)
+    return if (digits.length <= 2) {
+        digits
+    } else {
+        "${digits.substring(0, 2)}/${digits.substring(2)}"
+    }
 }
