@@ -19,6 +19,7 @@ import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -41,7 +42,10 @@ import com.aeu.boxapplication.core.utils.ValidationUtils
 import com.aeu.boxapplication.ui.components.AppPrimaryButton
 import com.aeu.boxapplication.ui.components.AppTextField
 import com.aeu.boxapplication.ui.components.SocialCircleButton
-
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     onBack: () -> Unit = {},
@@ -59,30 +63,35 @@ fun LoginScreen(
     val isPasswordValid = password.isNotBlank()
     val isFormValid = isEmailValid && isPasswordValid
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF6FAFF))
-    ) {
+    Scaffold(
+        containerColor = Color(0xFFF6FAFF),
+        topBar = {
+            TopAppBar(
+                title = {},
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.Outlined.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color(0xFF1E88E5)
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFFF6FAFF)
+                )
+            )
+        }
+    ) { paddingValues ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 28.dp, vertical = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Start
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.Outlined.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color(0xFF1E88E5)
-                    )
-                }
-            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -94,9 +103,7 @@ fun LoginScreen(
                             color = Color(0xFF1E88E5),
                             fontWeight = FontWeight.Bold
                         )
-                    ) {
-                        append("Back")
-                    }
+                    ) { append("Back") }
                 },
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
@@ -174,11 +181,8 @@ fun LoginScreen(
             AppPrimaryButton(
                 text = "Login",
                 onClick = {
-                    if (isFormValid) {
-                        onLogin()
-                    } else {
-                        setShowErrors(true)
-                    }
+                    if (isFormValid) onLogin()
+                    else setShowErrors(true)
                 },
                 enabled = isFormValid
             )
@@ -200,18 +204,14 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 SocialCircleButton(text = "G", onClick = onGoogleClick)
                 SocialCircleButton(text = "f", onClick = onFacebookClick)
             }
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = "Does not have an account? ",
                     fontSize = 13.sp,

@@ -20,9 +20,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,10 +41,6 @@ import androidx.compose.ui.unit.sp
 fun OrderHistoryScreen(
     onOrderClick: () -> Unit = {},
     onLoadPrevious: () -> Unit = {},
-    onHomeClick: () -> Unit = {},
-    onHistoryClick: () -> Unit = {},
-    onShopClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {},
     onNotificationsClick: () -> Unit = {}
 ) {
     Box(
@@ -76,17 +73,6 @@ fun OrderHistoryScreen(
                 textAlign = TextAlign.Center
             )
         }
-
-        SubscriberBottomNav(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth(),
-            selected = SubscriberBottomNavItem.History,
-            onHomeClick = onHomeClick,
-            onHistoryClick = onHistoryClick,
-            onShopClick = onShopClick,
-            onProfileClick = onProfileClick
-        )
     }
 }
 
@@ -150,7 +136,7 @@ private fun OrderHistoryHeader(onNotificationsClick: () -> Unit) {
 private fun OrderHistoryTitle() {
     Column {
         Text(
-            text = "Order History",
+            text = "History",
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF111827)
@@ -237,17 +223,20 @@ private fun OrderHistoryCard(
     onClick: () -> Unit
 ) {
     Surface(
+        // Use the built-in onClick for better Ripple handling
+        onClick = onClick,
         shape = RoundedCornerShape(18.dp),
         color = Color.White,
         shadowElevation = 1.dp,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp) // Added small vertical spacing so cards don't touch
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // --- Left Image Box ---
             Box(
                 modifier = Modifier
                     .size(70.dp)
@@ -263,7 +252,10 @@ private fun OrderHistoryCard(
                     modifier = Modifier.padding(8.dp)
                 )
             }
+
             Spacer(modifier = Modifier.width(12.dp))
+
+            // --- Center Text Info ---
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = order.title,
@@ -276,7 +268,9 @@ private fun OrderHistoryCard(
                     fontSize = 11.sp,
                     color = Color(0xFF6B7280)
                 )
+
                 Spacer(modifier = Modifier.height(8.dp))
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -287,6 +281,7 @@ private fun OrderHistoryCard(
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF111827)
                     )
+                    // Status Badge
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
@@ -302,17 +297,20 @@ private fun OrderHistoryCard(
                     }
                 }
             }
+
             Spacer(modifier = Modifier.width(10.dp))
+
+            // --- Right Arrow Icon ---
             Box(
                 modifier = Modifier
-                    .size(28.dp)
+                    .size(32.dp) // Slightly increased for better visual balance
                     .clip(CircleShape)
                     .background(Color(0xFFF1F5F9)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.ChevronRight,
-                    contentDescription = "Details",
+                    imageVector = Icons.Outlined.ArrowForward,
+                    contentDescription = "View Details",
                     tint = Color(0xFF1E88E5),
                     modifier = Modifier.size(16.dp)
                 )

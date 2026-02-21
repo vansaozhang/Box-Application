@@ -20,11 +20,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -47,10 +46,6 @@ fun ShoppingCartScreen(
     onRemove: (ShopProduct) -> Unit = {},
     onClear: () -> Unit = {},
     onCheckout: () -> Unit = {},
-    onHomeClick: () -> Unit = {},
-    onHistoryClick: () -> Unit = {},
-    onShopClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {},
     onNotificationsClick: () -> Unit = {},
     onCartClick: () -> Unit = {}
 ) {
@@ -96,17 +91,6 @@ fun ShoppingCartScreen(
             Spacer(modifier = Modifier.height(18.dp))
             CheckoutButton(total = total, onClick = onCheckout)
         }
-
-        SubscriberBottomNav(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth(),
-            selected = SubscriberBottomNavItem.Shop,
-            onHomeClick = onHomeClick,
-            onHistoryClick = onHistoryClick,
-            onShopClick = onShopClick,
-            onProfileClick = onProfileClick
-        )
     }
 }
 
@@ -286,7 +270,7 @@ private fun CartItemCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Icon(
-                        imageVector = Icons.Outlined.DeleteOutline,
+                        imageVector = Icons.Outlined.Delete,
                         contentDescription = "Remove",
                         tint = Color(0xFF6B7280),
                         modifier = Modifier
@@ -334,7 +318,7 @@ private fun QuantityControl(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         QuantityButton(
-            icon = Icons.Outlined.Remove,
+            icon = Icons.Outlined.Delete,
             onClick = onDecrement
         )
         Text(

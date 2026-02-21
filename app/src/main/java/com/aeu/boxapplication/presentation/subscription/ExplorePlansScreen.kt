@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -50,142 +51,146 @@ fun ExplorePlansScreen(
 ) {
     val (isMonthly, setIsMonthly) = remember { mutableStateOf(true) }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        Column(
+    Scaffold{
+        paddingValues ->
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(paddingValues)
+                .background(Color.White)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.Outlined.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color(0xFF1E88E5)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.Outlined.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color(0xFF1E88E5)
+                        )
+                    }
+                    Text(
+                        text = "Explore Plans",
+                        modifier = Modifier
+                            .padding(end = 48.dp)
+                            .fillMaxWidth(),
+                        textAlign = TextAlign.Center,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2F3A4A)
                     )
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Text(
-                    text = "Explore Plans",
-                    modifier = Modifier
-                        .padding(end = 48.dp)
-                        .fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    text = "Unlock Premium Features",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
                     color = Color(0xFF2F3A4A)
                 )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Choose a plan that works best for your shopping habits.",
+                    fontSize = 13.sp,
+                    color = Color(0xFF7B8794),
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                BillingToggle(
+                    isMonthly = isMonthly,
+                    onMonthlyClick = { setIsMonthly(true) },
+                    onYearlyClick = { setIsMonthly(false) }
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                PlanCard(
+                    title = "Starter",
+                    subtitle = "FOR INDIVIDUALS",
+                    price = "$9",
+                    period = "/mo",
+                    features = listOf(
+                        PlanFeature("5 recurring orders", true),
+                        PlanFeature("Basic analytics", true),
+                        PlanFeature("Free shipping", false)
+                    ),
+                    buttonText = "Select Starter",
+                    onSelect = onSelectStarter
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                PlanCard(
+                    title = "Pro",
+                    subtitle = "FOR POWER USERS",
+                    price = "$19",
+                    period = "/mo",
+                    features = listOf(
+                        PlanFeature("Unlimited recurring orders", true),
+                        PlanFeature("Advanced analytics", true),
+                        PlanFeature("Free shipping on all orders", true),
+                        PlanFeature("Priority support", true)
+                    ),
+                    buttonText = "Select Pro",
+                    highlight = true,
+                    badge = "MOST POPULAR",
+                    onSelect = onSelectPro
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                PlanCard(
+                    title = "Business",
+                    subtitle = "FOR TEAMS",
+                    price = "$49",
+                    period = "/mo",
+                    features = listOf(
+                        PlanFeature("Everything in Pro", true),
+                        PlanFeature("Multiple user seats", true),
+                        PlanFeature("Dedicated account manager", true)
+                    ),
+                    buttonText = "Select Business",
+                    onSelect = onSelectBusiness
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                Text(
+                    text = "Restore Purchases",
+                    fontSize = 13.sp,
+                    color = Color(0xFF1E88E5),
+                    modifier = Modifier
+                        .padding(top = 4.dp)
+                        .clickable(
+                            onClick = onRestorePurchases,
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        )
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "Recurring billing, cancel anytime. By\nsubscribing you agree to our Terms of Service.",
+                    fontSize = 11.sp,
+                    color = Color(0xFF9AA6B2),
+                    textAlign = TextAlign.Center,
+                    lineHeight = 16.sp
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Unlock Premium Features",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF2F3A4A)
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = "Choose a plan that works best for your shopping habits.",
-                fontSize = 13.sp,
-                color = Color(0xFF7B8794),
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            BillingToggle(
-                isMonthly = isMonthly,
-                onMonthlyClick = { setIsMonthly(true) },
-                onYearlyClick = { setIsMonthly(false) }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            PlanCard(
-                title = "Starter",
-                subtitle = "FOR INDIVIDUALS",
-                price = "$9",
-                period = "/mo",
-                features = listOf(
-                    PlanFeature("5 recurring orders", true),
-                    PlanFeature("Basic analytics", true),
-                    PlanFeature("Free shipping", false)
-                ),
-                buttonText = "Select Starter",
-                onSelect = onSelectStarter
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            PlanCard(
-                title = "Pro",
-                subtitle = "FOR POWER USERS",
-                price = "$19",
-                period = "/mo",
-                features = listOf(
-                    PlanFeature("Unlimited recurring orders", true),
-                    PlanFeature("Advanced analytics", true),
-                    PlanFeature("Free shipping on all orders", true),
-                    PlanFeature("Priority support", true)
-                ),
-                buttonText = "Select Pro",
-                highlight = true,
-                badge = "MOST POPULAR",
-                onSelect = onSelectPro
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            PlanCard(
-                title = "Business",
-                subtitle = "FOR TEAMS",
-                price = "$49",
-                period = "/mo",
-                features = listOf(
-                    PlanFeature("Everything in Pro", true),
-                    PlanFeature("Multiple user seats", true),
-                    PlanFeature("Dedicated account manager", true)
-                ),
-                buttonText = "Select Business",
-                onSelect = onSelectBusiness
-            )
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            Text(
-                text = "Restore Purchases",
-                fontSize = 13.sp,
-                color = Color(0xFF1E88E5),
-                modifier = Modifier
-                    .padding(top = 4.dp)
-                    .clickable(
-                        onClick = onRestorePurchases,
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    )
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = "Recurring billing, cancel anytime. By\nsubscribing you agree to our Terms of Service.",
-                fontSize = 11.sp,
-                color = Color(0xFF9AA6B2),
-                textAlign = TextAlign.Center,
-                lineHeight = 16.sp
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }

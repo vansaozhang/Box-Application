@@ -19,9 +19,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.Create
 import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.Payment
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -179,12 +179,17 @@ private fun QuantityPill() {
 }
 
 @Composable
-private fun SectionHeader(text: String) {
+fun SectionHeader(
+    text: String,
+    modifier: Modifier = Modifier
+) {
     Text(
-        text = text,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.SemiBold,
-        color = Color(0xFF9AA1AE)
+        text = text.uppercase(), // Design uses all caps for section headers
+        fontSize = 13.sp,
+        fontWeight = FontWeight.Bold,
+        color = Color(0xFF64748B), // Slate gray color from the UI
+        letterSpacing = 0.5.sp,
+        modifier = modifier.padding(bottom = 12.dp)
     )
 }
 
@@ -229,7 +234,7 @@ private fun AddressCard() {
                 )
             }
             Icon(
-                imageVector = Icons.Outlined.ChevronRight,
+                imageVector = Icons.Outlined.ArrowForward,
                 contentDescription = null,
                 tint = Color(0xFF9AA1AE)
             )
@@ -257,7 +262,7 @@ private fun PaymentMethodCard() {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Payment,
+                    imageVector = Icons.Outlined.Create,
                     contentDescription = null,
                     tint = Color(0xFF8B5CF6),
                     modifier = Modifier.size(18.dp)
@@ -278,7 +283,7 @@ private fun PaymentMethodCard() {
                 )
             }
             Icon(
-                imageVector = Icons.Outlined.ChevronRight,
+                imageVector = Icons.Outlined.ArrowForward,
                 contentDescription = null,
                 tint = Color(0xFF9AA1AE)
             )

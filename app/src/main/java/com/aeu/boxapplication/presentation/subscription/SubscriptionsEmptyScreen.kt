@@ -20,11 +20,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.LocalShipping
-import androidx.compose.material.icons.outlined.Percent
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,126 +47,132 @@ fun SubscriptionsEmptyScreen(
     onExplorePlans: () -> Unit = {},
     onRestorePurchases: () -> Unit = {}
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        Column(
+    Scaffold(
+
+    ){
+        paddingValues ->
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(paddingValues)
+                .background(Color.White)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Start
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.Outlined.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color(0xFF1E88E5)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.Outlined.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color(0xFF1E88E5)
+                        )
+                    }
+                    Text(
+                        text = "Subscriptions",
+                        modifier = Modifier
+                            .padding(end = 48.dp)
+                            .fillMaxWidth(),
+                        textAlign = TextAlign.Center,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2F3A4A)
                     )
                 }
-                Text(
-                    text = "Subscriptions",
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = Color(0xFFEDF6FF),
                     modifier = Modifier
-                        .padding(end = 48.dp)
-                        .fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF2F3A4A)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = Color(0xFFEDF6FF),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(220.dp)
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.welcome),
-                    contentDescription = "Subscriptions illustration",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Text(
-                text = "No Active Subscriptions",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF2F3A4A),
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Text(
-                text = "You aren’t subscribed to any products yet.\nStart a plan to automate your orders and save\nmoney.",
-                fontSize = 13.sp,
-                color = Color(0xFF7B8794),
-                textAlign = TextAlign.Center,
-                lineHeight = 18.sp
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            FeatureRow(
-                icon = Icons.Outlined.LocalShipping,
-                title = "Free Shipping",
-                subtitle = "On every single recurring order, no\nminimums."
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            FeatureRow(
-                icon = Icons.Outlined.Percent,
-                title = "Save 15% Instantly",
-                subtitle = "Subscribers get our best price compared\nto one-time purchases."
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            FeatureRow(
-                icon = Icons.Outlined.CalendarMonth,
-                title = "Full Control",
-                subtitle = "Pause, skip, or cancel your deliveries at\nany time."
-            )
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            Text(
-                text = "Restore Purchases",
-                fontSize = 13.sp,
-                color = Color(0xFF1E88E5),
-                modifier = Modifier
-                    .padding(top = 4.dp)
-                    .clickable(
-                        onClick = onRestorePurchases,
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
+                        .fillMaxWidth()
+                        .height(220.dp)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.welcome),
+                        contentDescription = "Subscriptions illustration",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
                     )
-            )
+                }
 
-            Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-            AppPrimaryButton(
-                text = "Explore Plans  →",
-                onClick = onExplorePlans
-            )
+                Text(
+                    text = "No Active Subscriptions",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2F3A4A),
+                    textAlign = TextAlign.Center
+                )
 
-            Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = "You aren’t subscribed to any products yet.\nStart a plan to automate your orders and save\nmoney.",
+                    fontSize = 13.sp,
+                    color = Color(0xFF7B8794),
+                    textAlign = TextAlign.Center,
+                    lineHeight = 18.sp
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                FeatureRow(
+                    icon = Icons.Outlined.DateRange,
+                    title = "Free Shipping",
+                    subtitle = "On every single recurring order, no\nminimums."
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                FeatureRow(
+                    icon = Icons.Outlined.Star,
+                    title = "Save 15% Instantly",
+                    subtitle = "Subscribers get our best price compared\nto one-time purchases."
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                FeatureRow(
+                    icon = Icons.Outlined.DateRange,
+                    title = "Full Control",
+                    subtitle = "Pause, skip, or cancel your deliveries at\nany time."
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                Text(
+                    text = "Restore Purchases",
+                    fontSize = 13.sp,
+                    color = Color(0xFF1E88E5),
+                    modifier = Modifier
+                        .padding(top = 4.dp)
+                        .clickable(
+                            onClick = onRestorePurchases,
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        )
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                AppPrimaryButton(
+                    text = "Explore Plans  →",
+                    onClick = onExplorePlans
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+            }
         }
     }
 }

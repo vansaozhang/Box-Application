@@ -19,13 +19,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.CreditCard
-import androidx.compose.material.icons.outlined.HelpOutline
-import androidx.compose.material.icons.outlined.LocalShipping
+import androidx.compose.material.icons.outlined.Create
+
 import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.OpenInNew
-import androidx.compose.material.icons.outlined.ReceiptLong
+
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -102,7 +101,7 @@ private fun OrderDetailsTopBar(
         )
         IconButton(onClick = onHelp) {
             Icon(
-                imageVector = Icons.Outlined.HelpOutline,
+                imageVector = Icons.Outlined.LocationOn,
                 contentDescription = "Help",
                 tint = Color(0xFF111827)
             )
@@ -149,7 +148,7 @@ private fun OrderStatusCard(onTrackPackage: () -> Unit) {
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Outlined.LocalShipping,
+                        imageVector = Icons.Outlined.LocationOn,
                         contentDescription = null,
                         tint = Color(0xFF1E88E5),
                         modifier = Modifier.size(20.dp)
@@ -212,7 +211,7 @@ private fun OrderStatusCard(onTrackPackage: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Icon(
-                    imageVector = Icons.Outlined.OpenInNew,
+                    imageVector = Icons.Outlined.Add,
                     contentDescription = null,
                     tint = Color(0xFF6B7280),
                     modifier = Modifier.size(14.dp)
@@ -349,7 +348,7 @@ private fun OrderInformationCard() {
             )
             Spacer(modifier = Modifier.height(12.dp))
             InfoRow(
-                icon = Icons.Outlined.CreditCard,
+                icon = Icons.Outlined.Create,
                 title = "Payment Method",
                 value = "Visa ending in 4242",
                 trailing = {
@@ -376,7 +375,7 @@ private fun OrderInformationCard() {
             )
             Spacer(modifier = Modifier.height(12.dp))
             InfoRow(
-                icon = Icons.Outlined.ReceiptLong,
+                icon = Icons.Outlined.Create,
                 title = "Billing Address",
                 value = "Same as shipping address"
             )

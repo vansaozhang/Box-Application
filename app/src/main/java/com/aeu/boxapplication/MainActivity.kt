@@ -4,345 +4,169 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.ui.tooling.preview.Preview
-import com.aeu.boxapplication.presentation.auth.LoginScreen
-import com.aeu.boxapplication.presentation.auth.RegisterScreen
-import com.aeu.boxapplication.presentation.onboarding.LoadingScreen
-import com.aeu.boxapplication.presentation.onboarding.WelcomeScreen
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import com.aeu.boxapplication.presentation.navigation.Screen
-import com.aeu.boxapplication.presentation.payment.PaymentConfirmationScreen
-import com.aeu.boxapplication.presentation.payment.PaymentDetailsScreen
-import com.aeu.boxapplication.presentation.subscriber.OrderConfirmedScreen
-import com.aeu.boxapplication.presentation.subscriber.OrderDetailsScreen
-import com.aeu.boxapplication.presentation.subscriber.OrderHistoryScreen
-import com.aeu.boxapplication.presentation.subscriber.OrderPlacedScreen
-import com.aeu.boxapplication.presentation.subscriber.ProductDetailsScreen
-import com.aeu.boxapplication.presentation.subscriber.CheckoutPaymentScreen
-import com.aeu.boxapplication.presentation.subscriber.CheckoutShippingScreen
-import com.aeu.boxapplication.presentation.subscriber.ReOrderScreen
-import com.aeu.boxapplication.presentation.subscriber.ShopProductsScreen
-import com.aeu.boxapplication.presentation.subscriber.SubscriberHomeScreen
-import com.aeu.boxapplication.presentation.subscriber.ShoppingCartScreen
-import com.aeu.boxapplication.presentation.subscriber.CartItem
-import com.aeu.boxapplication.presentation.subscriber.ShopProduct
-import com.aeu.boxapplication.presentation.subscriber.demoShopProducts
-import com.aeu.boxapplication.presentation.subscription.ConfirmSubscriptionScreen
-import com.aeu.boxapplication.presentation.subscription.ExplorePlansScreen
-import com.aeu.boxapplication.presentation.subscription.SubscriptionsEmptyScreen
-import com.aeu.boxapplication.ui.theme.BoxApplicationTheme
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.aeu.boxapplication.presentation.onboarding.LoadingScreen
+import com.aeu.boxapplication.presentation.subscriber.CheckoutPayment
+import com.aeu.boxapplication.presentation.subscriber.CompletePayment
+import com.aeu.boxapplication.presentation.subscriber.HistoryDetailScreen
+import com.aeu.boxapplication.presentation.subscriber.OrderConfirmScreen
+//import com.aeu.boxapplication.presentation.profile.ProfileScreen
+import com.aeu.boxapplication.presentation.subscriber.OrderHistoryScreen
+import com.aeu.boxapplication.presentation.subscriber.ProfileScreen
+import com.aeu.boxapplication.presentation.subscriber.ShopProductsScreen
+import com.aeu.boxapplication.presentation.subscriber.SubscriberHomeScreen
+import com.aeu.boxapplication.presentation.subscriber.SubscriptionDetailsScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            BoxApplicationTheme {
-                val navController = rememberNavController()
-                val shopProducts = remember { demoShopProducts() }
-                val cartItems = remember { mutableStateListOf<CartItem>() }
+            val navController = rememberNavController()
+            val navBackStackEntry by navController.currentBackStackEntryAsState()
+            val currentRoute = navBackStackEntry?.destination?.route
 
-                val addToCart: (ShopProduct) -> Unit = { product ->
-                    val index = cartItems.indexOfFirst { it.product.id == product.id }
-                    if (index >= 0) {
-                        val item = cartItems[index]
-                        cartItems[index] = item.copy(quantity = item.quantity + 1)
-                    } else {
-                        cartItems.add(CartItem(product, 1))
+            val showBottomBar = currentRoute in listOf(
+                Screen.SubscriberHome.route,
+                Screen.OrderHistory.route,
+                Screen.ShopProducts.route,
+                Screen.Profile.route
+            )
+            Scaffold(
+                bottomBar = {
+                    if (showBottomBar) {
+                        SubscriberBottomNav(
+                            // Logic to highlight the correct icon based on currentRoute
+                            selected = when(currentRoute) {
+                                Screen.OrderHistory.route -> SubscriberBottomNavItem.History
+                                Screen.ShopProducts.route -> SubscriberBottomNavItem.Package
+                                Screen.Profile.route -> SubscriberBottomNavItem.Profile
+                                else -> SubscriberBottomNavItem.Home
+                            },
+                            onHomeClick = { navController.navigate(Screen.SubscriberHome.route) { launchSingleTop = true } },
+                            onHistoryClick = { navController.navigate(Screen.OrderHistory.route) { launchSingleTop = true } },
+                            onShopClick = { navController.navigate(Screen.ShopProducts.route) { launchSingleTop = true } },
+                            onProfileClick = {
+                                navController.navigate(Screen.Profile.route)
+                            }
+                        )
                     }
                 }
-                val removeFromCart: (ShopProduct) -> Unit = { product ->
-                    val index = cartItems.indexOfFirst { it.product.id == product.id }
-                    if (index >= 0) {
-                        cartItems.removeAt(index)
-                    }
-                }
-                val decrementCart: (ShopProduct) -> Unit = { product ->
-                    val index = cartItems.indexOfFirst { it.product.id == product.id }
-                    if (index >= 0) {
-                        val item = cartItems[index]
-                        if (item.quantity > 1) {
-                            cartItems[index] = item.copy(quantity = item.quantity - 1)
-                        } else {
-                            cartItems.removeAt(index)
-                        }
-                    }
-                }
-                val clearCart: () -> Unit = {
-                    cartItems.clear()
-                }
+            ) { innerPadding ->
                 NavHost(
                     navController = navController,
-                    startDestination = Screen.Loading.route
+                    startDestination = Screen.Loading.route,
+                    modifier = Modifier.padding(innerPadding) // THIS IS THE KEY FIX
                 ) {
                     composable(Screen.Loading.route) {
                         LoadingScreen(
                             onFinished = {
                                 navController.navigate(Screen.SubscriberHome.route) {
                                     popUpTo(Screen.Loading.route) { inclusive = true }
-                                }
-                            }
+                                }                            }
                         )
                     }
                     composable(Screen.SubscriberHome.route) {
                         SubscriberHomeScreen(
-                            onProductClick = { navController.navigate(Screen.ProductDetails.route) },
-                            onHistoryClick = {
-                                navController.navigate(Screen.OrderHistory.route) {
-                                    launchSingleTop = true
-                                }
-                            },
-                            onShopClick = {
-                                navController.navigate(Screen.ShopProducts.route) {
-                                    launchSingleTop = true
-                                }
-                            }
+                         navController
                         )
                     }
-                    composable(Screen.OrderHistory.route) {
-                        OrderHistoryScreen(
-                            onOrderClick = { navController.navigate(Screen.OrderDetails.route) },
-                            onHomeClick = {
-                                navController.navigate(Screen.SubscriberHome.route) {
-                                    popUpTo(Screen.SubscriberHome.route) { inclusive = false }
-                                    launchSingleTop = true
-                                }
-                            },
-                            onShopClick = {
-                                navController.navigate(Screen.ShopProducts.route) {
-                                    launchSingleTop = true
-                                }
-                            }
-                        )
+                    composable(Screen.OrderHistory.route){
+                        OrderHistoryScreen {  }
                     }
-                    composable(Screen.ShopProducts.route) {
-                        ShopProductsScreen(
-                            products = shopProducts,
-                            cartItems = cartItems,
-                            onProductClick = { navController.navigate(Screen.ProductDetails.route) },
-                            onAddToCart = addToCart,
-                            onHomeClick = {
-                                navController.navigate(Screen.SubscriberHome.route) {
-                                    popUpTo(Screen.SubscriberHome.route) { inclusive = false }
-                                    launchSingleTop = true
-                                }
-                            },
-                            onHistoryClick = {
-                                navController.navigate(Screen.OrderHistory.route) {
-                                    launchSingleTop = true
-                                }
-                            },
-                            onCartClick = { navController.navigate(Screen.ShoppingCart.route) }
-                        )
+                    composable(Screen.ShopProducts.route){
+                        ShopProductsScreen(navController)
                     }
-                    composable(Screen.ShoppingCart.route) {
-                        ShoppingCartScreen(
-                            cartItems = cartItems,
-                            onIncrement = addToCart,
-                            onDecrement = decrementCart,
-                            onRemove = removeFromCart,
-                            onClear = clearCart,
-                            onCheckout = { navController.navigate(Screen.Checkout.route) },
-                            onHomeClick = {
-                                navController.navigate(Screen.SubscriberHome.route) {
-                                    popUpTo(Screen.SubscriberHome.route) { inclusive = false }
-                                    launchSingleTop = true
-                                }
-                            },
-                            onHistoryClick = {
-                                navController.navigate(Screen.OrderHistory.route) {
-                                    launchSingleTop = true
-                                }
-                            },
-                            onShopClick = {
-                                navController.navigate(Screen.ShopProducts.route) {
-                                    launchSingleTop = true
-                                }
-                            }
-                        )
+                    composable(Screen.Profile.route){
+                        ProfileScreen(navController)
                     }
-                    composable(Screen.Checkout.route) {
-                        CheckoutShippingScreen(
-                            onBack = { navController.popBackStack() },
-                            onContinue = { navController.navigate(Screen.CheckoutPayment.route) },
-                            onHomeClick = {
-                                navController.navigate(Screen.SubscriberHome.route) {
-                                    popUpTo(Screen.SubscriberHome.route) { inclusive = false }
-                                    launchSingleTop = true
-                                }
-                            },
-                            onHistoryClick = {
-                                navController.navigate(Screen.OrderHistory.route) {
-                                    launchSingleTop = true
-                                }
-                            },
-                            onShopClick = {
-                                navController.navigate(Screen.ShopProducts.route) {
-                                    launchSingleTop = true
-                                }
-                            }
-                        )
+                    composable(Screen.SubscribDetail.route){
+                        SubscriptionDetailsScreen(navController)
                     }
-                    composable(Screen.CheckoutPayment.route) {
-                        CheckoutPaymentScreen(
-                            onBack = { navController.popBackStack() },
-                            onReviewOrder = { navController.navigate(Screen.OrderPlaced.route) },
-                            onHomeClick = {
-                                navController.navigate(Screen.SubscriberHome.route) {
-                                    popUpTo(Screen.SubscriberHome.route) { inclusive = false }
-                                    launchSingleTop = true
-                                }
-                            },
-                            onHistoryClick = {
-                                navController.navigate(Screen.OrderHistory.route) {
-                                    launchSingleTop = true
-                                }
-                            },
-                            onShopClick = {
-                                navController.navigate(Screen.ShopProducts.route) {
-                                    launchSingleTop = true
-                                }
-                            }
-                        )
+                    composable(Screen.OrderConfirmed.route){
+                        OrderConfirmScreen(navController)
                     }
-                    composable(Screen.OrderPlaced.route) {
-                        OrderPlacedScreen(
-                            onClose = { navController.popBackStack() },
-                            onReturnDashboard = {
-                                navController.navigate(Screen.SubscriberHome.route) {
-                                    popUpTo(Screen.SubscriberHome.route) { inclusive = false }
-                                    launchSingleTop = true
-                                }
-                            },
-                            onViewDetails = { navController.navigate(Screen.OrderDetails.route) }
-                        )
+                    composable(Screen.CheckoutPayment.route){
+                        CheckoutPayment(navController)
                     }
-                    composable(Screen.ProductDetails.route) {
-                        ProductDetailsScreen(
-                            onBack = { navController.popBackStack() },
-                            onReOrderClick = { navController.navigate(Screen.ReOrder.route) }
-                        )
+                    composable(Screen.CompletePayment.route){
+                        CompletePayment(navController)
                     }
-                    composable(Screen.ReOrder.route) {
-                        ReOrderScreen(
-                            onBack = { navController.popBackStack() },
-                            onConfirmOrder = { navController.navigate(Screen.OrderConfirmed.route) }
-                        )
-                    }
-                    composable(Screen.OrderConfirmed.route) {
-                        OrderConfirmedScreen(
-                            onReturnDashboard = {
-                                navController.navigate(Screen.SubscriberHome.route) {
-                                    popUpTo(Screen.SubscriberHome.route) { inclusive = false }
-                                }
-                            },
-                            onViewOrderDetails = { navController.navigate(Screen.OrderDetails.route) }
-                        )
-                    }
-                    composable(Screen.OrderDetails.route) {
-                        OrderDetailsScreen(
-                            onBack = { navController.popBackStack() },
-                            onHelp = { },
-                            onTrackPackage = { }
-                        )
-                    }
-                    composable(Screen.Welcome.route) {
-                        WelcomeScreen(
-                            onStartExploring = { navController.navigate(Screen.Register.route) },
-                            onLoginClick = { navController.navigate(Screen.Login.route) }
-                        )
-                    }
-                    composable(Screen.Login.route) {
-                        LoginScreen(
-                            onBack = { navController.popBackStack() },
-                            onSignupClick = { navController.navigate(Screen.Register.route) },
-                            onLogin = { navController.navigate(Screen.SubscriptionsEmpty.route) }
-                        )
-                    }
-                    composable(Screen.SubscriptionsEmpty.route) {
-                        SubscriptionsEmptyScreen(
-                            onBack = { navController.popBackStack() },
-                            onExplorePlans = { navController.navigate(Screen.ExplorePlans.route) }
-                        )
-                    }
-                    composable(Screen.ExplorePlans.route) {
-                        ExplorePlansScreen(
-                            onBack = { navController.popBackStack() },
-                            onSelectBusiness = { navController.navigate(Screen.ConfirmSubscription.route) }
-                        )
-                    }
-                    composable(Screen.ConfirmSubscription.route) {
-                        ConfirmSubscriptionScreen(
-                            onBack = { navController.popBackStack() },
-                            onConfirmPay = { navController.navigate(Screen.PaymentDetails.route) }
-                        )
-                    }
-                    composable(Screen.PaymentDetails.route) {
-                        PaymentDetailsScreen(
-                            onBack = { navController.popBackStack() },
-                            onPayNow = { navController.navigate(Screen.PaymentConfirmation.route) }
-                        )
-                    }
-                    composable(Screen.PaymentConfirmation.route) {
-                        PaymentConfirmationScreen(
-                            onViewDashboard = { navController.popBackStack() },
-                            onGoToHistory = { navController.navigate(Screen.OrderHistory.route) }
-                        )
-                    }
-                    composable(Screen.Register.route) {
-                        RegisterScreen(
-                            onBack = { navController.popBackStack() },
-                            onContinue = { navController.navigate(Screen.SubscriptionsEmpty.route) },
-                            onLoginClick = { navController.navigate(Screen.Login.route) }
-                        )
+                    composable(Screen.HistoryDetail.route){
+                        HistoryDetailScreen(navController)
                     }
                 }
             }
         }
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-fun WelcomePreview() {
-    BoxApplicationTheme {
-        WelcomeScreen()
-    }
+enum class SubscriberBottomNavItem(
+    val title: String,
+    val icon: ImageVector,
+    val route: String
+) {
+    Home("Home", Icons.Default.Home, "subscriber_home"),
+    History("History", Icons.Default.Refresh, "order_history"),
+    Package("Package", Icons.Default.Favorite, "shop_products"),
+    Profile("Profile", Icons.Default.Person, "profile_screen")
 }
-
-@Preview(showBackground = true)
 @Composable
-fun RegisterPreview() {
-    BoxApplicationTheme {
-        RegisterScreen()
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun LoginPreview() {
-    BoxApplicationTheme {
-        LoginScreen()
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun SubscriptionsEmptyPreview() {
-    BoxApplicationTheme {
-        SubscriptionsEmptyScreen()
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ExplorePlansPreview() {
-    BoxApplicationTheme {
-        ExplorePlansScreen()
+fun SubscriberBottomNav(
+    modifier: Modifier = Modifier,
+    selected: SubscriberBottomNavItem,
+    onHomeClick: () -> Unit,
+    onHistoryClick: () -> Unit,
+    onShopClick: () -> Unit,
+    onProfileClick: () -> Unit
+) {
+    NavigationBar(
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
+    ) {
+        NavigationBarItem(
+            selected = selected == SubscriberBottomNavItem.Home,
+            onClick = onHomeClick,
+            label = { Text("Home") },
+            icon = { Icon(SubscriberBottomNavItem.Home.icon, contentDescription = null) }
+        )
+        NavigationBarItem(
+            selected = selected == SubscriberBottomNavItem.History,
+            onClick = onHistoryClick,
+            label = { Text("History") },
+            icon = { Icon(SubscriberBottomNavItem.History.icon, contentDescription = null) }
+        )
+        NavigationBarItem(
+            selected = selected == SubscriberBottomNavItem.Package,
+            onClick = onShopClick,
+            label = { Text("Package") },
+            icon = { Icon(SubscriberBottomNavItem.Package.icon, contentDescription = null) }
+        )
+        NavigationBarItem(
+            selected = selected == SubscriberBottomNavItem.Profile,
+            onClick = onProfileClick,
+            label = { Text("Profile") },
+            icon = { Icon(SubscriberBottomNavItem.Profile.icon, contentDescription = null) }
+        )
     }
 }

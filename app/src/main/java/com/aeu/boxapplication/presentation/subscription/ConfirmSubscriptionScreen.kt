@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,106 +53,110 @@ fun ConfirmSubscriptionScreen(
         PaymentMethodUi("visa", "Visa", "Ending in 4242", "VISA", Color(0xFF1F2A44))
     )
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 12.dp)
-                .padding(bottom = 88.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Start
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.Outlined.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color(0xFF1E88E5)
-                    )
-                }
-                Text(
-                    text = "Confirm Subscription",
-                    modifier = Modifier
-                        .padding(end = 48.dp)
-                        .fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF2F3A4A)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Review Details",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF2F3A4A)
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = "Review your selection before confirming.",
-                fontSize = 13.sp,
-                color = Color(0xFF7B8794),
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            SelectedPlanCard(onEdit = onEditPlan)
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            SectionTitle(text = "PAYMENT METHOD")
-            Spacer(modifier = Modifier.height(10.dp))
-
-            methods.forEach { method ->
-                PaymentMethodRow(
-                    method = method,
-                    selected = method.id == selectedMethod,
-                    onSelect = { setSelectedMethod(method.id) }
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            SectionTitle(text = "ORDER SUMMARY")
-            Spacer(modifier = Modifier.height(10.dp))
-
-            OrderSummaryCard()
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = "Your subscription will renew automatically on Dec 24, 2023.\nYou can cancel anytime in your settings.",
-                fontSize = 11.sp,
-                color = Color(0xFF8C99A6),
-                textAlign = TextAlign.Center,
-                lineHeight = 16.sp
-            )
-        }
-
+    Scaffold{
+        paddingValues ->
         Box(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
+                .fillMaxSize()
+                .padding(paddingValues)
                 .background(Color.White)
-                .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
-            AppPrimaryButton(
-                text = "Confirm&Pay",
-                onClick = onConfirmPay
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
+                    .padding(bottom = 88.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.Outlined.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color(0xFF1E88E5)
+                        )
+                    }
+                    Text(
+                        text = "Confirm Subscription",
+                        modifier = Modifier
+                            .padding(end = 48.dp)
+                            .fillMaxWidth(),
+                        textAlign = TextAlign.Center,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2F3A4A)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Review Details",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2F3A4A)
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Review your selection before confirming.",
+                    fontSize = 13.sp,
+                    color = Color(0xFF7B8794),
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                SelectedPlanCard(onEdit = onEditPlan)
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                SectionTitle(text = "PAYMENT METHOD")
+                Spacer(modifier = Modifier.height(10.dp))
+
+                methods.forEach { method ->
+                    PaymentMethodRow(
+                        method = method,
+                        selected = method.id == selectedMethod,
+                        onSelect = { setSelectedMethod(method.id) }
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                SectionTitle(text = "ORDER SUMMARY")
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OrderSummaryCard()
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "Your subscription will renew automatically on Dec 24, 2023.\nYou can cancel anytime in your settings.",
+                    fontSize = 11.sp,
+                    color = Color(0xFF8C99A6),
+                    textAlign = TextAlign.Center,
+                    lineHeight = 16.sp
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
+            ) {
+                AppPrimaryButton(
+                    text = "Confirm&Pay",
+                    onClick = onConfirmPay
+                )
+            }
         }
     }
 }

@@ -16,6 +16,7 @@ sealed class Screen(val route: String) {
     
     // Subscriber
     object SubscriberHome : Screen("subscriber_home")
+    object  SubscribDetail: Screen("subscribe_detail")
     object Profile : Screen("profile")
     object SubscriberSettings : Screen("subscriber_settings")
 
@@ -26,6 +27,7 @@ sealed class Screen(val route: String) {
     object ReOrder : Screen("reorder")
     object OrderConfirmed : Screen("order_confirmed")
     object OrderDetails : Screen("order_details")
+    object  HistoryDetail : Screen("history_details")
     
     // Subscription
     object SubscriptionPlans : Screen("subscription_plans")
@@ -41,8 +43,8 @@ sealed class Screen(val route: String) {
     object UpgradeSubscription : Screen("upgrade_subscription")
     
     // Payment
-    object Checkout : Screen("checkout")
     object CheckoutPayment : Screen("checkout_payment")
+    object  CompletePayment : Screen("complete_payment")
     object OrderPlaced : Screen("order_placed")
     object PaymentHistory : Screen("payment_history")
     object PaymentMethods : Screen("payment_methods")

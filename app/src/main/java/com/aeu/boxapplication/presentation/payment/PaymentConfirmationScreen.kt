@@ -19,12 +19,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.LocalShipping
+import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,108 +43,111 @@ fun PaymentConfirmationScreen(
     onViewDashboard: () -> Unit = {},
     onGoToHistory: () -> Unit = {}
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        Column(
+    Scaffold{paddingValues ->
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 12.dp)
-                .padding(bottom = 88.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Payment Confirmation",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF2F3A4A),
-                modifier = Modifier.padding(top = 4.dp)
-            )
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .background(Color(0xFFDFF7E8), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .background(Color(0xFF21C168), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Check,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Text(
-                text = "Payment Successful!",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF2F3A4A)
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = "Thank you for your purchase. Your\nsubscription is now active and ready to use.",
-                fontSize = 12.sp,
-                color = Color(0xFF7B8794),
-                textAlign = TextAlign.Center,
-                lineHeight = 16.sp
-            )
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            SectionTitle(text = "SUBSCRIPTION DETAILS")
-            Spacer(modifier = Modifier.height(10.dp))
-            SubscriptionDetailsCard()
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            SectionTitle(text = "FIRST SHIPMENT")
-            Spacer(modifier = Modifier.height(10.dp))
-            FirstShipmentCard()
-        }
-
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
+                .padding(paddingValues)
                 .background(Color.White)
-                .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 24.dp)
         ) {
-            AppPrimaryButton(
-                text = "View Dashboard  →",
-                onClick = onViewDashboard
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            OutlinedButton(
-                onClick = onGoToHistory,
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Color.White,
-                    contentColor = Color(0xFF1E88E5)
-                )
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
+                    .padding(bottom = 88.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Go to Order History",
+                    text = "Payment Confirmation",
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF2F3A4A),
+                    modifier = Modifier.padding(top = 4.dp)
                 )
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                Box(
+                    modifier = Modifier
+                        .size(72.dp)
+                        .background(Color(0xFFDFF7E8), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(Color(0xFF21C168), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Check,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Text(
+                    text = "Payment Successful!",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2F3A4A)
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Thank you for your purchase. Your\nsubscription is now active and ready to use.",
+                    fontSize = 12.sp,
+                    color = Color(0xFF7B8794),
+                    textAlign = TextAlign.Center,
+                    lineHeight = 16.sp
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                SectionTitle(text = "SUBSCRIPTION DETAILS")
+                Spacer(modifier = Modifier.height(10.dp))
+                SubscriptionDetailsCard()
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                SectionTitle(text = "FIRST SHIPMENT")
+                Spacer(modifier = Modifier.height(10.dp))
+                FirstShipmentCard()
+            }
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 24.dp)
+            ) {
+                AppPrimaryButton(
+                    text = "View Dashboard  →",
+                    onClick = onViewDashboard
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedButton(
+                    onClick = onGoToHistory,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.White,
+                        contentColor = Color(0xFF1E88E5)
+                    )
+                ) {
+                    Text(
+                        text = "Go to Order History",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
     }
@@ -210,7 +214,7 @@ private fun SubscriptionDetailsCard() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Schedule,
+                    imageVector = Icons.Outlined.DateRange,
                     contentDescription = null,
                     tint = Color(0xFF1E88E5),
                     modifier = Modifier.size(16.dp)
@@ -251,7 +255,7 @@ private fun FirstShipmentCard() {
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Outlined.LocalShipping,
+                        imageVector = Icons.Outlined.ShoppingCart,
                         contentDescription = null,
                         tint = Color(0xFF1E88E5),
                         modifier = Modifier.size(18.dp)
@@ -284,7 +288,7 @@ private fun FirstShipmentCard() {
             Spacer(modifier = Modifier.height(12.dp))
 
             InfoRow(
-                icon = Icons.Outlined.Schedule,
+                icon = Icons.Outlined.DateRange,
                 title = "Estimated Delivery",
                 value = "Mon, Dec 28 - Wed, Dec 30"
             )

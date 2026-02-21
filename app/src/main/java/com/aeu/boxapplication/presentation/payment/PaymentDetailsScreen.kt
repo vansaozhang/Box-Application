@@ -1,5 +1,7 @@
 package com.aeu.boxapplication.presentation.payment
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,8 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,6 +36,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
@@ -47,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import com.aeu.boxapplication.ui.components.AppPrimaryButton
 import java.time.YearMonth
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PaymentDetailsScreen(
     onBack: () -> Unit = {},
@@ -115,7 +119,7 @@ fun PaymentDetailsScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.CreditCard,
+                    imageVector = Icons.Outlined.ShoppingCart,
                     contentDescription = null,
                     tint = Color(0xFF1E88E5),
                     modifier = Modifier.size(24.dp)
@@ -213,7 +217,7 @@ fun PaymentDetailsScreen(
                 },
                 leadingIcon = {
                     Icon(
-                        imageVector = Icons.Outlined.CreditCard,
+                        imageVector = Icons.Outlined.Search,
                         contentDescription = null,
                         tint = Color(0xFF94A3B8),
                         modifier = Modifier.size(18.dp)
@@ -266,7 +270,7 @@ fun PaymentDetailsScreen(
                         },
                         leadingIcon = {
                             Icon(
-                                imageVector = Icons.Outlined.CalendarMonth,
+                                imageVector = Icons.Outlined.DateRange,
                                 contentDescription = null,
                                 tint = Color(0xFF94A3B8),
                                 modifier = Modifier.size(18.dp)
@@ -353,12 +357,8 @@ fun PaymentDetailsScreen(
                 color = Color(0xFF8C99A6),
                 textAlign = TextAlign.Center,
                 lineHeight = 16.sp,
-                modifier = Modifier
-                    .clickable(
-                        onClick = {},
-                        indication = null,
-                        interactionSource = MutableInteractionSource()
-                    )
+                modifier = Modifier.clickable(onClick = {})
+
             )
         }
 
@@ -445,6 +445,7 @@ private fun SummaryRow(label: String, value: String) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 private fun isValidExpiry(value: String): Boolean {
     if (!value.matches(Regex("\\d{2}/\\d{2}"))) return false
     val month = value.substring(0, 2).toIntOrNull() ?: return false
@@ -456,6 +457,7 @@ private fun isValidExpiry(value: String): Boolean {
     return !expiry.isBefore(current)
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 private fun expiryErrorMessage(value: String): String? {
     if (value.isEmpty()) return null
     if (!value.matches(Regex("\\d{2}/\\d{2}"))) return "Use MM/YY"

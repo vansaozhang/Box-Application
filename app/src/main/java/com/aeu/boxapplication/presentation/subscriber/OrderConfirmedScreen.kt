@@ -1,120 +1,158 @@
 package com.aeu.boxapplication.presentation.subscriber
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.LocalShipping
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.aeu.boxapplication.ui.components.AppPrimaryButton
+import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import com.aeu.boxapplication.presentation.navigation.Screen
 
+// Color Palette based on images
+val BoxlySoftTeal = Color(0xFFE0FBFA)
+val BoxlyLightGray = Color(0xFFF8FAFB)
+val BoxlySecondaryText = Color(0xFF94A3B8)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OrderConfirmedScreen(
-    onReturnDashboard: () -> Unit = {},
-    onViewOrderDetails: () -> Unit = {}
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF7F7F9))
-    ) {
+fun OrderConfirmScreen(navController: NavController) {
+    var selectedPlan by remember { mutableStateOf("Yearly") }
+    var deliveryFreq by remember { mutableStateOf("Once a Month") }
+
+    Scaffold(
+        containerColor = BoxlyLightGray,
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("Complete Your Order", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
+            )
+        },
+        bottomBar = {
+            Column(
+                modifier = Modifier
+                    .background(Color.White)
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Button(
+                    onClick = {
+                        navController.navigate(Screen.CheckoutPayment.route)
+                    },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = BoxlyTeal)
+                ) {
+                    Text("Subscribe & Pay", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "By clicking Subscribe & Pay, you agree to our Terms of Service. You can cancel your subscription at any time.",
+                    fontSize = 11.sp,
+                    color = BoxlySecondaryText,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    lineHeight = 16.sp
+                )
+            }
+        }
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 20.dp)
-                .padding(bottom = 88.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(20.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .background(Color(0xFFE5F6EC), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(86.dp)
-                        .background(Color(0xFFD4F0DF), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Check,
-                        contentDescription = null,
-                        tint = Color(0xFF16A34A),
-                        modifier = Modifier.size(36.dp)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Order Confirmed!",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF111827)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Your re-order has been placed successfully.\nA confirmation email has been sent to you.",
-                fontSize = 12.sp,
-                color = Color(0xFF6B7280),
-                textAlign = TextAlign.Center,
-                lineHeight = 18.sp
-            )
-            Spacer(modifier = Modifier.height(18.dp))
-            DeliveryCard()
-            Spacer(modifier = Modifier.height(14.dp))
+            SectionHeader("ORDER SUMMARY")
             OrderSummaryCard()
-        }
 
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .background(Color.White)
-                .padding(horizontal = 20.dp, vertical = 16.dp)
-        ) {
-            Column {
-                AppPrimaryButton(
-                    text = "Return to Dashboard",
-                    onClick = onReturnDashboard,
-                    enabled = true
-                )
-                Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+            SectionHeader("SELECT YOUR PLAN")
+
+            PlanOption(
+                title = "Yearly Plan",
+                price = "$19.99/mo",
+                subtext = "($239.88 billed annually)",
+                badge = "BEST VALUE",
+                isSelected = selectedPlan == "Yearly",
+                onClick = { selectedPlan = "Yearly" }
+            )
+            PlanOption(
+                title = "6-Month Plan",
+                price = "$24.99/mo",
+                subtext = "($149.94 billed every 6 mo)",
+                badge = "SAVE 15%",
+                isSelected = selectedPlan == "6-Month",
+                onClick = { selectedPlan = "6-Month" }
+            )
+            PlanOption(
+                title = "Monthly",
+                price = "$29.99/mo",
+                subtext = null,
+                badge = null,
+                isSelected = selectedPlan == "Monthly",
+                onClick = { selectedPlan = "Monthly" }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+            SectionHeader("DELIVERY FREQUENCY")
+            DeliveryFrequencyToggle(
+                selected = deliveryFreq,
+                onSelect = { deliveryFreq = it }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+            PriceBreakdown(selectedPlan)
+        }
+    }
+}
+
+@Composable
+fun SectionHeader(text: String) {
+    Text(
+        text = text,
+        fontSize = 13.sp,
+        fontWeight = FontWeight.Bold,
+        color = Color(0xFF64748B),
+        modifier = Modifier.padding(bottom = 12.dp)
+    )
+}
+
+@Composable
+fun OrderSummaryCard() {
+    Surface(
+        color = Color.White,
+        shape = RoundedCornerShape(24.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            AsyncImage(
+                model = "https://images.unsplash.com/photo-1589710780350-1215889378f1?w=400", // Representative box image
+                contentDescription = null,
+                modifier = Modifier.size(80.dp).clip(RoundedCornerShape(16.dp)),
+                contentScale = ContentScale.Crop
+            )
+            Column(modifier = Modifier.padding(start = 16.dp)) {
+                Text("The Wellness Box", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 Text(
-                    text = "View Order Details",
-                    fontSize = 12.sp,
-                    color = Color(0xFF6B7280),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onViewOrderDetails),
-                    textAlign = TextAlign.Center
+                    "Curated monthly essentials for your mental and physical wellbeing.",
+                    fontSize = 13.sp, color = BoxlySecondaryText, lineHeight = 18.sp
                 )
             }
         }
@@ -122,150 +160,109 @@ fun OrderConfirmedScreen(
 }
 
 @Composable
-private fun DeliveryCard() {
+fun PlanOption(
+    title: String, price: String, subtext: String?,
+    badge: String?, isSelected: Boolean, onClick: () -> Unit
+) {
     Surface(
-        shape = RoundedCornerShape(18.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(20.dp),
         color = Color.White,
-        shadowElevation = 1.dp,
+        border = BorderStroke(2.dp, if (isSelected) BoxlyTeal else Color.Transparent)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RadioButton(
+                selected = isSelected,
+                onClick = onClick,
+                colors = RadioButtonDefaults.colors(selectedColor = BoxlyTeal)
+            )
+            Column(modifier = Modifier.padding(start = 8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    if (badge != null) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(color = BoxlyTeal, shape = RoundedCornerShape(8.dp)) {
+                            Text(
+                                text = badge,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                fontSize = 10.sp, fontWeight = FontWeight.ExtraBold
+                            )
+                        }
+                    }
+                }
+                Row {
+                    Text(text = price, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color(0xFF475569))
+                    if (subtext != null) {
+                        Text(text = " $subtext", fontSize = 14.sp, color = BoxlySecondaryText)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DeliveryFrequencyToggle(selected: String, onSelect: (String) -> Unit) {
+    Surface(
+        color = Color(0xFFF1F5F9),
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth().height(56.dp)
+    ) {
+        Row(modifier = Modifier.padding(4.dp)) {
+            val options = listOf("Every 2 Weeks", "Once a Month")
+            options.forEach { option ->
+                val isSelected = selected == option
+                Surface(
+                    modifier = Modifier.weight(1f).fillMaxHeight().clickable { onSelect(option) },
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (isSelected) Color.White else Color.Transparent,
+                    shadowElevation = if (isSelected) 2.dp else 0.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = option,
+                            fontSize = 14.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) Color(0xFF1E293B) else BoxlySecondaryText
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PriceBreakdown(planType: String) {
+    Surface(
+        color = Color.White,
+        shape = RoundedCornerShape(24.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .background(Color(0xFFE8F1FF), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.LocalShipping,
-                        contentDescription = null,
-                        tint = Color(0xFF1E88E5),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Column {
-                    Text(
-                        text = "ESTIMATED DELIVERY",
-                        fontSize = 10.sp,
-                        color = Color(0xFF9AA1AE)
-                    )
-                    Text(
-                        text = "Friday, Oct 27",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF111827)
-                    )
-                }
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Subtotal ($planType Plan)", color = BoxlySecondaryText)
+                Text("$19.99", fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .background(Color(0xFFE5E7EB), RoundedCornerShape(8.dp))
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.35f)
-                        .height(6.dp)
-                        .background(Color(0xFF2F6BFF), RoundedCornerShape(8.dp))
-                )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Shipping", color = BoxlySecondaryText)
+                Text("FREE", color = BoxlyTeal, fontWeight = FontWeight.Bold)
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Divider(modifier = Modifier.padding(vertical = 20.dp), color = BoxlyLightGray)
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(text = "Ordered", fontSize = 11.sp, color = Color(0xFF1E88E5), fontWeight = FontWeight.SemiBold)
-                Text(text = "Shipped", fontSize = 11.sp, color = Color(0xFF6B7280))
-                Text(text = "Delivered", fontSize = 11.sp, color = Color(0xFF6B7280))
-            }
-        }
-    }
-}
-
-@Composable
-private fun OrderSummaryCard() {
-    Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = Color.White,
-        shadowElevation = 1.dp,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
+                Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Order #8492-RE",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF111827)
-                )
-                Box(
-                    modifier = Modifier
-                        .background(Color(0xFFE6F7EE), RoundedCornerShape(10.dp))
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "PAID",
-                        fontSize = 10.sp,
-                        color = Color(0xFF1E9E62),
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(52.dp)
-                        .background(
-                            Brush.linearGradient(
-                                listOf(Color(0xFF1B1712), Color(0xFF493A2B))
-                            ),
-                            RoundedCornerShape(12.dp)
-                        )
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Ethiopian Yirgacheffe",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF111827)
-                    )
-                    Text(
-                        text = "Qty: 1 • Whole Bean",
-                        fontSize = 12.sp,
-                        color = Color(0xFF6B7280)
-                    )
-                }
-                Text(
-                    text = "$24.35",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF111827)
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(Color(0xFFE5E7EB))
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Ship to: 808 Coffee Bean Rd, Seattle...",
-                    fontSize = 11.sp,
-                    color = Color(0xFF6B7280)
-                )
+                Text("Total Due Today", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text("$19.99", fontWeight = FontWeight.ExtraBold, fontSize = 24.sp)
             }
         }
     }
