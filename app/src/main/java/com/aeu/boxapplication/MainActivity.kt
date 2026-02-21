@@ -20,23 +20,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.dp
-import com.aeu.boxapplication.presentation.navigation.Screen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.aeu.boxapplication.presentation.auth.RegisterScreen
+import com.aeu.boxapplication.presentation.navigation.Screen
 import com.aeu.boxapplication.presentation.onboarding.LoadingScreen
-import com.aeu.boxapplication.presentation.subscriber.CheckoutPayment
-import com.aeu.boxapplication.presentation.subscriber.CompletePayment
-import com.aeu.boxapplication.presentation.subscriber.HistoryDetailScreen
-import com.aeu.boxapplication.presentation.subscriber.OrderConfirmScreen
-//import com.aeu.boxapplication.presentation.profile.ProfileScreen
-import com.aeu.boxapplication.presentation.subscriber.OrderHistoryScreen
-import com.aeu.boxapplication.presentation.subscriber.ProfileScreen
-import com.aeu.boxapplication.presentation.subscriber.ShopProductsScreen
-import com.aeu.boxapplication.presentation.subscriber.SubscriberHomeScreen
-import com.aeu.boxapplication.presentation.subscriber.SubscriptionDetailsScreen
+import com.aeu.boxapplication.presentation.subscriber.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,28 +38,48 @@ class MainActivity : ComponentActivity() {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
 
+            // Define which screens should show the Bottom Navigation Bar
+            // We exclude Register and Loading from this list
             val showBottomBar = currentRoute in listOf(
                 Screen.SubscriberHome.route,
                 Screen.OrderHistory.route,
                 Screen.ShopProducts.route,
                 Screen.Profile.route
             )
+
             Scaffold(
                 bottomBar = {
                     if (showBottomBar) {
                         SubscriberBottomNav(
-                            // Logic to highlight the correct icon based on currentRoute
                             selected = when(currentRoute) {
                                 Screen.OrderHistory.route -> SubscriberBottomNavItem.History
                                 Screen.ShopProducts.route -> SubscriberBottomNavItem.Package
                                 Screen.Profile.route -> SubscriberBottomNavItem.Profile
                                 else -> SubscriberBottomNavItem.Home
                             },
-                            onHomeClick = { navController.navigate(Screen.SubscriberHome.route) { launchSingleTop = true } },
-                            onHistoryClick = { navController.navigate(Screen.OrderHistory.route) { launchSingleTop = true } },
-                            onShopClick = { navController.navigate(Screen.ShopProducts.route) { launchSingleTop = true } },
+                            onHomeClick = {
+                                navController.navigate(Screen.SubscriberHome.route) {
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            onHistoryClick = {
+                                navController.navigate(Screen.OrderHistory.route) {
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            onShopClick = {
+                                navController.navigate(Screen.ShopProducts.route) {
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
                             onProfileClick = {
-                                navController.navigate(Screen.Profile.route)
+                                navController.navigate(Screen.Profile.route) {
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
                         )
                     }
@@ -76,51 +87,62 @@ class MainActivity : ComponentActivity() {
             ) { innerPadding ->
                 NavHost(
                     navController = navController,
-                    startDestination = Screen.Loading.route,
-                    modifier = Modifier.padding(innerPadding) // THIS IS THE KEY FIX
+                    startDestination = Screen.Loading.route, // App starts with Loading
+                    modifier = Modifier.padding(innerPadding)
                 ) {
+                    // 1. Splash/Loading Screen
                     composable(Screen.Loading.route) {
                         LoadingScreen(
                             onFinished = {
-                                navController.navigate(Screen.SubscriberHome.route) {
+                                // After loading, go to Register
+                                navController.navigate(Screen.Register.route) {
                                     popUpTo(Screen.Loading.route) { inclusive = true }
-                                }                            }
+                                }
+                            }
                         )
                     }
+
+                    // 2. Register Screen
+                    composable(Screen.Register.route) {
+                        RegisterScreen(
+                            navController = navController,
+                            onRegisterSuccess = {
+                                // After success, go to Home and clear Register from history
+                                navController.navigate(Screen.SubscriberHome.route) {
+                                    popUpTo(Screen.Register.route) { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+
+                    // 3. Main Bottom Nav Screens
                     composable(Screen.SubscriberHome.route) {
-                        SubscriberHomeScreen(
-                         navController
-                        )
+                        SubscriberHomeScreen(navController)
                     }
-                    composable(Screen.OrderHistory.route){
-                        OrderHistoryScreen {  }
+                    composable(Screen.OrderHistory.route) {
+                        OrderHistoryScreen { /* Handle detail click if needed */ }
                     }
-                    composable(Screen.ShopProducts.route){
+                    composable(Screen.ShopProducts.route) {
                         ShopProductsScreen(navController)
                     }
-                    composable(Screen.Profile.route){
+                    composable(Screen.Profile.route) {
                         ProfileScreen(navController)
                     }
-                    composable(Screen.SubscribDetail.route){
-                        SubscriptionDetailsScreen(navController)
-                    }
-                    composable(Screen.OrderConfirmed.route){
-                        OrderConfirmScreen(navController)
-                    }
-                    composable(Screen.CheckoutPayment.route){
-                        CheckoutPayment(navController)
-                    }
-                    composable(Screen.CompletePayment.route){
-                        CompletePayment(navController)
-                    }
-                    composable(Screen.HistoryDetail.route){
-                        HistoryDetailScreen(navController)
-                    }
+
+                    // 4. Secondary/Detail Screens
+                    composable(Screen.SubscribDetail.route) { SubscriptionDetailsScreen(navController) }
+                    composable(Screen.OrderConfirmed.route) { OrderConfirmScreen(navController) }
+                    composable(Screen.CheckoutPayment.route) { CheckoutPayment(navController) }
+                    composable(Screen.CompletePayment.route) { CompletePayment(navController) }
+                    composable(Screen.HistoryDetail.route) { HistoryDetailScreen(navController) }
                 }
             }
         }
     }
 }
+
+// --- UI Components ---
+
 enum class SubscriberBottomNavItem(
     val title: String,
     val icon: ImageVector,
@@ -131,6 +153,7 @@ enum class SubscriberBottomNavItem(
     Package("Package", Icons.Default.Favorite, "shop_products"),
     Profile("Profile", Icons.Default.Person, "profile_screen")
 }
+
 @Composable
 fun SubscriberBottomNav(
     modifier: Modifier = Modifier,
@@ -142,7 +165,7 @@ fun SubscriberBottomNav(
 ) {
     NavigationBar(
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = MaterialTheme.colorScheme.surface,
     ) {
         NavigationBarItem(
             selected = selected == SubscriberBottomNavItem.Home,

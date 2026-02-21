@@ -38,6 +38,7 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.navigation.NavHostController
 import com.aeu.boxapplication.core.utils.ValidationUtils
 import com.aeu.boxapplication.ui.components.AppPrimaryButton
 import com.aeu.boxapplication.ui.components.AppTextField
@@ -49,7 +50,9 @@ fun RegisterScreen(
     onContinue: () -> Unit = {},
     onLoginClick: () -> Unit = {},
     onGoogleClick: () -> Unit = {},
-    onFacebookClick: () -> Unit = {}
+    onFacebookClick: () -> Unit = {},
+    navController: NavHostController,
+    onRegisterSuccess: () -> Unit
 ) {
     val (username, setUsername) = remember { mutableStateOf("") }
     val (email, setEmail) = remember { mutableStateOf("") }
@@ -75,18 +78,6 @@ fun RegisterScreen(
                     .padding(horizontal = 28.dp, vertical = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Start
-                ) {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.Outlined.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color(0xFF1E88E5)
-                        )
-                    }
-                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -193,14 +184,6 @@ fun RegisterScreen(
                     Divider(color = Color(0xFFD7E0EA), modifier = Modifier.weight(1f))
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    SocialCircleButton(text = "G", onClick = onGoogleClick)
-                    SocialCircleButton(text = "f", onClick = onFacebookClick)
-                }
 
                 Spacer(modifier = Modifier.height(32.dp))
 
