@@ -20,7 +20,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.aeu.boxapplication.presentation.navigation.Screen
 
-// Color Palette based on images
+// Color Palette
 val BoxlySoftTeal = Color(0xFFE0FBFA)
 val BoxlyLightGray = Color(0xFFF8FAFB)
 val BoxlySecondaryText = Color(0xFF94A3B8)
@@ -31,51 +31,27 @@ fun OrderConfirmScreen(navController: NavController) {
     var selectedPlan by remember { mutableStateOf("Yearly") }
     var deliveryFreq by remember { mutableStateOf("Once a Month") }
 
-    Scaffold(
-        containerColor = BoxlyLightGray,
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Complete Your Order", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
-            )
-        },
-        bottomBar = {
-            Column(
-                modifier = Modifier
-                    .background(Color.White)
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Button(
-                    onClick = {
-                        navController.navigate(Screen.CheckoutPayment.route)
-                    },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BoxlyTeal)
-                ) {
-                    Text("Subscribe & Pay", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BoxlyLightGray)
+            .statusBarsPadding() // Protects status bar area
+    ) {
+        // --- Manual Top Bar ---
+        CenterAlignedTopAppBar(
+            title = { Text("Complete Your Order", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+            navigationIcon = {
+                IconButton(onClick = { navController.popBackStack() }) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                 }
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "By clicking Subscribe & Pay, you agree to our Terms of Service. You can cancel your subscription at any time.",
-                    fontSize = 11.sp,
-                    color = BoxlySecondaryText,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    lineHeight = 16.sp
-                )
-            }
-        }
-    ) { padding ->
+            },
+            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
+        )
+
+        // --- Main Content Area ---
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
+                .weight(1f) // Takes up remaining space between top and bottom bar
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp)
         ) {
@@ -120,6 +96,36 @@ fun OrderConfirmScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(24.dp))
             PriceBreakdown(selectedPlan)
         }
+
+        // --- Manual Bottom Bar ---
+        Column(
+            modifier = Modifier
+                .background(Color.White)
+                .navigationBarsPadding() // Protects bottom gesture navigation bar
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Button(
+                onClick = {
+                    navController.navigate(Screen.CheckoutPayment.route)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = BoxlyTeal)
+            ) {
+                Text("Subscribe & Pay", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "By clicking Subscribe & Pay, you agree to our Terms of Service. You can cancel your subscription at any time.",
+                fontSize = 11.sp,
+                color = BoxlySecondaryText,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                lineHeight = 16.sp
+            )
+        }
     }
 }
 
@@ -143,9 +149,11 @@ fun OrderSummaryCard() {
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             AsyncImage(
-                model = "https://images.unsplash.com/photo-1589710780350-1215889378f1?w=400", // Representative box image
+                model = "https://images.unsplash.com/photo-1589710780350-1215889378f1?w=400",
                 contentDescription = null,
-                modifier = Modifier.size(80.dp).clip(RoundedCornerShape(16.dp)),
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(16.dp)),
                 contentScale = ContentScale.Crop
             )
             Column(modifier = Modifier.padding(start = 16.dp)) {
@@ -212,14 +220,19 @@ fun DeliveryFrequencyToggle(selected: String, onSelect: (String) -> Unit) {
     Surface(
         color = Color(0xFFF1F5F9),
         shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth().height(56.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
     ) {
         Row(modifier = Modifier.padding(4.dp)) {
             val options = listOf("Every 2 Weeks", "Once a Month")
             options.forEach { option ->
                 val isSelected = selected == option
                 Surface(
-                    modifier = Modifier.weight(1f).fillMaxHeight().clickable { onSelect(option) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable { onSelect(option) },
                     shape = RoundedCornerShape(10.dp),
                     color = if (isSelected) Color.White else Color.Transparent,
                     shadowElevation = if (isSelected) 2.dp else 0.dp
@@ -255,7 +268,7 @@ fun PriceBreakdown(planType: String) {
                 Text("Shipping", color = BoxlySecondaryText)
                 Text("FREE", color = BoxlyTeal, fontWeight = FontWeight.Bold)
             }
-            Divider(modifier = Modifier.padding(vertical = 20.dp), color = BoxlyLightGray)
+            HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp), color = BoxlyLightGray)
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

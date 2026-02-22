@@ -5,9 +5,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ExitToApp
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,14 +23,24 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 
 @Composable
-fun ProfileScreen(navController: NavController) {
+fun ProfileScreen(
+    navController: NavController,
+    userName: String,      // Real name from API
+    userEmail: String,     // Real email from API
+    onShippingAddressClick: () -> Unit,
+    onPaymentMethodsClick: () -> Unit,
+    onLogoutClick: () -> Unit
+) {
+    // State for Logout Confirmation
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8FAFB)) // Matching background from Shop screen
+            .background(Color(0xFFF8FAFB))
             .verticalScroll(rememberScrollState())
     ) {
-        // 1. Profile Header
+        // --- 1. Profile Header (Real Data) ---
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -47,7 +59,6 @@ fun ProfileScreen(navController: NavController) {
                             .border(2.dp, Color(0xFF1CE5D1), CircleShape),
                         contentScale = ContentScale.Crop
                     )
-                    // Edit Badge
                     Surface(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
@@ -58,19 +69,21 @@ fun ProfileScreen(navController: NavController) {
                     ) {
                         Icon(
                             Icons.Outlined.Edit,
-                            contentDescription = null,
+                            contentDescription = "Edit Profile",
                             tint = Color.White,
                             modifier = Modifier.padding(6.dp)
                         )
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Sarah Jenkins", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                Text(text = "sarah.j@example.com", color = Color.Gray, fontSize = 14.sp)
+
+                // Displaying the Dynamic Data
+                Text(text = userName, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Text(text = userEmail, color = Color.Gray, fontSize = 14.sp)
             }
         }
 
-        // 2. Subscription Stats Row
+        // --- 2. Subscription Stats Row ---
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -82,35 +95,76 @@ fun ProfileScreen(navController: NavController) {
             StatCard("Boxes", "12", modifier = Modifier.weight(1f))
         }
 
-        // 3. Settings Sections
+        // --- 3. Account Settings Section ---
         Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-            Text("Account Settings", fontWeight = FontWeight.Bold, color = Color.Gray, fontSize = 13.sp)
+            Text(
+                text = "Account Settings",
+                fontWeight = FontWeight.Bold,
+                color = Color.Gray,
+                fontSize = 13.sp
+            )
             Spacer(modifier = Modifier.height(12.dp))
 
-            ProfileMenuItem(Icons.Outlined.Person, "Personal Information") { }
-            ProfileMenuItem(Icons.Outlined.Add, "Payment Methods") { }
-            ProfileMenuItem(Icons.Outlined.LocationOn, "Shipping Addresses") { }
-            ProfileMenuItem(Icons.Outlined.Notifications, "Notifications") { }
+            ProfileMenuItem(
+                icon = Icons.Outlined.LocationOn,
+                title = "Shipping Addresses",
+                onClick = onShippingAddressClick
+            )
+            ProfileMenuItem(
+                icon = Icons.Outlined.Payment,
+                title = "Payment Methods",
+                onClick = onPaymentMethodsClick
+            )
 
-            Spacer(modifier = Modifier.height(24.dp))
-            Text("Support", fontWeight = FontWeight.Bold, color = Color.Gray, fontSize = 13.sp)
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-            ProfileMenuItem(Icons.Outlined.Info, "Help Center") { }
-            ProfileMenuItem(Icons.Outlined.Lock, "Privacy Policy") { }
-
-            // Logout Button
-            Spacer(modifier = Modifier.height(24.dp))
+            // --- 4. Styled Logout Button ---
             Button(
-                onClick = { /* Handle Logout */ },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+                onClick = { showLogoutDialog = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFF1F1))
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFFFF1F1) // Soft Red
+                )
             ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.ExitToApp,
+                    contentDescription = null,
+                    tint = Color.Red
+                )
+                Spacer(modifier = Modifier.width(12.dp))
                 Text("Log Out", color = Color.Red, fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(40.dp))
         }
+    }
+
+    // --- Logout Confirmation Dialog ---
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text(text = "Logout Confirmation") },
+            text = { Text("Are you sure you want to log out? You will need to sign in again to access your account.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        onLogoutClick()
+                    }
+                ) {
+                    Text("Logout", color = Color.Red, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("Cancel", color = Color.Gray)
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
+        )
     }
 }
 
@@ -138,7 +192,7 @@ private fun ProfileMenuItem(icon: ImageVector, title: String, onClick: () -> Uni
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 8.dp)
-            .clickable { onClick() },
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         color = Color.White
     ) {
@@ -156,7 +210,11 @@ private fun ProfileMenuItem(icon: ImageVector, title: String, onClick: () -> Uni
             }
             Spacer(modifier = Modifier.width(16.dp))
             Text(text = title, modifier = Modifier.weight(1f), fontWeight = FontWeight.Medium)
-            Icon(Icons.Outlined.Warning, contentDescription = null, tint = Color.LightGray)
+            Icon(
+                Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                contentDescription = null,
+                tint = Color.LightGray
+            )
         }
     }
 }

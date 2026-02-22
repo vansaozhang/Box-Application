@@ -1,15 +1,15 @@
 package com.aeu.boxapplication
-
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -18,15 +18,28 @@ import androidx.compose.runtime.Composable
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.aeu.boxapplication.core.utils.SessionManager
+import com.aeu.boxapplication.data.remote.RetrofitClient
+import com.aeu.boxapplication.domain.repository.AuthRepository
+import com.aeu.boxapplication.presentation.LoginViewModel
+import com.aeu.boxapplication.presentation.auth.LoginScreen
 import com.aeu.boxapplication.presentation.auth.RegisterScreen
+import com.aeu.boxapplication.presentation.auth.RegisterViewModel
+import com.aeu.boxapplication.presentation.auth.RegisterViewModelFactory
 import com.aeu.boxapplication.presentation.navigation.Screen
 import com.aeu.boxapplication.presentation.onboarding.LoadingScreen
+import com.aeu.boxapplication.presentation.profile.ShippingAddressScreen
 import com.aeu.boxapplication.presentation.subscriber.*
 
 class MainActivity : ComponentActivity() {
@@ -37,24 +50,24 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
+            val context = LocalContext.current
+            val sessionManager = remember { SessionManager.getInstance(context) }
 
             // Define which screens should show the Bottom Navigation Bar
-            // We exclude Register and Loading from this list
-            val showBottomBar = currentRoute in listOf(
-                Screen.SubscriberHome.route,
-                Screen.OrderHistory.route,
-                Screen.ShopProducts.route,
-                Screen.Profile.route
-            )
+            val showBottomBar = currentRoute?.startsWith(Screen.SubscriberHome.route) == true ||
+                    currentRoute == Screen.OrderHistory.route ||
+                    currentRoute == Screen.ShopProducts.route ||
+                    currentRoute == Screen.Profile.route
 
             Scaffold(
                 bottomBar = {
                     if (showBottomBar) {
                         SubscriberBottomNav(
-                            selected = when(currentRoute) {
-                                Screen.OrderHistory.route -> SubscriberBottomNavItem.History
-                                Screen.ShopProducts.route -> SubscriberBottomNavItem.Package
-                                Screen.Profile.route -> SubscriberBottomNavItem.Profile
+                            selected = when {
+                                currentRoute?.startsWith(Screen.SubscriberHome.route) == true -> SubscriberBottomNavItem.Home
+                                currentRoute == Screen.OrderHistory.route -> SubscriberBottomNavItem.History
+                                currentRoute == Screen.ShopProducts.route -> SubscriberBottomNavItem.Package
+                                currentRoute == Screen.Profile.route -> SubscriberBottomNavItem.Profile
                                 else -> SubscriberBottomNavItem.Home
                             },
                             onHomeClick = {
@@ -94,55 +107,162 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.Loading.route) {
                         LoadingScreen(
                             onFinished = {
-                                // After loading, go to Register
-                                navController.navigate(Screen.Register.route) {
-                                    popUpTo(Screen.Loading.route) { inclusive = true }
+                                val savedName = sessionManager.getUserName()
+                                val hasAccount = sessionManager.hasAccount()
+
+                                when {
+                                    // Case 1: Currently Logged In
+                                    !savedName.isNullOrEmpty() -> {
+                                        val encodedName = Uri.encode(savedName)
+                                        navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
+                                            popUpTo(Screen.Loading.route) { inclusive = true }
+                                        }
+                                    }
+                                    // Case 2: Has account but logged out
+                                    hasAccount -> {
+                                        navController.navigate(Screen.Login.route) {
+                                            popUpTo(Screen.Loading.route) { inclusive = true }
+                                        }
+                                    }
+                                    // Case 3: First time user (No account yet)
+                                    else -> {
+                                        navController.navigate(Screen.Register.route) {
+                                            popUpTo(Screen.Loading.route) { inclusive = true }
+                                        }
+                                    }
                                 }
                             }
                         )
                     }
 
-                    // 2. Register Screen
+                    composable(Screen.Login.route) {
+                        // 1. Get the context
+                        val context = androidx.compose.ui.platform.LocalContext.current
+
+                        val sessionManager = com.aeu.boxapplication.core.utils.SessionManager.getInstance(context)
+
+                        val loginViewModel: LoginViewModel = viewModel(
+                            factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                                    // 3. Pass BOTH parameters to the constructor
+                                    return LoginViewModel(
+                                        authService = com.aeu.boxapplication.data.remote.RetrofitClient.authApiService,
+                                        sessionManager = sessionManager
+                                    ) as T
+                                }
+                            }
+                        )
+
+                        LoginScreen(
+                            navController = navController,
+                            viewModel = loginViewModel,
+                            onLoginSuccess = { userName ->
+                                // This is where the actual navigation happens
+                                val encodedName = Uri.encode(userName)
+                                navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
+                                    popUpTo(Screen.Login.route) { inclusive = true }
+                                }
+                            },
+                            onBack = { navController.popBackStack() },
+                            onSignupClick = { navController.navigate(Screen.Register.route) }
+                        )
+                    }
+
+                    // --- 2. Register Screen ---
                     composable(Screen.Register.route) {
+                        val viewModel: RegisterViewModel = viewModel(
+                            factory = RegisterViewModelFactory(AuthRepository(RetrofitClient.authApiService))
+                        )
                         RegisterScreen(
                             navController = navController,
-                            onRegisterSuccess = {
-                                // After success, go to Home and clear Register from history
-                                navController.navigate(Screen.SubscriberHome.route) {
+                            viewModel = viewModel,
+                            onRegisterSuccess = { name, email, token ->
+                                sessionManager.saveUserDetail(
+                                    name = name,
+                                    email = email,
+                                    token = token
+                                )
+                                sessionManager.setHasAccount()
+                                val encodedName = Uri.encode(name)
+                                navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
                                     popUpTo(Screen.Register.route) { inclusive = true }
                                 }
                             }
                         )
                     }
 
-                    // 3. Main Bottom Nav Screens
-                    composable(Screen.SubscriberHome.route) {
-                        SubscriberHomeScreen(navController)
+
+                    composable(
+                        route = "${Screen.SubscriberHome.route}/{userName}",
+                        arguments = listOf(navArgument("userName") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val extractedName = backStackEntry.arguments?.getString("userName") ?: "Guest"
+
+                        SubscriberHomeScreen(
+                            navController = navController,
+                            userName = extractedName
+                        )
                     }
+                    // Inside your NavHost
                     composable(Screen.OrderHistory.route) {
-                        OrderHistoryScreen { /* Handle detail click if needed */ }
+                        OrderHistoryScreen(
+                            navController = navController,
+                            onOrderClick = { orderId ->
+                                navController.navigate("${Screen.HistoryDetail.route}/$orderId")
+                            }
+                        )
+                    }
+
+                    composable("${Screen.HistoryDetail.route}/{orderId}") { backStackEntry ->
+                        val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+                        HistoryDetailScreen(
+                            orderId = orderId,
+                            navController = navController
+                        )
                     }
                     composable(Screen.ShopProducts.route) {
                         ShopProductsScreen(navController)
                     }
                     composable(Screen.Profile.route) {
-                        ProfileScreen(navController)
+                        // 1. Get the data from your session/storage
+                        val userName = sessionManager.getUserName() ?: "User"
+                        val userEmail = sessionManager.getUserEmail() ?: "No Email"
+
+                        ProfileScreen(
+                            navController = navController,
+                            userName = userName,      // 2. Pass it here
+                            userEmail = userEmail,    // 3. Pass it here
+                            onShippingAddressClick = { navController.navigate("shipping_address") },
+                            onPaymentMethodsClick = { navController.navigate("payment_methods") },
+                            onLogoutClick = {
+                                sessionManager.clearSession()
+                                navController.navigate(Screen.Login.route) {
+                                    popUpTo(0) { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            },
+                        )
                     }
+
+                    composable(Screen.ShipAddress.route) {
+                        ShippingAddressScreen(navController)
+                    }
+
 
                     // 4. Secondary/Detail Screens
                     composable(Screen.SubscribDetail.route) { SubscriptionDetailsScreen(navController) }
                     composable(Screen.OrderConfirmed.route) { OrderConfirmScreen(navController) }
                     composable(Screen.CheckoutPayment.route) { CheckoutPayment(navController) }
                     composable(Screen.CompletePayment.route) { CompletePayment(navController) }
-                    composable(Screen.HistoryDetail.route) { HistoryDetailScreen(navController) }
+
                 }
             }
         }
     }
+
 }
 
 // --- UI Components ---
-
 enum class SubscriberBottomNavItem(
     val title: String,
     val icon: ImageVector,
@@ -150,7 +270,7 @@ enum class SubscriberBottomNavItem(
 ) {
     Home("Home", Icons.Default.Home, "subscriber_home"),
     History("History", Icons.Default.Refresh, "order_history"),
-    Package("Package", Icons.Default.Favorite, "shop_products"),
+    Package("Package", Icons.Default.Send, "shop_products"),
     Profile("Profile", Icons.Default.Person, "profile_screen")
 }
 

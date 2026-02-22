@@ -119,17 +119,6 @@ fun SubscriptionDetailsScreen(navController: NavController) {
                 }
             }
 
-            // 3. Delivery Frequency
-            Text("Delivery Frequency", modifier = Modifier.padding(horizontal = 20.dp), fontWeight = FontWeight.Bold)
-            Row(
-                modifier = Modifier.padding(20.dp).horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                FrequencyOption("Monthly", "Best Value", selectedFrequency == "Monthly") { selectedFrequency = "Monthly" }
-                FrequencyOption("Bi-weekly", "Most Popular", selectedFrequency == "Bi-weekly") { selectedFrequency = "Bi-weekly" }
-                FrequencyOption("Quarterly", "Seasonal", selectedFrequency == "Quarterly") { selectedFrequency = "Quarterly" }
-            }
-
             // 4. Shipping Address
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),

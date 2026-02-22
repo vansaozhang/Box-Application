@@ -24,15 +24,14 @@ val BoxlyTextGrey = Color(0xFF94A3B8)
 val BoxlyOrange = Color(0xFFFDBA74)
 
 @Composable
-fun SubscriberHomeScreen(navController: NavController) {
+fun SubscriberHomeScreen(navController: NavController,userName: String) {
     // 1. UI State for Dialogs
     var showPauseDialog by remember { mutableStateOf(false) }
     var showCancelDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = BoxlyBackground,
-        topBar = { DashboardHeader() },
-    ) { padding ->
+        topBar = { DashboardHeader(userName = userName) },    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -94,7 +93,7 @@ fun SubscriberHomeScreen(navController: NavController) {
 // --- Components ---
 
 @Composable
-fun DashboardHeader() {
+fun DashboardHeader(userName: String) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(20.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -109,9 +108,10 @@ fun DashboardHeader() {
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column {
-                Text("DASHBOARD", fontSize = 11.sp, color = BoxlyTextGrey, fontWeight = FontWeight.Bold)
-                Text("Welcome back, Alex", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
-            }
+                Text("DASHBOARD", fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+
+                // This must match the name above exactly (case sensitive!)
+                Text("Welcome, $userName", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)            }
         }
         IconButton(onClick = {}, modifier = Modifier.background(Color.White, CircleShape)) {
             Icon(Icons.Default.Notifications, contentDescription = null, tint = Color(0xFF1E293B))

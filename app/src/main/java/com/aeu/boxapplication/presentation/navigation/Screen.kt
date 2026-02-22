@@ -18,7 +18,8 @@ sealed class Screen(val route: String) {
     object SubscriberHome : Screen("subscriber_home")
     object  SubscribDetail: Screen("subscribe_detail")
     object Profile : Screen("profile")
-    object SubscriberSettings : Screen("subscriber_settings")
+    object PersonalInfo : Screen("personal_info")
+    object  ShipAddress : Screen("shipping_address")
 
     object ProductDetails : Screen("product_details")
     object OrderHistory : Screen("order_history")

@@ -1,31 +1,17 @@
 package com.aeu.boxapplication.presentation.auth
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,29 +24,30 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.navigation.NavController
 import com.aeu.boxapplication.core.utils.ValidationUtils
+import com.aeu.boxapplication.presentation.LoginViewModel // Ensure this import is correct
 import com.aeu.boxapplication.ui.components.AppPrimaryButton
 import com.aeu.boxapplication.ui.components.AppTextField
-import com.aeu.boxapplication.ui.components.SocialCircleButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    onBack: () -> Unit = {},
-    onLogin: () -> Unit = {},
+    navController: NavController,
+    viewModel: LoginViewModel, // ADDED: Use your ViewModel for API logic
+    onLoginSuccess: (String) -> Unit,
+    onBack: () -> Unit,
     onSignupClick: () -> Unit = {},
-    onForgotPassword: () -> Unit = {},
-    onGoogleClick: () -> Unit = {},
-    onFacebookClick: () -> Unit = {}
+    onForgotPassword: () -> Unit = {}
 ) {
-    val (email, setEmail) = remember { mutableStateOf("") }
-    val (password, setPassword) = remember { mutableStateOf("") }
-    val (showErrors, setShowErrors) = remember { mutableStateOf(false) }
+    // UI Local State
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var showErrors by remember { mutableStateOf(false) }
 
+    // Validation Logic
     val isEmailValid = ValidationUtils.isValidEmail(email)
-    val isPasswordValid = password.isNotBlank()
+    val isPasswordValid = password.length >= 6
     val isFormValid = isEmailValid && isPasswordValid
 
     Scaffold(
@@ -77,13 +64,10 @@ fun LoginScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFF6FAFF)
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF6FAFF))
             )
         }
     ) { paddingValues ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -92,134 +76,109 @@ fun LoginScreen(
                 .padding(horizontal = 28.dp, vertical = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Text(
                 text = buildAnnotatedString {
                     append("Welcome ")
-                    withStyle(
-                        style = SpanStyle(
-                            color = Color(0xFF1E88E5),
-                            fontWeight = FontWeight.Bold
-                        )
-                    ) { append("Back") }
+                    withStyle(style = SpanStyle(color = Color(0xFF1E88E5), fontWeight = FontWeight.Bold)) {
+                        append("Back")
+                    }
                 },
-                fontSize = 26.sp,
+                fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF2F3A4A),
-                textAlign = TextAlign.Center
+                color = Color(0xFF2F3A4A)
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "We missed you! Login to continue your journey\nwith us.",
+                text = "Login to access your account",
                 fontSize = 14.sp,
                 color = Color(0xFF7B8794),
-                textAlign = TextAlign.Center,
-                lineHeight = 20.sp
+                modifier = Modifier.padding(top = 8.dp)
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // --- API ERROR MESSAGE ---
+            // We read this from the ViewModel now
+            if (viewModel.errorMessage != null) {
+                Text(
+                    text = viewModel.errorMessage!!,
+                    color = Color.Red,
+                    fontSize = 13.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+            }
 
             AppTextField(
                 value = email,
-                onValueChange = setEmail,
+                onValueChange = {
+                    email = it
+                    viewModel.errorMessage = null // Clear API error when typing
+                },
                 label = "Email Address",
                 leadingIcon = Icons.Outlined.Email,
-                placeholder = "JaneDoe@gmail.com",
-                keyboardType = KeyboardType.Email,
-                imeAction = ImeAction.Next,
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions.Default.copy(
-                    keyboardType = KeyboardType.Email,
-                    imeAction = ImeAction.Next,
-                    autoCorrectEnabled = false
-                ),
+                placeholder = "example@mail.com",
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                 isError = showErrors && !isEmailValid,
-                errorMessage = if (showErrors && !isEmailValid) "Enter a valid email" else null
+                errorMessage = if (showErrors && !isEmailValid) "Please enter a valid email" else null
             )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             AppTextField(
                 value = password,
-                onValueChange = setPassword,
+                onValueChange = {
+                    password = it
+                    viewModel.errorMessage = null // Clear API error when typing
+                },
                 label = "Password",
                 leadingIcon = Icons.Outlined.Lock,
                 placeholder = "••••••••",
                 isPassword = true,
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Done,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                 isError = showErrors && !isPasswordValid,
-                errorMessage = if (showErrors && !isPasswordValid) "Password is required" else null
+                errorMessage = if (showErrors && !isPasswordValid) "Password must be at least 6 characters" else null
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 6.dp),
-                horizontalArrangement = Arrangement.Start
-            ) {
+            Box(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), contentAlignment = Alignment.CenterEnd) {
                 Text(
                     text = "Forgot Password?",
                     fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
                     color = Color(0xFFFFB300),
-                    modifier = Modifier.clickable(
-                        onClick = onForgotPassword,
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    )
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.clickable(onClick = onForgotPassword)
                 )
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(30.dp))
+
+            // --- FIXED DYNAMIC BUTTON ---
 
             AppPrimaryButton(
-                text = "Login",
+                text = if (viewModel.isLoading) "Checking Credentials..." else "Login",
+                enabled = isFormValid && !viewModel.isLoading,
                 onClick = {
-                    if (isFormValid) onLogin()
-                    else setShowErrors(true)
-                },
-                enabled = isFormValid
+                    if (isFormValid) {
+                        // CALL REAL API
+                        viewModel.performLogin(email, password) { name ->
+                            onLoginSuccess(name)
+                        }
+                    } else {
+                        showErrors = true
+                    }
+                }
             )
 
-            Spacer(modifier = Modifier.height(22.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Divider(color = Color(0xFFD7E0EA), modifier = Modifier.weight(1f))
-                Text(
-                    text = "  Or continue with  ",
-                    fontSize = 12.sp,
-                    color = Color(0xFF8A97A6)
-                )
-                Divider(color = Color(0xFFD7E0EA), modifier = Modifier.weight(1f))
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                SocialCircleButton(text = "G", onClick = onGoogleClick)
-                SocialCircleButton(text = "f", onClick = onFacebookClick)
-            }
-
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Don't have an account? ", fontSize = 14.sp, color = Color(0xFF7B8794))
                 Text(
-                    text = "Does not have an account? ",
-                    fontSize = 13.sp,
-                    color = Color(0xFF7B8794)
-                )
-                Text(
-                    text = "Signup",
-                    fontSize = 13.sp,
+                    text = "Sign Up",
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFFFB300),
                     modifier = Modifier.clickable(
@@ -229,8 +188,6 @@ fun LoginScreen(
                     )
                 )
             }
-
-            Spacer(modifier = Modifier.height(20.dp))
         }
     }
 }
