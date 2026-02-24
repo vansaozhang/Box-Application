@@ -2,11 +2,13 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Android: Run (AVD)",
+      "name": "Android: Debug (AVD)",
       "type": "android",
       "request": "launch",
-      "noDebug": true,
-      "preLaunchTask": "Android: Run (AVD)"
+      "appSrcRoot": "${workspaceFolder}/app/src/main",
+      "apkFile": "${workspaceFolder}/app/build/outputs/apk/debug/app-debug.apk",
+      "noDebug": false,
+      "preLaunchTask": "Android: Ensure AVD Running"
     }
   ]
 }

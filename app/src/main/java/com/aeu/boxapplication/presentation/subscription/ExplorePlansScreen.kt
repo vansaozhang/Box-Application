@@ -51,13 +51,15 @@ fun ExplorePlansScreen(
 ) {
     val (isMonthly, setIsMonthly) = remember { mutableStateOf(true) }
 
-    Scaffold{
+    Scaffold(
+        containerColor = Color.White
+    ) {
         paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
                 .background(Color.White)
+                .padding(paddingValues)
         ) {
             Column(
                 modifier = Modifier

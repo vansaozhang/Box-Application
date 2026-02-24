@@ -45,7 +45,7 @@ fun HistoryDetailScreen(
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
             },
-            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = BoxlyBackground)
+            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
         )
 
         if (order == null) {

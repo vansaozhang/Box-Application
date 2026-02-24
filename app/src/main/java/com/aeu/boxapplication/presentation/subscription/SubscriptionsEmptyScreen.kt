@@ -48,14 +48,14 @@ fun SubscriptionsEmptyScreen(
     onRestorePurchases: () -> Unit = {}
 ) {
     Scaffold(
-
-    ){
+        containerColor = Color.White
+    ) {
         paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
                 .background(Color.White)
+                .padding(paddingValues)
         ) {
             Column(
                 modifier = Modifier

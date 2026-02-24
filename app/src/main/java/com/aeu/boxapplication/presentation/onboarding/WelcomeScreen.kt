@@ -26,13 +26,13 @@ fun WelcomeScreen(
     onLoginClick: () -> Unit = {}
 ) {
    Scaffold(
-
+       containerColor = Color.White
    ) {paddingValues ->
        Box(
            modifier = Modifier
                .fillMaxSize()
+               .background(Color.White)
                .padding(paddingValues)
-               .background(Color(0xFF6B9AC4))
        ) {
            Column(
                modifier = Modifier

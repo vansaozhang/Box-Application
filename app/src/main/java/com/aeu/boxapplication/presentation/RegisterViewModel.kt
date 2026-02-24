@@ -45,8 +45,14 @@ class RegisterViewModel(private val repository: AuthRepository) : ViewModel() {
                 password = password.trim()
             )
 
-            result.onSuccess {
-                state = state.copy(isLoading = false, isSuccess = true)
+            result.onSuccess { authResponse ->
+                state = state.copy(
+                    isLoading = false,
+                    isSuccess = true,
+                    userName = authResponse.user?.name ?: "",
+                    userEmail = authResponse.user?.email ?: "",
+                    accessToken = authResponse.accessToken ?: ""
+                )
             }.onFailure { exception ->
                 state = state.copy(
                     isLoading = false,

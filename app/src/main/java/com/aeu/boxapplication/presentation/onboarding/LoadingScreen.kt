@@ -28,13 +28,16 @@ fun LoadingScreen(
         delay(1200)
         onFinished()
     }
-    Scaffold{paddingValues ->
+    val loadingBackground = Color(0xFFF6FAFF)
+    Scaffold(
+        containerColor = loadingBackground
+    ) { paddingValues ->
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .background(Color(0xFFF6FAFF)),
+                .background(loadingBackground)
+                .padding(paddingValues),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {

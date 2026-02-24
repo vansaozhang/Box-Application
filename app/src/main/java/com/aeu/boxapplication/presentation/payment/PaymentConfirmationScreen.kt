@@ -43,12 +43,14 @@ fun PaymentConfirmationScreen(
     onViewDashboard: () -> Unit = {},
     onGoToHistory: () -> Unit = {}
 ) {
-    Scaffold{paddingValues ->
+    Scaffold(
+        containerColor = Color.White
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
                 .background(Color.White)
+                .padding(paddingValues)
         ) {
             Column(
                 modifier = Modifier

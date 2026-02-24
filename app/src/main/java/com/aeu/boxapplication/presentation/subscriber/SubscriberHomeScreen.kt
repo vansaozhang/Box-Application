@@ -1,274 +1,465 @@
 package com.aeu.boxapplication.presentation.subscriber
 
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 
-// --- Color Palette ---
+private val HomeBackground = Color(0xFFF3F5F9)
+private val HomeCard = Color(0xFFFFFFFF)
+private val HomePrimary = Color(0xFF2F6CE5)
+private val HomeTitle = Color(0xFF111827)
+private val HomeBody = Color(0xFF64748B)
+private val HomeStroke = Color(0xFFE6EAF0)
+private val HomePending = Color(0xFFF59E0B)
 
-val BoxlyCardBackground = Color(0xFFFFFFFF)
-val BoxlyTextGrey = Color(0xFF94A3B8)
-val BoxlyOrange = Color(0xFFFDBA74)
+// Compatibility token used by other screens in the same package.
+val BoxlyTextGrey = HomeBody
 
 @Composable
-fun SubscriberHomeScreen(navController: NavController,userName: String) {
-    // 1. UI State for Dialogs
-    var showPauseDialog by remember { mutableStateOf(false) }
-    var showCancelDialog by remember { mutableStateOf(false) }
-
+fun SubscriberHomeScreen(navController: NavController, userName: String) {
     Scaffold(
-        containerColor = BoxlyBackground,
-        topBar = { DashboardHeader(userName = userName) },    ) { padding ->
+        containerColor = HomeBackground,
+        topBar = { DashboardHeader(userName = userName) }
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 16.dp)
         ) {
-            // 2. Billing Section
             BillingCard()
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // 3. Tracking Section
             TrackingCard()
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
-            // 5. Active Subscriptions
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 SectionTitle("Active Subscriptions")
-                Text("View All", color = BoxlyTeal, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                TextButton(onClick = {}) {
+                    Text("View All", color = HomePrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                }
             }
 
-            SubscriptionListItem("Gourmet Coffee Box", "Oct 24, 2023", "$19.99/mo", "PAID", BoxlyTeal)
-            SubscriptionListItem("Artisan Tea Selection", "Oct 28, 2023", "$10.00/mo", "PENDING", BoxlyOrange)
-            SubscriptionListItem("Premium Sound Stream", "Nov 02, 2023", "$14.99/mo", "PAID", BoxlyTeal)
-
-            Spacer(modifier = Modifier.height(20.dp))
-        }
-
-        // --- Dialog Logic ---
-        if (showPauseDialog) {
-            ActionConfirmDialog(
-                title = "Pause Subscription?",
-                desc = "Your deliveries will stop until you resume. You won't be charged during this time.",
-                confirmText = "Pause Plan",
-                onDismiss = { showPauseDialog = false },
-                onConfirm = { showPauseDialog = false }
+            SubscriptionListItem(
+                name = "Gourmet Coffee Box",
+                date = "Oct 24, 2023",
+                price = "$19.99/mo",
+                status = "PAID",
+                statusColor = HomePrimary
             )
-        }
-
-        if (showCancelDialog) {
-            ActionConfirmDialog(
-                title = "Cancel Subscription?",
-                desc = "Are you sure? You will lose your current loyalty discount and any pending rewards.",
-                confirmText = "Yes, Cancel",
-                isDestructive = true,
-                onDismiss = { showCancelDialog = false },
-                onConfirm = { showCancelDialog = false }
+            SubscriptionListItem(
+                name = "Artisan Tea Selection",
+                date = "Oct 28, 2023",
+                price = "$10.00/mo",
+                status = "PENDING",
+                statusColor = HomePending
             )
+            SubscriptionListItem(
+                name = "Premium Sound Stream",
+                date = "Nov 02, 2023",
+                price = "$14.99/mo",
+                status = "PAID",
+                statusColor = HomePrimary
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
-// --- Components ---
-
 @Composable
-fun DashboardHeader(userName: String) {
+private fun DashboardHeader(userName: String) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(20.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier.size(48.dp).clip(CircleShape).background(BoxlyTeal.copy(alpha = 0.15f)),
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(HomePrimary.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Person, contentDescription = null, tint = BoxlyTeal)
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text("DASHBOARD", fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-
-                // This must match the name above exactly (case sensitive!)
-                Text("Welcome, $userName", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)            }
-        }
-        IconButton(onClick = {}, modifier = Modifier.background(Color.White, CircleShape)) {
-            Icon(Icons.Default.Notifications, contentDescription = null, tint = Color(0xFF1E293B))
-        }
-    }
-}
-
-@Composable
-fun ManagePlanCard(onUpgradeClick: () -> Unit, onPauseClick: () -> Unit, onCancelClick: () -> Unit) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        color = BoxlyCardBackground
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Upgrade to Pro", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    Text("Faster delivery & 24/7 support.", color = BoxlyTextGrey, fontSize = 14.sp)
-                }
-                Button(
-                    onClick = onUpgradeClick,
-                    colors = ButtonDefaults.buttonColors(containerColor = BoxlyTeal),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Upgrade", color = Color.Black, fontWeight = FontWeight.Bold)
-                }
-            }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = BoxlyBackground)
-
-            Row(modifier = Modifier.fillMaxWidth()) {
-                OutlinedButton(
-                    onClick = onPauseClick,
-                    modifier = Modifier.weight(1f).height(50.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
-                ) {
-                    Icon(Icons.Default.Clear, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Pause", color = Color(0xFF1E293B))
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                OutlinedButton(
-                    onClick = onCancelClick,
-                    modifier = Modifier.weight(1f).height(50.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
-                ) {
-                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp), tint = BoxlyTextGrey)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Cancel", color = Color(0xFF1E293B))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ActionConfirmDialog(title: String, desc: String, confirmText: String, isDestructive: Boolean = false, onDismiss: () -> Unit, onConfirm: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title, fontWeight = FontWeight.Bold) },
-        text = { Text(desc, color = BoxlyTextGrey) },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(containerColor = if (isDestructive) Color(0xFFEF4444) else BoxlyTeal)
-            ) { Text(confirmText, color = Color.White) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Back", color = BoxlyTextGrey) }
-        },
-        shape = RoundedCornerShape(20.dp),
-        containerColor = Color.White
-    )
-}
-
-@Composable
-fun BillingCard() {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        color = BoxlyCardBackground
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.DateRange, contentDescription = null, tint = BoxlyTeal, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("NEXT BILLING DATE", fontSize = 12.sp, color = BoxlyTeal, fontWeight = FontWeight.ExtraBold)
-            }
-            Text("October 24, 2023", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(vertical = 4.dp))
-            Text("Total to be charged: $29.99", color = BoxlyTextGrey, fontSize = 15.sp)
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = {},
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = BoxlyTeal),
-                shape = RoundedCornerShape(12.dp)
-            ) { Text("View Details", color = Color.White, fontWeight = FontWeight.Bold) }
-        }
-    }
-}
-
-@Composable
-fun TrackingCard() {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        color = BoxlyCardBackground
-    ) {
-        Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text("TRACK YOUR ORDER", fontSize = 11.sp, color = BoxlyTeal, fontWeight = FontWeight.ExtraBold)
-                Text("In Transit", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                Text("Arriving Oct 22, 2023", color = BoxlyTextGrey, fontSize = 13.sp)
-                Spacer(modifier = Modifier.height(10.dp))
-                LinearProgressIndicator(
-                    progress = 0.6f,
-                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
-                    color = BoxlyTeal, trackColor = BoxlyBackground
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    tint = HomePrimary,
+                    modifier = Modifier.size(22.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(16.dp))
-            Button(onClick = {}, colors = ButtonDefaults.buttonColors(containerColor = BoxlyTeal), shape = RoundedCornerShape(10.dp)) {
-                Text("Track", fontSize = 12.sp)
+            Spacer(modifier = Modifier.width(10.dp))
+            Column {
+                Text(
+                    text = "DASHBOARD",
+                    fontSize = 10.sp,
+                    color = HomePrimary,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Welcome, $userName",
+                    fontSize = 17.sp,
+                    color = HomeTitle,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
+        }
+
+        IconButton(
+            onClick = {},
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(Color.White)
+                .border(1.dp, HomeStroke, CircleShape)
+        ) {
+            Icon(Icons.Default.Notifications, contentDescription = null, tint = HomeTitle)
         }
     }
 }
 
 @Composable
-fun SubscriptionListItem(name: String, date: String, price: String, status: String, statusColor: Color) {
+private fun BillingCard() {
     Surface(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(176.dp),
         shape = RoundedCornerShape(20.dp),
-        color = BoxlyCardBackground
+        color = HomeCard,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, HomeStroke)
     ) {
-        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(54.dp).clip(RoundedCornerShape(12.dp)).background(BoxlyBackground), contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.ShoppingCart, contentDescription = null, tint = BoxlyTextGrey)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.DateRange,
+                    contentDescription = null,
+                    tint = HomePrimary,
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "NEXT BILLING DATE",
+                    fontSize = 11.sp,
+                    color = HomePrimary,
+                    fontWeight = FontWeight.Bold
+                )
             }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(name, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                Text("Recharge Date: $date", fontSize = 12.sp, color = BoxlyTextGrey)
-                Text(price, fontSize = 14.sp, color = BoxlyTeal, fontWeight = FontWeight.Bold)
+
+            Column {
+                Text(
+                    text = "October 24, 2023",
+                    fontSize = 21.sp,
+                    color = HomeTitle,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Total to be charged: $29.99",
+                    fontSize = 13.sp,
+                    color = HomeBody,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
             }
-            Surface(color = statusColor.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
-                Text(status, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = statusColor)
+
+            Button(
+                onClick = {},
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(46.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = HomePrimary)
+            ) {
+                Text("View Details", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
             }
         }
     }
 }
 
 @Composable
-fun SectionTitle(text: String) {
-    Text(text = text, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 8.dp))
+private fun TrackingCard() {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(150.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = HomeCard,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, HomeStroke)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.Top) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "TRACK YOUR ORDER",
+                        fontSize = 11.sp,
+                        color = HomePrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "In Transit",
+                        fontSize = 18.sp,
+                        color = HomeTitle,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                    Text(
+                        text = "Arriving Oct 22, 2023",
+                        fontSize = 13.sp,
+                        color = HomeBody
+                    )
+                }
+
+                Button(
+                    onClick = {},
+                    modifier = Modifier.height(42.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = HomePrimary)
+                ) {
+                    Text("Track", fontSize = 13.sp, color = Color.White)
+                }
+            }
+
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Packed", fontSize = 11.sp, color = HomeBody)
+                    Text("Shipped", fontSize = 11.sp, color = HomePrimary, fontWeight = FontWeight.Bold)
+                    Text("Delivered", fontSize = 11.sp, color = HomeBody)
+                }
+
+                ShipmentProgressBar(
+                    packedProgress = 0.46f,
+                    totalProgress = 0.62f,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                )
+            }
+        }
+    }
 }
 
+@Composable
+private fun ShipmentProgressBar(
+    packedProgress: Float,
+    totalProgress: Float,
+    modifier: Modifier = Modifier
+) {
+    val packed = packedProgress.coerceIn(0f, 1f)
+    val total = totalProgress.coerceIn(packed, 1f)
+    val shipped = (total - packed).coerceAtLeast(0f)
+    val packedWeight = if (total > 0f) packed / total else 0f
+    val shippedWeight = if (total > 0f) shipped / total else 0f
+
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(50.dp))
+            .background(HomePrimary.copy(alpha = 0.14f))
+    ) {
+        if (total > 0f) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(total)
+                    .fillMaxHeight()
+            ) {
+                if (packedWeight > 0f) {
+                    Box(
+                        modifier = Modifier
+                            .weight(packedWeight)
+                            .fillMaxHeight()
+                            .background(
+                                color = HomePrimary,
+                                shape = if (shippedWeight > 0f) {
+                                    RoundedCornerShape(
+                                        topStart = 50.dp,
+                                        bottomStart = 50.dp,
+                                        topEnd = 0.dp,
+                                        bottomEnd = 0.dp
+                                    )
+                                } else {
+                                    RoundedCornerShape(50.dp)
+                                }
+                            )
+                    )
+                }
+                if (shippedWeight > 0f) {
+                    Box(
+                        modifier = Modifier
+                            .weight(shippedWeight)
+                            .fillMaxHeight()
+                            .background(
+                                color = HomePrimary.copy(alpha = 0.82f),
+                                shape = if (packedWeight > 0f) {
+                                    RoundedCornerShape(
+                                        topStart = 0.dp,
+                                        bottomStart = 0.dp,
+                                        topEnd = 50.dp,
+                                        bottomEnd = 50.dp
+                                    )
+                                } else {
+                                    RoundedCornerShape(50.dp)
+                                }
+                            )
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SubscriptionListItem(
+    name: String,
+    date: String,
+    price: String,
+    status: String,
+    statusColor: Color
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(94.dp)
+            .padding(vertical = 5.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = HomeCard,
+        shadowElevation = 0.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, HomeStroke)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(HomePrimary.copy(alpha = 0.10f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ShoppingCart,
+                    contentDescription = null,
+                    tint = HomePrimary,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = name,
+                    fontSize = 14.sp,
+                    color = HomeTitle,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "Recharge Date: $date",
+                    fontSize = 11.sp,
+                    color = HomeBody,
+                    modifier = Modifier.padding(top = 1.dp)
+                )
+                Text(
+                    text = price,
+                    fontSize = 13.sp,
+                    color = HomePrimary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 3.dp)
+                )
+            }
+
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = statusColor.copy(alpha = 0.12f)
+            ) {
+                Text(
+                    text = status,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    fontSize = 10.sp,
+                    color = statusColor,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text = text,
+        fontSize = 17.sp,
+        color = HomeTitle,
+        fontWeight = FontWeight.Bold
+    )
+}

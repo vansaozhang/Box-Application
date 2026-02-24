@@ -53,12 +53,14 @@ fun RegisterScreen(
         }
     }
 
-    Scaffold { paddingValues ->
+    Scaffold(
+        containerColor = Color.White
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
-                .background(Color(0xFFF6FAFF))
+                .background(Color.White)
         ) {
             Column(
                 modifier = Modifier
@@ -67,7 +69,7 @@ fun RegisterScreen(
                     .padding(horizontal = 28.dp, vertical = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(60.dp))
 
                 Text(
                     text = buildAnnotatedString {

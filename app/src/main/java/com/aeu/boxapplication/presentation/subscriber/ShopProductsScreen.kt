@@ -37,7 +37,7 @@ fun ShopProductsScreen(navController: NavController) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(BoxlyBackground)
+                .background(Color.White)
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
@@ -134,8 +134,9 @@ fun SearchBarSection() {
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
         shape = RoundedCornerShape(25.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = Color(0xFFEFF3F6),
-            unfocusedContainerColor = Color(0xFFEFF3F6),
+            focusedContainerColor = Color.White,
+            unfocusedContainerColor = Color.White,
+            disabledContainerColor = Color.White,
             unfocusedBorderColor = Color.Transparent
         )
     )

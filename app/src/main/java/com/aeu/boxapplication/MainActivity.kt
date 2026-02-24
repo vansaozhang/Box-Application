@@ -2,6 +2,7 @@ package com.aeu.boxapplication
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.padding
@@ -14,14 +15,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -40,12 +45,19 @@ import com.aeu.boxapplication.presentation.auth.RegisterViewModelFactory
 import com.aeu.boxapplication.presentation.navigation.Screen
 import com.aeu.boxapplication.presentation.onboarding.LoadingScreen
 import com.aeu.boxapplication.presentation.profile.ShippingAddressScreen
+import com.aeu.boxapplication.presentation.subscription.ConfirmSubscriptionScreen
+import com.aeu.boxapplication.presentation.subscription.ExplorePlansScreen
+import com.aeu.boxapplication.presentation.subscription.SubscriptionsEmptyScreen
 import com.aeu.boxapplication.presentation.subscriber.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(Color.White.toArgb(), Color.White.toArgb()),
+            navigationBarStyle = SystemBarStyle.light(Color.White.toArgb(), Color.White.toArgb())
+        )
+        window.isNavigationBarContrastEnforced = false
         setContent {
             val navController = rememberNavController()
             val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -60,6 +72,7 @@ class MainActivity : ComponentActivity() {
                     currentRoute == Screen.Profile.route
 
             Scaffold(
+                containerColor = Color.White,
                 bottomBar = {
                     if (showBottomBar) {
                         SubscriberBottomNav(
@@ -183,11 +196,34 @@ class MainActivity : ComponentActivity() {
                                     token = token
                                 )
                                 sessionManager.setHasAccount()
-                                val encodedName = Uri.encode(name)
-                                navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
+                                navController.navigate(Screen.SubscriptionsEmpty.route) {
                                     popUpTo(Screen.Register.route) { inclusive = true }
                                 }
                             }
+                        )
+                    }
+
+                    composable(Screen.SubscriptionsEmpty.route) {
+                        SubscriptionsEmptyScreen(
+                            onBack = { navController.popBackStack() },
+                            onExplorePlans = { navController.navigate(Screen.ExplorePlans.route) }
+                        )
+                    }
+
+                    composable(Screen.ExplorePlans.route) {
+                        ExplorePlansScreen(
+                            onBack = { navController.popBackStack() },
+                            onSelectStarter = { navController.navigate(Screen.ConfirmSubscription.route) },
+                            onSelectPro = { navController.navigate(Screen.ConfirmSubscription.route) },
+                            onSelectBusiness = { navController.navigate(Screen.ConfirmSubscription.route) }
+                        )
+                    }
+
+                    composable(Screen.ConfirmSubscription.route) {
+                        ConfirmSubscriptionScreen(
+                            onBack = { navController.popBackStack() },
+                            onEditPlan = { navController.popBackStack() },
+                            onConfirmPay = { navController.navigate(Screen.CheckoutPayment.route) }
                         )
                     }
 
@@ -283,33 +319,48 @@ fun SubscriberBottomNav(
     onShopClick: () -> Unit,
     onProfileClick: () -> Unit
 ) {
+    val activeColor = Color(0xFF1E88E5)
+    val inactiveColor = Color(0xFF4B5563)
+    val bottomNavItemColors = NavigationBarItemDefaults.colors(
+        selectedIconColor = activeColor,
+        selectedTextColor = activeColor,
+        unselectedIconColor = inactiveColor,
+        unselectedTextColor = inactiveColor,
+        indicatorColor = Color.Transparent
+    )
+
     NavigationBar(
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = Color.White,
+        tonalElevation = 0.dp,
     ) {
         NavigationBarItem(
             selected = selected == SubscriberBottomNavItem.Home,
             onClick = onHomeClick,
             label = { Text("Home") },
-            icon = { Icon(SubscriberBottomNavItem.Home.icon, contentDescription = null) }
+            icon = { Icon(SubscriberBottomNavItem.Home.icon, contentDescription = null) },
+            colors = bottomNavItemColors
         )
         NavigationBarItem(
             selected = selected == SubscriberBottomNavItem.History,
             onClick = onHistoryClick,
             label = { Text("History") },
-            icon = { Icon(SubscriberBottomNavItem.History.icon, contentDescription = null) }
+            icon = { Icon(SubscriberBottomNavItem.History.icon, contentDescription = null) },
+            colors = bottomNavItemColors
         )
         NavigationBarItem(
             selected = selected == SubscriberBottomNavItem.Package,
             onClick = onShopClick,
             label = { Text("Package") },
-            icon = { Icon(SubscriberBottomNavItem.Package.icon, contentDescription = null) }
+            icon = { Icon(SubscriberBottomNavItem.Package.icon, contentDescription = null) },
+            colors = bottomNavItemColors
         )
         NavigationBarItem(
             selected = selected == SubscriberBottomNavItem.Profile,
             onClick = onProfileClick,
             label = { Text("Profile") },
-            icon = { Icon(SubscriberBottomNavItem.Profile.icon, contentDescription = null) }
+            icon = { Icon(SubscriberBottomNavItem.Profile.icon, contentDescription = null) },
+            colors = bottomNavItemColors
         )
     }
 }

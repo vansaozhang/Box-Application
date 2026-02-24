@@ -19,8 +19,8 @@
     {
       "label": "Android: Launch App",
       "type": "shell",
-      "command": "adb",
-      "args": ["shell", "am", "start", "-n", "com.aeu.boxapplication/.MainActivity"],
+      "command": "bash",
+      "args": ["scripts/launch-app.sh"],
       "problemMatcher": []
     },
     {

@@ -51,7 +51,7 @@ fun LoginScreen(
     val isFormValid = isEmailValid && isPasswordValid
 
     Scaffold(
-        containerColor = Color(0xFFF6FAFF),
+        containerColor = Color.White,
         topBar = {
             TopAppBar(
                 title = {},
@@ -64,7 +64,7 @@ fun LoginScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF6FAFF))
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         }
     ) { paddingValues ->

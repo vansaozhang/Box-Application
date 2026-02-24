@@ -31,7 +31,8 @@ class SessionManager private constructor(context: Context) {
         val editor = prefs.edit()
         editor.putString("user_name", name)
         editor.putString("user_email", email)
-        // ...
+        token?.let { editor.putString("auth_token", it) }
+        editor.apply()
     }
 
     fun getUserName(): String? = prefs.getString("user_name", null)

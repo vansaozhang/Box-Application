@@ -53,13 +53,15 @@ fun ConfirmSubscriptionScreen(
         PaymentMethodUi("visa", "Visa", "Ending in 4242", "VISA", Color(0xFF1F2A44))
     )
 
-    Scaffold{
+    Scaffold(
+        containerColor = Color.White
+    ) {
         paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
                 .background(Color.White)
+                .padding(paddingValues)
         ) {
             Column(
                 modifier = Modifier

@@ -40,7 +40,7 @@ fun ShippingAddressScreen(navController: NavController) {
                     Icon(Icons.Outlined.Add, contentDescription = "Add", tint = Color(0xFF1CE5D1))
                 }
             },
-            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color(0xFFF8FAFB))
+            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
         )
 
         // Content Area

@@ -27,6 +27,7 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -72,6 +73,11 @@ fun PaymentDetailsScreen(
     val showExpiryError = expiryError != null
     val showCvvError = cvv.isNotEmpty() && !isCvvValid
     val isFormValid = isCardNumberValid && isCardholderValid && isExpiryValid && isCvvValid
+    val whiteInputColors = OutlinedTextFieldDefaults.colors(
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White,
+        disabledContainerColor = Color.White
+    )
 
     Box(
         modifier = Modifier
@@ -190,6 +196,7 @@ fun PaymentDetailsScreen(
                 ),
                 shape = RoundedCornerShape(14.dp),
                 isError = showCardNumberError,
+                colors = whiteInputColors,
                 supportingText = {
                     if (showCardNumberError) {
                         Text(
@@ -230,6 +237,7 @@ fun PaymentDetailsScreen(
                 ),
                 shape = RoundedCornerShape(14.dp),
                 isError = showCardholderError,
+                colors = whiteInputColors,
                 supportingText = {
                     if (showCardholderError) {
                         Text(
@@ -283,6 +291,7 @@ fun PaymentDetailsScreen(
                         ),
                         shape = RoundedCornerShape(14.dp),
                         isError = showExpiryError,
+                        colors = whiteInputColors,
                         supportingText = {
                             if (showExpiryError) {
                                 Text(
@@ -322,6 +331,7 @@ fun PaymentDetailsScreen(
                         ),
                         shape = RoundedCornerShape(14.dp),
                         isError = showCvvError,
+                        colors = whiteInputColors,
                         supportingText = {
                             if (showCvvError) {
                                 Text(

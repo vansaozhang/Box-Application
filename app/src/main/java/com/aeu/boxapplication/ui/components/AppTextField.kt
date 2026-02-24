@@ -114,9 +114,9 @@ fun AppTextField(
         shape = shape,
         isError = isError,
         colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color(0xFFF8FBFF),
-            unfocusedContainerColor = Color(0xFFF8FBFF),
-            disabledContainerColor = Color(0xFFF8FBFF),
+            focusedContainerColor = Color.White,
+            unfocusedContainerColor = Color.White,
+            disabledContainerColor = Color.White,
             focusedIndicatorColor = Color(0xFF1E88E5),
             unfocusedIndicatorColor = Color(0xFFD5DEE7),
             errorIndicatorColor = Color(0xFFE53935),
