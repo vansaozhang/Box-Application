@@ -2,10 +2,9 @@ package com.aeu.boxapplication.presentation.subscriber
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,10 +19,12 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.aeu.boxapplication.presentation.navigation.Screen
 
-// Color Palette
-val BoxlySoftTeal = Color(0xFFE0FBFA)
-val BoxlyLightGray = Color(0xFFF8FAFB)
-val BoxlySecondaryText = Color(0xFF94A3B8)
+private val ConfirmPrimary = Color(0xFF1E88E5)
+private val ConfirmTitle = Color(0xFF2F3A4A)
+private val ConfirmBody = Color(0xFF7B8794)
+private val ConfirmStroke = Color(0xFFE3E8EF)
+private val ConfirmTint = Color(0xFFEAF3FF)
+private val ConfirmBackground = Color(0xFFF8FAFB)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,15 +35,26 @@ fun OrderConfirmScreen(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(BoxlyLightGray)
+            .background(Color.White)
             .statusBarsPadding() // Protects status bar area
     ) {
         // --- Manual Top Bar ---
         CenterAlignedTopAppBar(
-            title = { Text("Complete Your Order", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+            title = {
+                Text(
+                    "Complete Your Order",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ConfirmTitle
+                )
+            },
             navigationIcon = {
                 IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = ConfirmPrimary
+                    )
                 }
             },
             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
@@ -113,15 +125,15 @@ fun OrderConfirmScreen(navController: NavController) {
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = BoxlyTeal)
+                colors = ButtonDefaults.buttonColors(containerColor = ConfirmPrimary)
             ) {
-                Text("Subscribe & Pay", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text("Subscribe & Pay", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = "By clicking Subscribe & Pay, you agree to our Terms of Service. You can cancel your subscription at any time.",
                 fontSize = 11.sp,
-                color = BoxlySecondaryText,
+                color = ConfirmBody,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 lineHeight = 16.sp
             )
@@ -135,7 +147,7 @@ fun SectionHeader(text: String) {
         text = text,
         fontSize = 13.sp,
         fontWeight = FontWeight.Bold,
-        color = Color(0xFF64748B),
+        color = ConfirmTitle,
         modifier = Modifier.padding(bottom = 12.dp)
     )
 }
@@ -145,6 +157,7 @@ fun OrderSummaryCard() {
     Surface(
         color = Color.White,
         shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, ConfirmStroke),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -157,10 +170,10 @@ fun OrderSummaryCard() {
                 contentScale = ContentScale.Crop
             )
             Column(modifier = Modifier.padding(start = 16.dp)) {
-                Text("The Wellness Box", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text("The Wellness Box", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = ConfirmTitle)
                 Text(
                     "Curated monthly essentials for your mental and physical wellbeing.",
-                    fontSize = 13.sp, color = BoxlySecondaryText, lineHeight = 18.sp
+                    fontSize = 13.sp, color = ConfirmBody, lineHeight = 18.sp
                 )
             }
         }
@@ -179,7 +192,7 @@ fun PlanOption(
             .clickable { onClick() },
         shape = RoundedCornerShape(20.dp),
         color = Color.White,
-        border = BorderStroke(2.dp, if (isSelected) BoxlyTeal else Color.Transparent)
+        border = BorderStroke(2.dp, if (isSelected) ConfirmPrimary else ConfirmStroke)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -188,26 +201,31 @@ fun PlanOption(
             RadioButton(
                 selected = isSelected,
                 onClick = onClick,
-                colors = RadioButtonDefaults.colors(selectedColor = BoxlyTeal)
+                colors = RadioButtonDefaults.colors(
+                    selectedColor = ConfirmPrimary,
+                    unselectedColor = ConfirmBody
+                )
             )
             Column(modifier = Modifier.padding(start = 8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(text = title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = ConfirmTitle)
                     if (badge != null) {
                         Spacer(modifier = Modifier.width(8.dp))
-                        Surface(color = BoxlyTeal, shape = RoundedCornerShape(8.dp)) {
+                        Surface(color = ConfirmTint, shape = RoundedCornerShape(8.dp)) {
                             Text(
                                 text = badge,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                                fontSize = 10.sp, fontWeight = FontWeight.ExtraBold
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = ConfirmPrimary
                             )
                         }
                     }
                 }
                 Row {
-                    Text(text = price, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color(0xFF475569))
+                    Text(text = price, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = ConfirmTitle)
                     if (subtext != null) {
-                        Text(text = " $subtext", fontSize = 14.sp, color = BoxlySecondaryText)
+                        Text(text = " $subtext", fontSize = 14.sp, color = ConfirmBody)
                     }
                 }
             }
@@ -218,7 +236,7 @@ fun PlanOption(
 @Composable
 fun DeliveryFrequencyToggle(selected: String, onSelect: (String) -> Unit) {
     Surface(
-        color = Color(0xFFF1F5F9),
+        color = ConfirmBackground,
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier
             .fillMaxWidth()
@@ -235,6 +253,7 @@ fun DeliveryFrequencyToggle(selected: String, onSelect: (String) -> Unit) {
                         .clickable { onSelect(option) },
                     shape = RoundedCornerShape(10.dp),
                     color = if (isSelected) Color.White else Color.Transparent,
+                    border = if (isSelected) BorderStroke(1.dp, ConfirmStroke) else null,
                     shadowElevation = if (isSelected) 2.dp else 0.dp
                 ) {
                     Box(contentAlignment = Alignment.Center) {
@@ -242,7 +261,7 @@ fun DeliveryFrequencyToggle(selected: String, onSelect: (String) -> Unit) {
                             text = option,
                             fontSize = 14.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) Color(0xFF1E293B) else BoxlySecondaryText
+                            color = if (isSelected) ConfirmTitle else ConfirmBody
                         )
                     }
                 }
@@ -256,26 +275,27 @@ fun PriceBreakdown(planType: String) {
     Surface(
         color = Color.White,
         shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, ConfirmStroke),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Subtotal ($planType Plan)", color = BoxlySecondaryText)
-                Text("$19.99", fontWeight = FontWeight.Bold)
+                Text("Subtotal ($planType Plan)", color = ConfirmBody)
+                Text("$19.99", fontWeight = FontWeight.Bold, color = ConfirmTitle)
             }
             Spacer(modifier = Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Shipping", color = BoxlySecondaryText)
-                Text("FREE", color = BoxlyTeal, fontWeight = FontWeight.Bold)
+                Text("Shipping", color = ConfirmBody)
+                Text("FREE", color = ConfirmPrimary, fontWeight = FontWeight.Bold)
             }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp), color = BoxlyLightGray)
+            HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp), color = ConfirmStroke)
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Total Due Today", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text("$19.99", fontWeight = FontWeight.ExtraBold, fontSize = 24.sp)
+                Text("Total Due Today", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = ConfirmTitle)
+                Text("$19.99", fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, color = ConfirmTitle)
             }
         }
     }

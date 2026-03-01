@@ -5,10 +5,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,13 +24,17 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.aeu.boxapplication.presentation.navigation.Screen
 
-// Using the brand teal from the image
+private val DetailsPrimary = Color(0xFF1E88E5)
+private val DetailsTitle = Color(0xFF2F3A4A)
+private val DetailsBody = Color(0xFF7B8794)
+private val DetailsStroke = Color(0xFFE3E8EF)
+private val DetailsTint = Color(0xFFEAF3FF)
+private val DetailsBackground = Color(0xFFF8FAFB)
 
 @Composable
 fun SubscriptionDetailsScreen(navController: NavController) {
-    var selectedFrequency by remember { mutableStateOf("Monthly") }
-
     Scaffold(
+        containerColor = Color.White,
 //        topBar = {
 //            CenterAlignedTopAppBar(
 //                title = { Text("Subscription Details", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
@@ -53,14 +56,14 @@ fun SubscriptionDetailsScreen(navController: NavController) {
                     onClick = {
                         navController.navigate(Screen.OrderConfirmed.route)
                     },
-                    modifier = Modifier.fillMaxWidth().height(60.dp),
-                    shape = RoundedCornerShape(30.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BoxlyTeal)
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = DetailsPrimary)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Subscribe Now", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text("Subscribe Now", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Icon(Icons.Default.ArrowForward, contentDescription = null, tint = Color.Black)
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color.White)
                     }
                 }
             }
@@ -78,7 +81,9 @@ fun SubscriptionDetailsScreen(navController: NavController) {
                     .fillMaxWidth()
                     .height(280.dp)
                     .padding(horizontal = 20.dp, vertical = 10.dp),
-                shape = RoundedCornerShape(32.dp)
+                shape = RoundedCornerShape(32.dp),
+                border = BorderStroke(1.dp, DetailsStroke),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Box {
                     AsyncImage(
@@ -89,13 +94,13 @@ fun SubscriptionDetailsScreen(navController: NavController) {
                     )
                     // Gradient for text readability
                     Box(modifier = Modifier.fillMaxSize().background(
-                        Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(0.6f)))
+                        Brush.verticalGradient(listOf(Color.Transparent, DetailsTitle.copy(alpha = 0.72f)))
                     ))
 
                     Column(modifier = Modifier.align(Alignment.BottomStart).padding(20.dp)) {
-                        Surface(color = BoxlyTeal, shape = RoundedCornerShape(8.dp)) {
+                        Surface(color = DetailsTint, shape = RoundedCornerShape(8.dp)) {
                             Text("ACTIVE", modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                fontSize = 10.sp, fontWeight = FontWeight.Bold, color = DetailsPrimary)
                         }
                         Text("The Wellness Box", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
                     }
@@ -109,13 +114,13 @@ fun SubscriptionDetailsScreen(navController: NavController) {
                 verticalAlignment = Alignment.Bottom
             ) {
                 Row(verticalAlignment = Alignment.Bottom) {
-                    Text("$29.99", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = BoxlyTeal)
-                    Text("/mo", color = Color.Gray, modifier = Modifier.padding(bottom = 6.dp, start = 4.dp))
+                    Text("$29.99", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = DetailsPrimary)
+                    Text("/mo", color = DetailsBody, modifier = Modifier.padding(bottom = 6.dp, start = 4.dp))
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.Yellow, modifier = Modifier.size(16.dp)) // Replace with Star
-                    Text(" 4.9 ", fontWeight = FontWeight.Bold)
-                    Text("(1.2k)", color = Color.LightGray)
+                    Icon(Icons.Default.Star, contentDescription = null, tint = DetailsPrimary, modifier = Modifier.size(16.dp))
+                    Text(" 4.9 ", fontWeight = FontWeight.Bold, color = DetailsTitle)
+                    Text("(1.2k)", color = DetailsBody)
                 }
             }
 
@@ -124,25 +129,26 @@ fun SubscriptionDetailsScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Shipping Address", fontWeight = FontWeight.Bold)
+                Text("Shipping Address", fontWeight = FontWeight.Bold, color = DetailsTitle)
                 Row(modifier = Modifier.clickable {  }, verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Edit, contentDescription = null, tint = BoxlyTeal, modifier = Modifier.size(14.dp))
-                    Text(" Edit", color = BoxlyTeal, fontWeight = FontWeight.Bold)
+                    Icon(Icons.Default.Edit, contentDescription = null, tint = DetailsPrimary, modifier = Modifier.size(14.dp))
+                    Text(" Edit", color = DetailsPrimary, fontWeight = FontWeight.Bold)
                 }
             }
 
             Surface(
                 modifier = Modifier.fillMaxWidth().padding(20.dp),
-                color = Color(0xFFF8FAFB),
-                shape = RoundedCornerShape(20.dp)
+                color = DetailsBackground,
+                shape = RoundedCornerShape(20.dp),
+                border = BorderStroke(1.dp, DetailsStroke)
             ) {
                 Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(45.dp).background(BoxlyTeal.copy(0.2f), CircleShape), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Outlined.ShoppingCart, contentDescription = null, tint = BoxlyTeal)
+                    Box(modifier = Modifier.size(45.dp).background(DetailsTint, CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Outlined.ShoppingCart, contentDescription = null, tint = DetailsPrimary)
                     }
                     Column(modifier = Modifier.padding(start = 12.dp)) {
-                        Text("Home Office", fontWeight = FontWeight.Bold)
-                        Text("123 Serenity Lane, Wellness District\nSan Francisco, CA 94105", fontSize = 12.sp, color = Color.Gray)
+                        Text("Home Office", fontWeight = FontWeight.Bold, color = DetailsTitle)
+                        Text("123 Serenity Lane, Wellness District\nSan Francisco, CA 94105", fontSize = 12.sp, color = DetailsBody)
                     }
                 }
             }
@@ -152,8 +158,8 @@ fun SubscriptionDetailsScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Sneak Peek: What's Inside", fontWeight = FontWeight.Bold)
-                Text("View All", color = Color.LightGray, fontSize = 12.sp)
+                Text("Sneak Peek: What's Inside", fontWeight = FontWeight.Bold, color = DetailsTitle)
+                Text("View All", color = DetailsBody, fontSize = 12.sp)
             }
             Row(modifier = Modifier.padding(20.dp).horizontalScroll(rememberScrollState())) {
                 InsideItem("Lavender Oil", "Essential Scent")
@@ -170,12 +176,12 @@ fun FrequencyOption(title: String, subtitle: String, isSelected: Boolean, onClic
     Surface(
         modifier = Modifier.width(110.dp).clickable { onClick() },
         shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(1.dp, if (isSelected) BoxlyTeal else Color(0xFFF1F5F9)),
+        border = BorderStroke(1.dp, if (isSelected) DetailsPrimary else DetailsStroke),
         color = if (isSelected) Color.White else Color.Transparent
     ) {
         Column(modifier = Modifier.padding(vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            Text(subtitle, fontSize = 10.sp, color = Color.Gray)
+            Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = DetailsTitle)
+            Text(subtitle, fontSize = 10.sp, color = DetailsBody)
         }
     }
 }
@@ -183,8 +189,14 @@ fun FrequencyOption(title: String, subtitle: String, isSelected: Boolean, onClic
 @Composable
 fun InsideItem(title: String, category: String) {
     Column(modifier = Modifier.padding(end = 16.dp)) {
-        Box(modifier = Modifier.size(130.dp).clip(RoundedCornerShape(28.dp)).background(Color(0xFFF1F5F9)))
-        Text(title, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp), fontSize = 12.sp)
-        Text(category, color = Color.Gray, fontSize = 11.sp)
+        Box(
+            modifier = Modifier
+                .size(130.dp)
+                .clip(RoundedCornerShape(28.dp))
+                .background(DetailsBackground)
+                .border(1.dp, DetailsStroke, RoundedCornerShape(28.dp))
+        )
+        Text(title, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp), fontSize = 12.sp, color = DetailsTitle)
+        Text(category, color = DetailsBody, fontSize = 11.sp)
     }
 }

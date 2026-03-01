@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -27,67 +28,72 @@ import com.aeu.boxapplication.presentation.navigation.Screen
 val BoxlyTeal = Color(0xFF1CE5D1)
 val BoxlyBackground = Color(0xFFF8FAFB)
 val BoxlyDarkText = Color(0xFF1A1C1E)
+private val ShopPrimary = Color(0xFF1E88E5)
+private val ShopTitle = Color(0xFF2F3A4A)
+private val ShopBody = Color(0xFF7B8794)
+private val ShopStroke = Color(0xFFE3E8EF)
+private val ShopTint = Color(0xFFEAF3FF)
 
 @Composable
 fun ShopProductsScreen(navController: NavController) {
     Scaffold(
+        containerColor = Color.White,
         topBar = { TopHeader() },
         bottomBar = { /* Implement Bottom Navigation here */ }
-    ) { padding ->
-        Column(
+    ) { paddingValues ->
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.White)
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
+                .padding(paddingValues)
         ) {
-            // Search Bar
-            SearchBarSection()
-
-            // Categories
-            CategoryChipsSection()
-
-            // Main Featured Card
-            FeaturedBoxCard()
-
-            // List Header
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .verticalScroll(rememberScrollState())
             ) {
-                Text(
-                    text = "Discover All Boxes",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = BoxlyDarkText
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Sort by", color = BoxlyTeal, fontSize = 14.sp)
-                    Icon(Icons.Default.Star, contentDescription = null, tint = BoxlyTeal, modifier = Modifier.size(14.dp))
-                }
-            }
+                SearchBarSection()
+                CategoryChipsSection()
+                FeaturedBoxCard()
 
-            // Subscription List
-            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                SubscriptionItem(
-                    title = "Eco-Home Essentials",
-                    desc = "Green living made simple with zero-waste home supplies.",
-                    price = "$29.99",
-                    rating = "4.9",
-                    badge = "BEST VALUE",
-                    navController
-                )
-                SubscriptionItem(
-                    title = "Gamer's Loot",
-                    desc = "Top-tier peripherals, accessories, and fuel for late-night sessions.",
-                    price = "$45.00",
-                    rating = "4.8",
-                    badge = "POPULAR",
-                    navController
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Discover All Boxes",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = ShopTitle
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Sort by", color = ShopPrimary, fontSize = 14.sp)
+                        Icon(Icons.Default.Star, contentDescription = null, tint = ShopPrimary, modifier = Modifier.size(14.dp))
+                    }
+                }
+
+                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                    SubscriptionItem(
+                        title = "Eco-Home Essentials",
+                        desc = "Green living made simple with zero-waste home supplies.",
+                        price = "$29.99",
+                        rating = "4.9",
+                        badge = "BEST VALUE",
+                        navController
+                    )
+                    SubscriptionItem(
+                        title = "Gamer's Loot",
+                        desc = "Top-tier peripherals, accessories, and fuel for late-night sessions.",
+                        price = "$45.00",
+                        rating = "4.8",
+                        badge = "POPULAR",
+                        navController
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
             }
         }
     }
@@ -106,18 +112,18 @@ fun TopHeader() {
             Box(
                 modifier = Modifier
                     .size(32.dp)
-                    .background(BoxlyTeal, RoundedCornerShape(8.dp)),
+                    .background(ShopPrimary, RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Outlined.ShoppingCart, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Boxly", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+            Text("Boxly", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = ShopTitle)
         }
         Row {
-            Icon(Icons.Outlined.ShoppingCart, contentDescription = null)
+            Icon(Icons.Outlined.ShoppingCart, contentDescription = null, tint = ShopTitle)
             Spacer(modifier = Modifier.width(16.dp))
-            Icon(Icons.Default.Notifications, contentDescription = null)
+            Icon(Icons.Default.Notifications, contentDescription = null, tint = ShopTitle)
         }
     }
 }
@@ -131,13 +137,14 @@ fun SearchBarSection() {
             .fillMaxWidth()
             .padding(horizontal = 20.dp),
         placeholder = { Text("Search boxes, brands, or categories...") },
-        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = ShopBody) },
         shape = RoundedCornerShape(25.dp),
         colors = OutlinedTextFieldDefaults.colors(
             focusedContainerColor = Color.White,
             unfocusedContainerColor = Color.White,
             disabledContainerColor = Color.White,
-            unfocusedBorderColor = Color.Transparent
+            focusedBorderColor = ShopStroke,
+            unfocusedBorderColor = ShopStroke
         )
     )
 }
@@ -156,13 +163,13 @@ fun CategoryChipsSection() {
             Surface(
                 modifier = Modifier.padding(end = 8.dp),
                 shape = RoundedCornerShape(20.dp),
-                color = if (isSelected) BoxlyTeal else Color.White,
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                color = if (isSelected) ShopPrimary else Color.White,
+                border = BorderStroke(1.dp, ShopStroke)
             ) {
                 Text(
                     text = name,
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp),
-                    color = if (isSelected) Color.White else Color.Gray,
+                    color = if (isSelected) Color.White else ShopBody,
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -177,46 +184,89 @@ fun FeaturedBoxCard() {
             .fillMaxWidth()
             .height(240.dp)
             .padding(horizontal = 20.dp),
-        shape = RoundedCornerShape(28.dp)
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, ShopStroke),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            // Placeholder for the background image + gradient
-            Box(modifier = Modifier.fillMaxSize().background(
-                Brush.verticalGradient(listOf(Color(0xFF8B6E5E), Color(0xFF1A1C1E)))
-            ))
-
-            Column(modifier = Modifier.padding(24.dp)) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                ShopPrimary.copy(alpha = 0.95f),
+                                ShopTitle
+                            )
+                        )
+                    )
+            ) {
                 Surface(
-                    color = BoxlyTeal,
-                    shape = RoundedCornerShape(8.dp)
+                    color = ShopTint,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(start = 20.dp, top = 16.dp)
                 ) {
                     Text(
                         "PICK OF THE MONTH",
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Black
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = ShopPrimary
                     )
                 }
-                Spacer(modifier = Modifier.height(12.dp))
-                Text("The Wellness Box", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(horizontal = 20.dp, vertical = 16.dp)
+                ) {
+                    Text(
+                        "The Wellness Box",
+                        color = Color.White,
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
                 Text(
                     "Curated for your peace of mind. Includes 6 organic self-care essentials.",
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 14.sp,
-                    modifier = Modifier.width(200.dp)
+                    color = ShopBody,
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp
                 )
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.height(14.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = "$34.99/mo", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = "$34.99",
+                            color = ShopTitle,
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "/mo",
+                            color = ShopBody,
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(start = 4.dp, bottom = 3.dp)
+                        )
+                    }
                     Button(
                         onClick = {},
-                        colors = ButtonDefaults.buttonColors(containerColor = BoxlyTeal),
+                        modifier = Modifier.height(44.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = ShopPrimary),
                         shape = RoundedCornerShape(14.dp)
                     ) {
-                        Text("Get Started", color = Color.Black, fontWeight = FontWeight.Bold)
+                        Text("Get Started", color = Color.White, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -231,44 +281,65 @@ fun SubscriptionItem(title: String, desc: String, price: String, rating: String,
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         shape = RoundedCornerShape(20.dp),
-        color = Color.White
+        color = Color.White,
+        border = BorderStroke(1.dp, ShopStroke)
     ) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.size(100.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFFF1F5F9))) {
                 // AsyncImage would go here
                 if (badge != null) {
                     Surface(
-                        color = BoxlyTeal.copy(alpha = 0.8f),
+                        color = ShopPrimary.copy(alpha = 0.18f),
                         modifier = Modifier.padding(4.dp),
                         shape = RoundedCornerShape(4.dp)
                     ) {
-                        Text(badge, fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(2.dp))
+                        Text(
+                            badge,
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ShopPrimary,
+                            modifier = Modifier.padding(2.dp)
+                        )
                     }
                 }
             }
 
             Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(
+                        title,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = ShopTitle,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Star, contentDescription = null, tint = BoxlyTeal, modifier = Modifier.size(14.dp))
-                        Text(rating, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Icon(Icons.Default.Star, contentDescription = null, tint = ShopPrimary, modifier = Modifier.size(14.dp))
+                        Text(rating, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ShopTitle)
                     }
                 }
-                Text(desc, fontSize = 12.sp, color = Color.Gray, maxLines = 2)
+                Text(desc, fontSize = 12.sp, color = ShopBody, maxLines = 2)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("$price", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Text("/mo", fontSize = 10.sp, color = Color.Gray)
+                    Text("$price", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = ShopTitle)
+                    Text("/mo", fontSize = 10.sp, color = ShopBody)
                     Spacer(modifier = Modifier.weight(1f))
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = Color(0xFFF1F5F9),
+                        color = ShopTint,
+                        border = BorderStroke(1.dp, ShopStroke),
                         modifier = Modifier.clickable {
                             navController.navigate(Screen.SubscribDetail.route)
                         }
                     ) {
-                        Text("View Details", modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            "View Details",
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            fontSize = 12.sp,
+                            color = ShopPrimary,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }

@@ -84,7 +84,9 @@ class MainActivity : ComponentActivity() {
                                 else -> SubscriberBottomNavItem.Home
                             },
                             onHomeClick = {
-                                navController.navigate(Screen.SubscriberHome.route) {
+                                val homeUserName = sessionManager.getUserName().takeUnless { it.isNullOrBlank() } ?: "Guest"
+                                val encodedName = Uri.encode(homeUserName)
+                                navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
                                     launchSingleTop = true
                                     restoreState = true
                                 }
