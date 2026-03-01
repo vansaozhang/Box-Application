@@ -2,9 +2,12 @@ package com.aeu.boxapplication.data.remote
 
 import com.aeu.boxapplication.data.remote.dto.response.AuthResponse
 import com.aeu.boxapplication.data.remote.dto.response.AuthMeResponse
+import com.aeu.boxapplication.data.remote.dto.request.ConfirmStripeSubscriptionRequest
+import com.aeu.boxapplication.data.remote.dto.request.CreateStripeCheckoutIntentRequest
 import com.aeu.boxapplication.data.remote.dto.request.LoginRequest
 import com.aeu.boxapplication.data.remote.dto.request.RegisterRequest
 import com.aeu.boxapplication.data.remote.dto.request.SubscribeRequest
+import com.aeu.boxapplication.data.remote.dto.response.StripeCheckoutIntentResponse
 import com.aeu.boxapplication.data.remote.dto.response.SubscriptionApiResponse
 import com.aeu.boxapplication.data.remote.dto.response.SubscriptionPlanApiResponse
 import retrofit2.Response
@@ -45,5 +48,17 @@ interface AuthApiService {
     suspend fun subscribeToPlan(
         @Header("Authorization") authHeader: String,
         @Body request: SubscribeRequest
+    ): Response<SubscriptionApiResponse>
+
+    @POST("stripe/subscriptions/checkout-intent")
+    suspend fun createStripeCheckoutIntent(
+        @Header("Authorization") authHeader: String,
+        @Body request: CreateStripeCheckoutIntentRequest
+    ): Response<StripeCheckoutIntentResponse>
+
+    @POST("stripe/subscriptions/confirm")
+    suspend fun confirmStripeSubscription(
+        @Header("Authorization") authHeader: String,
+        @Body request: ConfirmStripeSubscriptionRequest
     ): Response<SubscriptionApiResponse>
 }

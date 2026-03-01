@@ -7,7 +7,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aeu.boxapplication.core.utils.SessionManager
 import com.aeu.boxapplication.data.remote.AuthApiService
+import com.aeu.boxapplication.data.remote.dto.request.ConfirmStripeSubscriptionRequest
+import com.aeu.boxapplication.data.remote.dto.request.CreateStripeCheckoutIntentRequest
 import com.aeu.boxapplication.data.remote.dto.request.SubscribeRequest
+import com.aeu.boxapplication.data.remote.dto.response.StripeCheckoutIntentResponse
 import com.aeu.boxapplication.data.remote.dto.response.SubscriptionPlanApiResponse
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -164,6 +167,79 @@ class SubscriptionViewModel(
                     onSuccess()
                 } else {
                     errorMessage = response.errorBody()?.string() ?: "Failed to subscribe"
+                }
+            } catch (e: Exception) {
+                errorMessage = "Network error: ${e.localizedMessage}"
+            } finally {
+                isSubmitting = false
+            }
+        }
+    }
+
+    fun createStripeCheckout(
+        planId: String,
+        onReady: (StripeCheckoutIntentResponse) -> Unit
+    ) {
+        val token = sessionManager.getAuthToken()
+        if (token.isNullOrBlank()) {
+            errorMessage = "Please login first."
+            return
+        }
+
+        viewModelScope.launch {
+            isSubmitting = true
+            errorMessage = null
+            try {
+                val response = authService.createStripeCheckoutIntent(
+                    authHeader = "Bearer $token",
+                    request = CreateStripeCheckoutIntentRequest(planId = planId)
+                )
+
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    if (body != null) {
+                        onReady(body)
+                    } else {
+                        errorMessage = "Failed to initialize Stripe checkout"
+                    }
+                } else {
+                    errorMessage = response.errorBody()?.string() ?: "Failed to initialize Stripe checkout"
+                }
+            } catch (e: Exception) {
+                errorMessage = "Network error: ${e.localizedMessage}"
+            } finally {
+                isSubmitting = false
+            }
+        }
+    }
+
+    fun confirmStripeSubscription(
+        planId: String,
+        stripeSubscriptionId: String,
+        onSuccess: () -> Unit
+    ) {
+        val token = sessionManager.getAuthToken()
+        if (token.isNullOrBlank()) {
+            errorMessage = "Please login first."
+            return
+        }
+
+        viewModelScope.launch {
+            isSubmitting = true
+            errorMessage = null
+            try {
+                val response = authService.confirmStripeSubscription(
+                    authHeader = "Bearer $token",
+                    request = ConfirmStripeSubscriptionRequest(
+                        planId = planId,
+                        stripeSubscriptionId = stripeSubscriptionId
+                    )
+                )
+
+                if (response.isSuccessful) {
+                    onSuccess()
+                } else {
+                    errorMessage = response.errorBody()?.string() ?: "Failed to confirm subscription"
                 }
             } catch (e: Exception) {
                 errorMessage = "Network error: ${e.localizedMessage}"

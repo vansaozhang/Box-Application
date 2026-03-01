@@ -29,7 +29,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,11 +55,14 @@ fun ConfirmSubscriptionScreen(
     isSubmitting: Boolean = false,
     errorMessage: String? = null
 ) {
-    val (selectedMethod, setSelectedMethod) = remember { mutableStateOf("visa") }
     val methods = listOf(
-        PaymentMethodUi("mastercard", "MasterCard", "Ending in 8832", "MASTER", Color(0xFFE11D2A)),
-        PaymentMethodUi("paypal", "PayPal", "john.doe@example.com", "PAYPAL", Color(0xFF1E4DD8)),
-        PaymentMethodUi("visa", "Visa", "Ending in 4242", "VISA", Color(0xFF1F2A44))
+        PaymentMethodUi(
+            id = "stripe_card",
+            title = "Card via Stripe",
+            subtitle = "Secure test payment",
+            badgeText = "STRIPE",
+            badgeColor = Color(0xFF635BFF)
+        )
     )
 
     Scaffold(
@@ -139,8 +141,8 @@ fun ConfirmSubscriptionScreen(
                 methods.forEach { method ->
                     PaymentMethodRow(
                         method = method,
-                        selected = method.id == selectedMethod,
-                        onSelect = { setSelectedMethod(method.id) }
+                        selected = true,
+                        onSelect = {}
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                 }

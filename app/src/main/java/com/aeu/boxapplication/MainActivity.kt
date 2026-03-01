@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -28,8 +27,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -60,6 +61,10 @@ import com.aeu.boxapplication.presentation.subscription.ExplorePlansScreen
 import com.aeu.boxapplication.presentation.subscription.SubscriptionsEmptyScreen
 import com.aeu.boxapplication.presentation.subscription.SubscriptionViewModel
 import com.aeu.boxapplication.presentation.subscriber.*
+import com.stripe.android.PaymentConfiguration
+import com.stripe.android.paymentsheet.PaymentSheet
+import com.stripe.android.paymentsheet.PaymentSheetResult
+import com.stripe.android.paymentsheet.rememberPaymentSheet
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -345,6 +350,45 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         )
+                        val context = LocalContext.current
+                        var pendingPlanId by remember { mutableStateOf<String?>(null) }
+                        var pendingStripeSubscriptionId by remember { mutableStateOf<String?>(null) }
+
+                        val paymentSheet = rememberPaymentSheet(
+                            paymentResultCallback = { paymentResult ->
+                                when (paymentResult) {
+                                    is PaymentSheetResult.Completed -> {
+                                        val planIdToConfirm = pendingPlanId
+                                        val stripeSubscriptionId = pendingStripeSubscriptionId
+                                        if (planIdToConfirm.isNullOrBlank() || stripeSubscriptionId.isNullOrBlank()) {
+                                            subscriptionViewModel.setError("Missing Stripe subscription data. Please try again.")
+                                        } else {
+                                            subscriptionViewModel.confirmStripeSubscription(
+                                                planId = planIdToConfirm,
+                                                stripeSubscriptionId = stripeSubscriptionId
+                                            ) {
+                                                sessionManager.clearPendingPlan()
+                                                val homeUserName = sessionManager.getUserName().takeUnless { it.isNullOrBlank() } ?: "User"
+                                                val encodedName = Uri.encode(homeUserName)
+                                                navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
+                                                    popUpTo(Screen.ExplorePlans.route) { inclusive = true }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    is PaymentSheetResult.Canceled -> {
+                                        subscriptionViewModel.setError("Payment canceled.")
+                                    }
+
+                                    is PaymentSheetResult.Failed -> {
+                                        subscriptionViewModel.setError(
+                                            "Payment failed: ${paymentResult.error.localizedMessage ?: "Unknown Stripe error"}"
+                                        )
+                                    }
+                                }
+                            }
+                        )
 
                         val selectedPlanId = sessionManager.getPendingPlanId()
                         val selectedPlanName = sessionManager.getPendingPlanName() ?: "Pro"
@@ -358,13 +402,22 @@ class MainActivity : ComponentActivity() {
                                 if (selectedPlanId.isNullOrBlank()) {
                                     subscriptionViewModel.setError("Please select a plan before confirming.")
                                 } else {
-                                    subscriptionViewModel.subscribeToPlan(selectedPlanId) {
-                                        sessionManager.clearPendingPlan()
-                                        val homeUserName = sessionManager.getUserName().takeUnless { it.isNullOrBlank() } ?: "User"
-                                        val encodedName = Uri.encode(homeUserName)
-                                        navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
-                                            popUpTo(Screen.ExplorePlans.route) { inclusive = true }
-                                        }
+                                    subscriptionViewModel.createStripeCheckout(selectedPlanId) { checkout ->
+                                        pendingPlanId = selectedPlanId
+                                        pendingStripeSubscriptionId = checkout.stripeSubscriptionId
+
+                                        PaymentConfiguration.init(context, checkout.publishableKey)
+
+                                        paymentSheet.presentWithPaymentIntent(
+                                            paymentIntentClientSecret = checkout.paymentIntentClientSecret,
+                                            configuration = PaymentSheet.Configuration(
+                                                merchantDisplayName = "Box Subscription",
+                                                customer = PaymentSheet.CustomerConfiguration(
+                                                    id = checkout.customerId,
+                                                    ephemeralKeySecret = checkout.ephemeralKey
+                                                )
+                                            )
+                                        )
                                     }
                                 }
                             },
