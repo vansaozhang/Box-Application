@@ -28,20 +28,33 @@ class LoginViewModel(private val authService: AuthApiService,private val session
 
                 if (response.isSuccessful) {
                     val body: AuthResponse? = response.body()
-                    body?.let {
-                        // This saves everything so the Profile screen can read it
-                        sessionManager.saveUserDetail(
-                            name = it.user?.name ?: "User",
-                            email = it.user?.email ?: "",
-                            token = it.accessToken
-                        )
-                    }
+                    val accessToken = body?.accessToken
 
-                    if (body?.accessToken != null) {
-                        val userName = body.user?.name ?: "User"
-                        onSuccess(userName)
+                    if (!accessToken.isNullOrBlank()) {
+                        val meResponse = authService.getMe("Bearer $accessToken")
+                        if (meResponse.isSuccessful) {
+                            val meBody = meResponse.body()
+                            if (meBody != null) {
+                                val userName = body?.user?.name?.takeIf { it.isNotBlank() }
+                                    ?: sessionManager.getUserName().takeUnless { it.isNullOrBlank() }
+                                    ?: meBody.email.substringBefore("@")
+
+                                sessionManager.saveUserDetail(
+                                    name = userName,
+                                    email = meBody.email,
+                                    token = accessToken
+                                )
+                                sessionManager.setHasAccount()
+                                onSuccess(userName)
+                            } else {
+                                errorMessage = "Login failed to load profile"
+                            }
+                        } else {
+                            val errorJson = meResponse.errorBody()?.string()
+                            errorMessage = "Login failed to validate account"
+                            println("API_ME_ERROR: $errorJson")
+                        }
                     } else {
-                        // FIXED TYPO HERE: Changed errormessage to errorMessage
                         errorMessage = "Login successful but no user data found"
                     }
                 } else {

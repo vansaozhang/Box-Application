@@ -91,20 +91,9 @@ launch_method=""
 launch_emulator() {
   local log="/tmp/avd.log"
 
-  # On macOS, launchd is the most reliable way to detach from task runners that
-  # kill the entire process tree when a task ends.
-  if command -v launchctl >/dev/null 2>&1; then
-    local label="com.aeu.boxapplication.emu.${avd_name//[^A-Za-z0-9]/_}.$RANDOM"
-    local cmd
-    cmd="$(printf '%q ' "$emu_bin" "$@")"
-    if launchctl submit -l "$label" -- /bin/sh -c "exec $cmd </dev/null >>'$log' 2>&1"; then
-      launch_method="launchctl"
-      echo ""
-      return 0
-    fi
-  fi
-
-  # Fallbacks when launchctl isn't available.
+  # Launch in background using standard Unix methods.
+  # Launchctl method removed to allow emulator to quit properly when closed.
+  # Note: Emulator may be terminated if the parent task/process ends.
   if command -v setsid >/dev/null 2>&1; then
     launch_method="setsid"
     setsid "$emu_bin" "$@" </dev/null >>"$log" 2>&1 &

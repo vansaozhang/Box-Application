@@ -23,13 +23,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,18 +43,18 @@ import com.aeu.boxapplication.ui.components.AppPrimaryButton
 
 @Composable
 fun ExplorePlansScreen(
+    isLoading: Boolean,
+    isMonthly: Boolean,
+    plans: List<PlanUiModel>,
+    errorMessage: String?,
     onBack: () -> Unit = {},
     onRestorePurchases: () -> Unit = {},
-    onSelectStarter: () -> Unit = {},
-    onSelectPro: () -> Unit = {},
-    onSelectBusiness: () -> Unit = {}
+    onToggleMonthly: (Boolean) -> Unit,
+    onSelectPlan: (PlanUiModel) -> Unit
 ) {
-    val (isMonthly, setIsMonthly) = remember { mutableStateOf(true) }
-
     Scaffold(
         containerColor = Color.White
-    ) {
-        paddingValues ->
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -111,60 +111,54 @@ fun ExplorePlansScreen(
 
                 BillingToggle(
                     isMonthly = isMonthly,
-                    onMonthlyClick = { setIsMonthly(true) },
-                    onYearlyClick = { setIsMonthly(false) }
+                    onMonthlyClick = { onToggleMonthly(true) },
+                    onYearlyClick = { onToggleMonthly(false) }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                PlanCard(
-                    title = "Starter",
-                    subtitle = "FOR INDIVIDUALS",
-                    price = "$9",
-                    period = "/mo",
-                    features = listOf(
-                        PlanFeature("5 recurring orders", true),
-                        PlanFeature("Basic analytics", true),
-                        PlanFeature("Free shipping", false)
-                    ),
-                    buttonText = "Select Starter",
-                    onSelect = onSelectStarter
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(color = Color(0xFF1E88E5))
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                if (!errorMessage.isNullOrBlank()) {
+                    Text(
+                        text = errorMessage,
+                        fontSize = 12.sp,
+                        color = Color(0xFFDC2626),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp)
+                    )
+                }
 
-                PlanCard(
-                    title = "Pro",
-                    subtitle = "FOR POWER USERS",
-                    price = "$19",
-                    period = "/mo",
-                    features = listOf(
-                        PlanFeature("Unlimited recurring orders", true),
-                        PlanFeature("Advanced analytics", true),
-                        PlanFeature("Free shipping on all orders", true),
-                        PlanFeature("Priority support", true)
-                    ),
-                    buttonText = "Select Pro",
-                    highlight = true,
-                    badge = "MOST POPULAR",
-                    onSelect = onSelectPro
-                )
+                plans.forEachIndexed { index, plan ->
+                    PlanCard(
+                        title = plan.name,
+                        subtitle = plan.subtitle,
+                        price = plan.priceLabel,
+                        period = plan.periodLabel,
+                        features = plan.features,
+                        buttonText = "Select ${plan.name}",
+                        onSelect = { onSelectPlan(plan) },
+                        highlight = plan.name.equals("Pro", ignoreCase = true),
+                        badge = if (plan.name.equals("Pro", ignoreCase = true)) "MOST POPULAR" else null
+                    )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    if (index != plans.lastIndex) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                }
 
-                PlanCard(
-                    title = "Business",
-                    subtitle = "FOR TEAMS",
-                    price = "$49",
-                    period = "/mo",
-                    features = listOf(
-                        PlanFeature("Everything in Pro", true),
-                        PlanFeature("Multiple user seats", true),
-                        PlanFeature("Dedicated account manager", true)
-                    ),
-                    buttonText = "Select Business",
-                    onSelect = onSelectBusiness
-                )
+                if (!isLoading && plans.isEmpty()) {
+                    Text(
+                        text = "No plans available.",
+                        fontSize = 13.sp,
+                        color = Color(0xFF7B8794)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(18.dp))
 
@@ -269,18 +263,13 @@ private fun TogglePill(
     }
 }
 
-private data class PlanFeature(
-    val text: String,
-    val included: Boolean
-)
-
 @Composable
 private fun PlanCard(
     title: String,
     subtitle: String,
     price: String,
     period: String,
-    features: List<PlanFeature>,
+    features: List<PlanFeatureUi>,
     buttonText: String,
     onSelect: () -> Unit,
     highlight: Boolean = false,

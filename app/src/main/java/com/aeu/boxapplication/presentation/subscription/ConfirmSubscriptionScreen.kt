@@ -44,7 +44,17 @@ import com.aeu.boxapplication.ui.components.AppPrimaryButton
 fun ConfirmSubscriptionScreen(
     onBack: () -> Unit = {},
     onEditPlan: () -> Unit = {},
-    onConfirmPay: () -> Unit = {}
+    onConfirmPay: () -> Unit = {},
+    selectedPlanName: String = "Pro",
+    selectedPlanPrice: String = "$19",
+    selectedPlanPeriod: String = "/mo",
+    selectedPlanFeatures: List<String> = listOf(
+        "Unlimited recurring orders",
+        "Advanced analytics",
+        "Free shipping on all orders"
+    ),
+    isSubmitting: Boolean = false,
+    errorMessage: String? = null
 ) {
     val (selectedMethod, setSelectedMethod) = remember { mutableStateOf("visa") }
     val methods = listOf(
@@ -113,7 +123,13 @@ fun ConfirmSubscriptionScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                SelectedPlanCard(onEdit = onEditPlan)
+                SelectedPlanCard(
+                    onEdit = onEditPlan,
+                    planName = selectedPlanName,
+                    planPrice = selectedPlanPrice,
+                    planPeriod = selectedPlanPeriod,
+                    features = selectedPlanFeatures
+                )
 
                 Spacer(modifier = Modifier.height(18.dp))
 
@@ -134,17 +150,27 @@ fun ConfirmSubscriptionScreen(
                 SectionTitle(text = "ORDER SUMMARY")
                 Spacer(modifier = Modifier.height(10.dp))
 
-                OrderSummaryCard()
+                OrderSummaryCard(totalPrice = selectedPlanPrice)
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Your subscription will renew automatically on Dec 24, 2023.\nYou can cancel anytime in your settings.",
+                    text = "Your subscription will renew automatically based on your selected ${if (selectedPlanPeriod == "/yr") "yearly" else "monthly"} cycle.\nYou can cancel anytime in your settings.",
                     fontSize = 11.sp,
                     color = Color(0xFF8C99A6),
                     textAlign = TextAlign.Center,
                     lineHeight = 16.sp
                 )
+
+                if (!errorMessage.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = errorMessage,
+                        fontSize = 12.sp,
+                        color = Color(0xFFDC2626),
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
 
             Box(
@@ -155,8 +181,9 @@ fun ConfirmSubscriptionScreen(
                     .padding(horizontal = 20.dp, vertical = 16.dp)
             ) {
                 AppPrimaryButton(
-                    text = "Confirm&Pay",
-                    onClick = onConfirmPay
+                    text = if (isSubmitting) "Processing..." else "Confirm & Subscribe",
+                    onClick = onConfirmPay,
+                    enabled = !isSubmitting
                 )
             }
         }
@@ -164,7 +191,13 @@ fun ConfirmSubscriptionScreen(
 }
 
 @Composable
-private fun SelectedPlanCard(onEdit: () -> Unit) {
+private fun SelectedPlanCard(
+    onEdit: () -> Unit,
+    planName: String,
+    planPrice: String,
+    planPeriod: String,
+    features: List<String>
+) {
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = Color.White,
@@ -199,7 +232,7 @@ private fun SelectedPlanCard(onEdit: () -> Unit) {
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Pro",
+                text = planName,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF2F3A4A)
@@ -207,14 +240,14 @@ private fun SelectedPlanCard(onEdit: () -> Unit) {
             Spacer(modifier = Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
-                    text = "$19",
+                    text = planPrice,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF2F3A4A)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "/month",
+                    text = planPeriod,
                     fontSize = 12.sp,
                     color = Color(0xFF7B8794)
                 )
@@ -226,11 +259,12 @@ private fun SelectedPlanCard(onEdit: () -> Unit) {
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            FeatureLine(text = "Unlimited recurring orders")
-            Spacer(modifier = Modifier.height(8.dp))
-            FeatureLine(text = "Advanced analytics")
-            Spacer(modifier = Modifier.height(8.dp))
-            FeatureLine(text = "Free shipping on all orders")
+            features.forEachIndexed { index, feature ->
+                FeatureLine(text = feature)
+                if (index != features.lastIndex) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
         }
     }
 }
@@ -354,7 +388,7 @@ private fun PaymentMethodRow(
 }
 
 @Composable
-private fun OrderSummaryCard() {
+private fun OrderSummaryCard(totalPrice: String) {
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = Color.White,
@@ -363,7 +397,7 @@ private fun OrderSummaryCard() {
             .border(1.2.dp, Color(0xFFE3E8EF), RoundedCornerShape(14.dp))
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            SummaryRow(label = "Subtotal", value = "$19.00")
+            SummaryRow(label = "Subtotal", value = totalPrice)
             Spacer(modifier = Modifier.height(8.dp))
             SummaryRow(label = "Tax (0%)", value = "$0.00")
             Spacer(modifier = Modifier.height(10.dp))
@@ -381,7 +415,7 @@ private fun OrderSummaryCard() {
                     color = Color(0xFF2F3A4A)
                 )
                 Text(
-                    text = "$19.00",
+                    text = totalPrice,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF1E88E5)

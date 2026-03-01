@@ -27,13 +27,14 @@
     import com.aeu.boxapplication.domain.model.OrderHistoryItem
     import com.aeu.boxapplication.domain.model.dummyOrders
 
-    @Composable
-    fun OrderHistoryScreen(
-        navController: NavController,
-        onOrderClick: (String) -> Unit = {}, // FIXED: Now takes a String ID
-        onLoadPrevious: () -> Unit = {},
-        onNotificationsClick: () -> Unit = {}
-    ) {
+@Composable
+fun OrderHistoryScreen(
+    navController: NavController,
+    userName: String,
+    onOrderClick: (String) -> Unit = {}, // FIXED: Now takes a String ID
+    onLoadPrevious: () -> Unit = {},
+    onNotificationsClick: () -> Unit = {}
+) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -46,7 +47,10 @@
                     .padding(horizontal = 20.dp, vertical = 16.dp)
                     .padding(bottom = 84.dp)
             ) {
-                OrderHistoryHeader(onNotificationsClick = onNotificationsClick)
+            OrderHistoryHeader(
+                userName = userName,
+                onNotificationsClick = onNotificationsClick
+            )
                 Spacer(modifier = Modifier.height(18.dp))
                 OrderHistoryTitle()
                 Spacer(modifier = Modifier.height(16.dp))
@@ -71,7 +75,10 @@
     }
 
     @Composable
-    private fun OrderHistoryHeader(onNotificationsClick: () -> Unit) {
+private fun OrderHistoryHeader(
+    userName: String,
+    onNotificationsClick: () -> Unit
+) {
         Row(
             modifier = Modifier.fillMaxWidth().statusBarsPadding(),
             verticalAlignment = Alignment.CenterVertically,
@@ -92,12 +99,12 @@
                         modifier = Modifier.size(30.dp)
                     )
                 }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text("Sarah", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    Text("Member since 2021", fontSize = 12.sp, color = Color.Gray)
-                }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(userName, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text("Member since 2021", fontSize = 12.sp, color = Color.Gray)
             }
+        }
             IconButton(onClick = onNotificationsClick) {
                 Icon(Icons.Outlined.Notifications, contentDescription = null)
             }
@@ -181,4 +188,3 @@
             }
         }
     }
-

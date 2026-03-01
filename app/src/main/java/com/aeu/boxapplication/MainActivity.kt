@@ -5,7 +5,15 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
@@ -14,18 +22,20 @@ import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -48,7 +58,9 @@ import com.aeu.boxapplication.presentation.profile.ShippingAddressScreen
 import com.aeu.boxapplication.presentation.subscription.ConfirmSubscriptionScreen
 import com.aeu.boxapplication.presentation.subscription.ExplorePlansScreen
 import com.aeu.boxapplication.presentation.subscription.SubscriptionsEmptyScreen
+import com.aeu.boxapplication.presentation.subscription.SubscriptionViewModel
 import com.aeu.boxapplication.presentation.subscriber.*
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -120,27 +132,61 @@ class MainActivity : ComponentActivity() {
                 ) {
                     // 1. Splash/Loading Screen
                     composable(Screen.Loading.route) {
+                        val loadingScope = rememberCoroutineScope()
                         LoadingScreen(
                             onFinished = {
-                                val savedName = sessionManager.getUserName()
-                                val hasAccount = sessionManager.hasAccount()
-
-                                when {
-                                    // Case 1: Currently Logged In
-                                    !savedName.isNullOrEmpty() -> {
-                                        val encodedName = Uri.encode(savedName)
+                                loadingScope.launch {
+                                    val navigateToHome: (String) -> Unit = { userName ->
+                                        val encodedName = Uri.encode(userName)
                                         navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
                                             popUpTo(Screen.Loading.route) { inclusive = true }
                                         }
                                     }
-                                    // Case 2: Has account but logged out
-                                    hasAccount -> {
+
+                                    val savedToken = sessionManager.getAuthToken()
+                                    val savedName = sessionManager.getUserName()
+
+                                    if (!savedToken.isNullOrBlank()) {
+                                        try {
+                                            val meResponse = RetrofitClient.authApiService.getMe("Bearer $savedToken")
+                                            val meBody = meResponse.body()
+
+                                            if (meResponse.isSuccessful && meBody != null) {
+                                                val resolvedName = savedName
+                                                    .takeUnless { it.isNullOrBlank() }
+                                                    ?: meBody.email.substringBefore("@")
+
+                                                sessionManager.saveUserDetail(
+                                                    name = resolvedName,
+                                                    email = meBody.email,
+                                                    token = savedToken
+                                                )
+                                                sessionManager.setHasAccount()
+                                                navigateToHome(resolvedName)
+                                                return@launch
+                                            }
+
+                                            if (meResponse.code() == 401 || meResponse.code() == 403) {
+                                                sessionManager.clearSession()
+                                            } else if (!savedName.isNullOrBlank()) {
+                                                navigateToHome(savedName)
+                                                return@launch
+                                            }
+                                        } catch (_: Exception) {
+                                            if (!savedName.isNullOrBlank()) {
+                                                navigateToHome(savedName)
+                                                return@launch
+                                            }
+                                        }
+                                    } else if (!savedName.isNullOrBlank()) {
+                                        sessionManager.clearSession()
+                                    }
+
+                                    if (sessionManager.hasAccount()) {
                                         navController.navigate(Screen.Login.route) {
                                             popUpTo(Screen.Loading.route) { inclusive = true }
                                         }
-                                    }
-                                    // Case 3: First time user (No account yet)
-                                    else -> {
+                                    } else {
                                         navController.navigate(Screen.Register.route) {
                                             popUpTo(Screen.Loading.route) { inclusive = true }
                                         }
@@ -206,29 +252,141 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable(Screen.SubscriptionsEmpty.route) {
+                        val subscriptionViewModel: SubscriptionViewModel = viewModel(
+                            factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                                    return SubscriptionViewModel(
+                                        authService = RetrofitClient.authApiService,
+                                        sessionManager = sessionManager
+                                    ) as T
+                                }
+                            }
+                        )
+
                         SubscriptionsEmptyScreen(
                             onBack = { navController.popBackStack() },
-                            onExplorePlans = { navController.navigate(Screen.ExplorePlans.route) }
+                            onExplorePlans = { navController.navigate(Screen.ExplorePlans.route) },
+                            onRestorePurchases = {
+                                subscriptionViewModel.restorePurchases(
+                                    onHasSubscription = {
+                                        val homeUserName = sessionManager.getUserName().takeUnless { it.isNullOrBlank() } ?: "User"
+                                        val encodedName = Uri.encode(homeUserName)
+                                        navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
+                                            popUpTo(Screen.SubscriptionsEmpty.route) { inclusive = true }
+                                        }
+                                    },
+                                    onNoSubscription = {
+                                        navController.navigate(Screen.ExplorePlans.route)
+                                    }
+                                )
+                            }
                         )
                     }
 
                     composable(Screen.ExplorePlans.route) {
+                        val subscriptionViewModel: SubscriptionViewModel = viewModel(
+                            factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                                    return SubscriptionViewModel(
+                                        authService = RetrofitClient.authApiService,
+                                        sessionManager = sessionManager
+                                    ) as T
+                                }
+                            }
+                        )
+
+                        LaunchedEffect(Unit) {
+                            if (subscriptionViewModel.plans.isEmpty()) {
+                                subscriptionViewModel.loadPlans()
+                            }
+                        }
+
                         ExplorePlansScreen(
+                            isLoading = subscriptionViewModel.isLoading,
+                            isMonthly = subscriptionViewModel.selectedCycle.apiValue == "monthly",
+                            plans = subscriptionViewModel.plans,
+                            errorMessage = subscriptionViewModel.errorMessage,
                             onBack = { navController.popBackStack() },
-                            onSelectStarter = { navController.navigate(Screen.ConfirmSubscription.route) },
-                            onSelectPro = { navController.navigate(Screen.ConfirmSubscription.route) },
-                            onSelectBusiness = { navController.navigate(Screen.ConfirmSubscription.route) }
+                            onRestorePurchases = {
+                                subscriptionViewModel.restorePurchases(
+                                    onHasSubscription = {
+                                        val homeUserName = sessionManager.getUserName().takeUnless { it.isNullOrBlank() } ?: "User"
+                                        val encodedName = Uri.encode(homeUserName)
+                                        navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
+                                            popUpTo(Screen.ExplorePlans.route) { inclusive = true }
+                                        }
+                                    },
+                                    onNoSubscription = {}
+                                )
+                            },
+                            onToggleMonthly = { isMonthly ->
+                                subscriptionViewModel.setBillingCycle(isMonthly = isMonthly)
+                            },
+                            onSelectPlan = { selectedPlan ->
+                                sessionManager.savePendingPlan(
+                                    planId = selectedPlan.id,
+                                    planName = selectedPlan.name,
+                                    planPrice = selectedPlan.priceLabel,
+                                    planPeriod = selectedPlan.periodLabel
+                                )
+                                navController.navigate(Screen.ConfirmSubscription.route)
+                            }
                         )
                     }
 
                     composable(Screen.ConfirmSubscription.route) {
+                        val subscriptionViewModel: SubscriptionViewModel = viewModel(
+                            factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                                    return SubscriptionViewModel(
+                                        authService = RetrofitClient.authApiService,
+                                        sessionManager = sessionManager
+                                    ) as T
+                                }
+                            }
+                        )
+
+                        val selectedPlanId = sessionManager.getPendingPlanId()
+                        val selectedPlanName = sessionManager.getPendingPlanName() ?: "Pro"
+                        val selectedPlanPrice = sessionManager.getPendingPlanPrice() ?: "$19"
+                        val selectedPlanPeriod = sessionManager.getPendingPlanPeriod() ?: "/mo"
+
                         ConfirmSubscriptionScreen(
                             onBack = { navController.popBackStack() },
                             onEditPlan = { navController.popBackStack() },
-                            onConfirmPay = { navController.navigate(Screen.CheckoutPayment.route) }
+                            onConfirmPay = {
+                                if (selectedPlanId.isNullOrBlank()) {
+                                    subscriptionViewModel.setError("Please select a plan before confirming.")
+                                } else {
+                                    subscriptionViewModel.subscribeToPlan(selectedPlanId) {
+                                        sessionManager.clearPendingPlan()
+                                        val homeUserName = sessionManager.getUserName().takeUnless { it.isNullOrBlank() } ?: "User"
+                                        val encodedName = Uri.encode(homeUserName)
+                                        navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
+                                            popUpTo(Screen.ExplorePlans.route) { inclusive = true }
+                                        }
+                                    }
+                                }
+                            },
+                            selectedPlanName = selectedPlanName,
+                            selectedPlanPrice = selectedPlanPrice,
+                            selectedPlanPeriod = selectedPlanPeriod,
+                            selectedPlanFeatures = selectedPlanFeatures(selectedPlanName),
+                            isSubmitting = subscriptionViewModel.isSubmitting,
+                            errorMessage = subscriptionViewModel.errorMessage
                         )
                     }
 
+
+                    composable(
+                        route = Screen.SubscriberHome.route
+                    ) {
+                        val fallbackName = sessionManager.getUserName().takeUnless { it.isNullOrBlank() } ?: "Guest"
+                        SubscriberHomeScreen(
+                            navController = navController,
+                            userName = fallbackName
+                        )
+                    }
 
                     composable(
                         route = "${Screen.SubscriberHome.route}/{userName}",
@@ -243,8 +401,10 @@ class MainActivity : ComponentActivity() {
                     }
                     // Inside your NavHost
                     composable(Screen.OrderHistory.route) {
+                        val historyUserName = sessionManager.getUserName().takeUnless { it.isNullOrBlank() } ?: "User"
                         OrderHistoryScreen(
                             navController = navController,
+                            userName = historyUserName,
                             onOrderClick = { orderId ->
                                 navController.navigate("${Screen.HistoryDetail.route}/$orderId")
                             }
@@ -301,6 +461,31 @@ class MainActivity : ComponentActivity() {
 }
 
 // --- UI Components ---
+private fun selectedPlanFeatures(planName: String): List<String> {
+    return when (planName.lowercase()) {
+        "starter" -> listOf(
+            "5 recurring orders",
+            "Basic analytics",
+            "Free shipping"
+        )
+
+        "pro" -> listOf(
+            "Unlimited recurring orders",
+            "Advanced analytics",
+            "Free shipping on all orders",
+            "Priority support"
+        )
+
+        "business" -> listOf(
+            "Everything in Pro",
+            "Multiple user seats",
+            "Dedicated account manager"
+        )
+
+        else -> listOf("Standard subscription access")
+    }
+}
+
 enum class SubscriberBottomNavItem(
     val title: String,
     val icon: ImageVector,
@@ -323,46 +508,79 @@ fun SubscriberBottomNav(
 ) {
     val activeColor = Color(0xFF1E88E5)
     val inactiveColor = Color(0xFF4B5563)
-    val bottomNavItemColors = NavigationBarItemDefaults.colors(
-        selectedIconColor = activeColor,
-        selectedTextColor = activeColor,
-        unselectedIconColor = inactiveColor,
-        unselectedTextColor = inactiveColor,
-        indicatorColor = Color.Transparent
-    )
 
     NavigationBar(
         modifier = modifier,
         containerColor = Color.White,
         tonalElevation = 0.dp,
     ) {
-        NavigationBarItem(
+        SubscriberBottomNavTab(
+            item = SubscriberBottomNavItem.Home,
             selected = selected == SubscriberBottomNavItem.Home,
             onClick = onHomeClick,
-            label = { Text("Home") },
-            icon = { Icon(SubscriberBottomNavItem.Home.icon, contentDescription = null) },
-            colors = bottomNavItemColors
+            activeColor = activeColor,
+            inactiveColor = inactiveColor
         )
-        NavigationBarItem(
+        SubscriberBottomNavTab(
+            item = SubscriberBottomNavItem.History,
             selected = selected == SubscriberBottomNavItem.History,
             onClick = onHistoryClick,
-            label = { Text("History") },
-            icon = { Icon(SubscriberBottomNavItem.History.icon, contentDescription = null) },
-            colors = bottomNavItemColors
+            activeColor = activeColor,
+            inactiveColor = inactiveColor
         )
-        NavigationBarItem(
+        SubscriberBottomNavTab(
+            item = SubscriberBottomNavItem.Package,
             selected = selected == SubscriberBottomNavItem.Package,
             onClick = onShopClick,
-            label = { Text("Package") },
-            icon = { Icon(SubscriberBottomNavItem.Package.icon, contentDescription = null) },
-            colors = bottomNavItemColors
+            activeColor = activeColor,
+            inactiveColor = inactiveColor
         )
-        NavigationBarItem(
+        SubscriberBottomNavTab(
+            item = SubscriberBottomNavItem.Profile,
             selected = selected == SubscriberBottomNavItem.Profile,
             onClick = onProfileClick,
-            label = { Text("Profile") },
-            icon = { Icon(SubscriberBottomNavItem.Profile.icon, contentDescription = null) },
-            colors = bottomNavItemColors
+            activeColor = activeColor,
+            inactiveColor = inactiveColor
+        )
+    }
+}
+
+@Composable
+private fun RowScope.SubscriberBottomNavTab(
+    item: SubscriberBottomNavItem,
+    selected: Boolean,
+    onClick: () -> Unit,
+    activeColor: Color,
+    inactiveColor: Color
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val contentColor = if (selected) activeColor else inactiveColor
+
+    Column(
+        modifier = Modifier
+            .weight(1f)
+            .height(80.dp)
+            .selectable(
+                selected = selected,
+                onClick = onClick,
+                role = Role.Tab,
+                interactionSource = interactionSource,
+                indication = null
+            )
+            .padding(vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = item.icon,
+            contentDescription = item.title,
+            tint = contentColor
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = item.title,
+            color = contentColor,
+            style = MaterialTheme.typography.labelSmall
         )
     }
 }

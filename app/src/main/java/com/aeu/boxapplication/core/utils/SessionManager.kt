@@ -42,12 +42,39 @@ class SessionManager private constructor(context: Context) {
 
     fun getAuthToken(): String? = prefs.getString("auth_token", null)
 
+    fun savePendingPlan(planId: String, planName: String, planPrice: String, planPeriod: String) {
+        prefs.edit()
+            .putString("pending_plan_id", planId)
+            .putString("pending_plan_name", planName)
+            .putString("pending_plan_price", planPrice)
+            .putString("pending_plan_period", planPeriod)
+            .apply()
+    }
+
+    fun getPendingPlanId(): String? = prefs.getString("pending_plan_id", null)
+    fun getPendingPlanName(): String? = prefs.getString("pending_plan_name", null)
+    fun getPendingPlanPrice(): String? = prefs.getString("pending_plan_price", null)
+    fun getPendingPlanPeriod(): String? = prefs.getString("pending_plan_period", null)
+
+    fun clearPendingPlan() {
+        prefs.edit()
+            .remove("pending_plan_id")
+            .remove("pending_plan_name")
+            .remove("pending_plan_price")
+            .remove("pending_plan_period")
+            .apply()
+    }
+
     // --- FIX: Logout should remove Name, Email, and Token ---
     fun clearSession() {
         prefs.edit()
             .remove("user_name")
             .remove("user_email")
             .remove("auth_token")
+            .remove("pending_plan_id")
+            .remove("pending_plan_name")
+            .remove("pending_plan_price")
+            .remove("pending_plan_period")
             .apply()
     }
 
