@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -41,31 +42,34 @@ fun ShopProductsScreen(navController: NavController) {
         topBar = { TopHeader() },
         bottomBar = { /* Implement Bottom Navigation here */ }
     ) { paddingValues ->
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.White)
                 .padding(paddingValues)
         ) {
+            val isCompactHeight = maxHeight < 780.dp
+            val sectionHorizontalPadding = if (isCompactHeight) 16.dp else 20.dp
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
             ) {
-                SearchBarSection()
-                CategoryChipsSection()
-                FeaturedBoxCard()
+                SearchBarSection(isCompact = isCompactHeight, horizontalPadding = sectionHorizontalPadding)
+                CategoryChipsSection(isCompact = isCompactHeight, horizontalPadding = sectionHorizontalPadding)
+                FeaturedBoxCard(isCompact = isCompactHeight, horizontalPadding = sectionHorizontalPadding)
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                        .padding(horizontal = sectionHorizontalPadding, vertical = if (isCompactHeight) 12.dp else 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = "Discover All Boxes",
-                        fontSize = 22.sp,
+                        fontSize = if (isCompactHeight) 20.sp else 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = ShopTitle
                     )
@@ -75,14 +79,15 @@ fun ShopProductsScreen(navController: NavController) {
                     }
                 }
 
-                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                Column(modifier = Modifier.padding(horizontal = sectionHorizontalPadding)) {
                     SubscriptionItem(
                         title = "Eco-Home Essentials",
                         desc = "Green living made simple with zero-waste home supplies.",
                         price = "$29.99",
                         rating = "4.9",
                         badge = "BEST VALUE",
-                        navController
+                        navController = navController,
+                        isCompact = isCompactHeight
                     )
                     SubscriptionItem(
                         title = "Gamer's Loot",
@@ -90,10 +95,11 @@ fun ShopProductsScreen(navController: NavController) {
                         price = "$45.00",
                         rating = "4.8",
                         badge = "POPULAR",
-                        navController
+                        navController = navController,
+                        isCompact = isCompactHeight
                     )
                 }
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(if (isCompactHeight) 20.dp else 28.dp))
             }
         }
     }
@@ -104,7 +110,7 @@ fun TopHeader() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(20.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -129,13 +135,16 @@ fun TopHeader() {
 }
 
 @Composable
-fun SearchBarSection() {
+fun SearchBarSection(
+    isCompact: Boolean = false,
+    horizontalPadding: Dp = 20.dp
+) {
     OutlinedTextField(
         value = "",
         onValueChange = {},
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = horizontalPadding),
         placeholder = { Text("Search boxes, brands, or categories...") },
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = ShopBody) },
         shape = RoundedCornerShape(25.dp),
@@ -150,14 +159,17 @@ fun SearchBarSection() {
 }
 
 @Composable
-fun CategoryChipsSection() {
+fun CategoryChipsSection(
+    isCompact: Boolean = false,
+    horizontalPadding: Dp = 20.dp
+) {
     val categories = listOf("All", "Beauty", "Tech", "Snacks", "Wellness")
     Row(
         modifier = Modifier
-            .padding(vertical = 16.dp)
+            .padding(vertical = if (isCompact) 12.dp else 16.dp)
             .horizontalScroll(rememberScrollState())
     ) {
-        Spacer(modifier = Modifier.width(20.dp))
+        Spacer(modifier = Modifier.width(horizontalPadding))
         categories.forEach { name ->
             val isSelected = name == "All"
             Surface(
@@ -168,9 +180,10 @@ fun CategoryChipsSection() {
             ) {
                 Text(
                     text = name,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp),
+                    modifier = Modifier.padding(horizontal = if (isCompact) 20.dp else 24.dp, vertical = if (isCompact) 8.dp else 10.dp),
                     color = if (isSelected) Color.White else ShopBody,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    fontSize = if (isCompact) 14.sp else 16.sp
                 )
             }
         }
@@ -178,12 +191,15 @@ fun CategoryChipsSection() {
 }
 
 @Composable
-fun FeaturedBoxCard() {
+fun FeaturedBoxCard(
+    isCompact: Boolean = false,
+    horizontalPadding: Dp = 20.dp
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(240.dp)
-            .padding(horizontal = 20.dp),
+            .height(if (isCompact) 210.dp else 240.dp)
+            .padding(horizontal = horizontalPadding),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         border = BorderStroke(1.dp, ShopStroke),
@@ -227,20 +243,20 @@ fun FeaturedBoxCard() {
                     Text(
                         "The Wellness Box",
                         color = Color.White,
-                        fontSize = 26.sp,
+                        fontSize = if (isCompact) 22.sp else 26.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
 
-            Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = if (isCompact) 12.dp else 16.dp)) {
                 Text(
                     "Curated for your peace of mind. Includes 6 organic self-care essentials.",
                     color = ShopBody,
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp
+                    fontSize = if (isCompact) 12.sp else 13.sp,
+                    lineHeight = if (isCompact) 16.sp else 18.sp
                 )
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(if (isCompact) 10.dp else 14.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -250,7 +266,7 @@ fun FeaturedBoxCard() {
                         Text(
                             text = "$34.99",
                             color = ShopTitle,
-                            fontSize = 26.sp,
+                            fontSize = if (isCompact) 22.sp else 26.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
@@ -262,11 +278,16 @@ fun FeaturedBoxCard() {
                     }
                     Button(
                         onClick = {},
-                        modifier = Modifier.height(44.dp),
+                        modifier = Modifier.height(if (isCompact) 40.dp else 44.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = ShopPrimary),
                         shape = RoundedCornerShape(14.dp)
                     ) {
-                        Text("Get Started", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            "Get Started",
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = if (isCompact) 14.sp else 16.sp
+                        )
                     }
                 }
             }
@@ -275,17 +296,30 @@ fun FeaturedBoxCard() {
 }
 
 @Composable
-fun SubscriptionItem(title: String, desc: String, price: String, rating: String, badge: String? = null, navController: NavController) {
+fun SubscriptionItem(
+    title: String,
+    desc: String,
+    price: String,
+    rating: String,
+    badge: String? = null,
+    navController: NavController,
+    isCompact: Boolean = false
+) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = if (isCompact) 6.dp else 8.dp),
         shape = RoundedCornerShape(20.dp),
         color = Color.White,
         border = BorderStroke(1.dp, ShopStroke)
     ) {
-        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(100.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFFF1F5F9))) {
+        Row(modifier = Modifier.padding(if (isCompact) 10.dp else 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(if (isCompact) 88.dp else 100.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFFF1F5F9))
+            ) {
                 // AsyncImage would go here
                 if (badge != null) {
                     Surface(
@@ -309,20 +343,20 @@ fun SubscriptionItem(title: String, desc: String, price: String, rating: String,
                     Text(
                         title,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
+                        fontSize = if (isCompact) 15.sp else 16.sp,
                         color = ShopTitle,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Star, contentDescription = null, tint = ShopPrimary, modifier = Modifier.size(14.dp))
-                        Text(rating, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ShopTitle)
+                        Text(rating, fontSize = if (isCompact) 11.sp else 12.sp, fontWeight = FontWeight.Bold, color = ShopTitle)
                     }
                 }
-                Text(desc, fontSize = 12.sp, color = ShopBody, maxLines = 2)
-                Spacer(modifier = Modifier.height(8.dp))
+                Text(desc, fontSize = if (isCompact) 11.sp else 12.sp, color = ShopBody, maxLines = 2)
+                Spacer(modifier = Modifier.height(if (isCompact) 6.dp else 8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("$price", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = ShopTitle)
+                    Text("$price", fontWeight = FontWeight.Bold, fontSize = if (isCompact) 15.sp else 16.sp, color = ShopTitle)
                     Text("/mo", fontSize = 10.sp, color = ShopBody)
                     Spacer(modifier = Modifier.weight(1f))
                     Surface(
@@ -335,8 +369,8 @@ fun SubscriptionItem(title: String, desc: String, price: String, rating: String,
                     ) {
                         Text(
                             "View Details",
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            fontSize = 12.sp,
+                            modifier = Modifier.padding(horizontal = if (isCompact) 10.dp else 12.dp, vertical = if (isCompact) 5.dp else 6.dp),
+                            fontSize = if (isCompact) 11.sp else 12.sp,
                             color = ShopPrimary,
                             fontWeight = FontWeight.Bold
                         )

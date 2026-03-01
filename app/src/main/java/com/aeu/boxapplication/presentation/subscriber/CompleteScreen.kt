@@ -41,17 +41,32 @@ fun CompletePayment(navController: NavController) {
     Scaffold(
         containerColor = Color.White
     ) { paddingValues ->
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.White)
                 .padding(paddingValues)
         ) {
+            val isCompactHeight = maxHeight < 760.dp
+            val horizontalPadding = if (isCompactHeight) 16.dp else 20.dp
+            val verticalPadding = if (isCompactHeight) 8.dp else 12.dp
+            val topGap = if (isCompactHeight) 4.dp else 8.dp
+            val iconOuterSize = if (isCompactHeight) 76.dp else 92.dp
+            val iconInnerSize = if (isCompactHeight) 44.dp else 54.dp
+            val iconGlyphSize = if (isCompactHeight) 24.dp else 28.dp
+            val titleFontSize = if (isCompactHeight) 34.sp else 42.sp
+            val titleTopGap = if (isCompactHeight) 14.dp else 20.dp
+            val bodyTopGap = if (isCompactHeight) 6.dp else 8.dp
+            val firstCardTopGap = if (isCompactHeight) 18.dp else 24.dp
+            val cardGap = if (isCompactHeight) 12.dp else 14.dp
+            val buttonTopGap = if (isCompactHeight) 16.dp else 22.dp
+            val bottomGap = if (isCompactHeight) 16.dp else 20.dp
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                    .padding(horizontal = horizontalPadding, vertical = verticalPadding),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Row(
@@ -75,17 +90,17 @@ fun CompletePayment(navController: NavController) {
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(topGap))
 
                 Box(
                     modifier = Modifier
-                        .size(92.dp)
+                        .size(iconOuterSize)
                         .background(ConfirmTint, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(54.dp)
+                            .size(iconInnerSize)
                             .background(ConfirmPrimary, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
@@ -93,51 +108,57 @@ fun CompletePayment(navController: NavController) {
                             imageVector = Icons.Default.Check,
                             contentDescription = null,
                             tint = Color.White,
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(iconGlyphSize)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(titleTopGap))
 
                 Text(
                     text = "You're in!",
-                    fontSize = 42.sp,
+                    fontSize = titleFontSize,
                     fontWeight = FontWeight.ExtraBold,
                     color = ConfirmTitle
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(bodyTopGap))
                 Text(
                     text = "Welcome to the Boxly Family. Your subscription is officially active and your first box is being prepared.",
                     textAlign = TextAlign.Center,
                     color = ConfirmBody,
-                    fontSize = 14.sp,
-                    lineHeight = 20.sp,
+                    fontSize = if (isCompactHeight) 13.sp else 14.sp,
+                    lineHeight = if (isCompactHeight) 18.sp else 20.sp,
                     modifier = Modifier.padding(horizontal = 8.dp)
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(firstCardTopGap))
 
-                OrderDetailsCard()
+                OrderDetailsCard(isCompact = isCompactHeight)
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(cardGap))
 
-                DeliveryProgressCard()
+                DeliveryProgressCard(isCompact = isCompactHeight)
 
-                Spacer(modifier = Modifier.height(22.dp))
+                Spacer(modifier = Modifier.height(buttonTopGap))
 
                 AppPrimaryButton(
                     text = "Go to Home",
                     onClick = goToHome
                 )
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(bottomGap))
             }
         }
     }
 }
 
 @Composable
-private fun OrderDetailsCard() {
+private fun OrderDetailsCard(isCompact: Boolean = false) {
+    val cardPadding = if (isCompact) 12.dp else 14.dp
+    val metricGap = if (isCompact) 10.dp else 12.dp
+    val metricDividerGap = if (isCompact) 10.dp else 12.dp
+    val iconSize = if (isCompact) 40.dp else 46.dp
+    val iconRadius = if (isCompact) 8.dp else 10.dp
+
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = Color.White,
@@ -145,38 +166,43 @@ private fun OrderDetailsCard() {
             .fillMaxWidth()
             .border(1.2.dp, ConfirmStroke, RoundedCornerShape(14.dp))
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(cardPadding)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(metricGap)
             ) {
                 DetailMetric(
                     label = "ORDER NUMBER",
-                    value = "#SB-992831"
+                    value = "#SB-992831",
+                    modifier = Modifier.weight(1f),
+                    isCompact = isCompact
                 )
                 DetailMetric(
                     label = "ESTIMATED DELIVERY",
                     value = "Oct 12, 2023",
-                    highlighted = true
+                    highlighted = true,
+                    modifier = Modifier.weight(1f),
+                    alignEnd = true,
+                    isCompact = isCompact
                 )
             }
 
-            Divider(
-                modifier = Modifier.padding(vertical = 12.dp),
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = metricDividerGap),
                 color = ConfirmStroke
             )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(46.dp)
-                        .background(ConfirmTint, RoundedCornerShape(10.dp)),
+                        .size(iconSize)
+                        .background(ConfirmTint, RoundedCornerShape(iconRadius)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "BOX",
                         color = ConfirmPrimary,
-                        fontSize = 11.sp,
+                        fontSize = if (isCompact) 10.sp else 11.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -184,13 +210,13 @@ private fun OrderDetailsCard() {
                 Column {
                     Text(
                         text = "The Wellness Box",
-                        fontSize = 16.sp,
+                        fontSize = if (isCompact) 15.sp else 16.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = ConfirmTitle
                     )
                     Text(
                         text = "Premium Monthly Member",
-                        fontSize = 12.sp,
+                        fontSize = if (isCompact) 11.sp else 12.sp,
                         color = ConfirmPrimary
                     )
                 }
@@ -200,7 +226,12 @@ private fun OrderDetailsCard() {
 }
 
 @Composable
-private fun DeliveryProgressCard() {
+private fun DeliveryProgressCard(isCompact: Boolean = false) {
+    val cardPadding = if (isCompact) 12.dp else 14.dp
+    val labelSize = if (isCompact) 9.sp else 10.sp
+    val progressTopGap = if (isCompact) 6.dp else 8.dp
+    val progressHeight = if (isCompact) 6.dp else 8.dp
+
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = Color.White,
@@ -208,21 +239,21 @@ private fun DeliveryProgressCard() {
             .fillMaxWidth()
             .border(1.2.dp, ConfirmStroke, RoundedCornerShape(14.dp))
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(cardPadding)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("ORDERED", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ConfirmPrimary)
-                Text("PREPARING", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ConfirmBody.copy(alpha = 0.45f))
-                Text("SHIPPED", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ConfirmBody.copy(alpha = 0.45f))
+                Text("ORDERED", fontSize = labelSize, fontWeight = FontWeight.Bold, color = ConfirmPrimary)
+                Text("PREPARING", fontSize = labelSize, fontWeight = FontWeight.Bold, color = ConfirmBody.copy(alpha = 0.45f))
+                Text("SHIPPED", fontSize = labelSize, fontWeight = FontWeight.Bold, color = ConfirmBody.copy(alpha = 0.45f))
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(progressTopGap))
             LinearProgressIndicator(
-                progress = 0.33f,
+                progress = { 0.33f },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(8.dp),
+                    .height(progressHeight),
                 color = ConfirmPrimary,
                 trackColor = ConfirmStroke
             )
@@ -231,17 +262,27 @@ private fun DeliveryProgressCard() {
 }
 
 @Composable
-private fun DetailMetric(label: String, value: String, highlighted: Boolean = false) {
-    Column {
+private fun DetailMetric(
+    label: String,
+    value: String,
+    highlighted: Boolean = false,
+    modifier: Modifier = Modifier,
+    alignEnd: Boolean = false,
+    isCompact: Boolean = false
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start
+    ) {
         Text(
             text = label,
-            fontSize = 10.sp,
+            fontSize = if (isCompact) 9.sp else 10.sp,
             color = ConfirmBody,
             fontWeight = FontWeight.Bold
         )
         Text(
             text = value,
-            fontSize = 14.sp,
+            fontSize = if (isCompact) 13.sp else 14.sp,
             fontWeight = FontWeight.Bold,
             color = if (highlighted) ConfirmPrimary else ConfirmTitle
         )

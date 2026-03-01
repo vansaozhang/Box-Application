@@ -17,8 +17,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 
@@ -27,6 +29,8 @@ private val ProfileTitle = Color(0xFF2F3A4A)
 private val ProfileBody = Color(0xFF7B8794)
 private val ProfileStroke = Color(0xFFE3E8EF)
 private val ProfileTint = Color(0xFFEAF3FF)
+private val ProfileDanger = Color(0xFFE11D48)
+private val ProfileDangerTint = Color(0xFFFFF1F3)
 
 @Composable
 fun ProfileScreen(
@@ -147,28 +151,101 @@ fun ProfileScreen(
 
     // --- Logout Confirmation Dialog ---
     if (showLogoutDialog) {
-        AlertDialog(
-            onDismissRequest = { showLogoutDialog = false },
-            title = { Text(text = "Logout Confirmation") },
-            text = { Text("Are you sure you want to log out? You will need to sign in again to access your account.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showLogoutDialog = false
-                        onLogoutClick()
-                    }
-                ) {
-                    Text("Logout", color = Color.Red, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("Cancel", color = Color.Gray)
-                }
-            },
-            containerColor = Color.White,
-            shape = RoundedCornerShape(16.dp)
+        LogoutConfirmationDialog(
+            onDismiss = { showLogoutDialog = false },
+            onConfirmLogout = {
+                showLogoutDialog = false
+                onLogoutClick()
+            }
         )
+    }
+}
+
+@Composable
+private fun LogoutConfirmationDialog(
+    onDismiss: () -> Unit,
+    onConfirmLogout: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = Color.White,
+            tonalElevation = 0.dp,
+            shadowElevation = 8.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .background(ProfileDangerTint, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.ExitToApp,
+                        contentDescription = null,
+                        tint = ProfileDanger,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Text(
+                    text = "Log out of Boxly?",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ProfileTitle
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "You will need to sign in again to access your account and subscriptions.",
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                    color = ProfileBody,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, ProfileStroke),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color.White,
+                            contentColor = ProfileBody
+                        )
+                    ) {
+                        Text("Cancel", fontWeight = FontWeight.SemiBold)
+                    }
+
+                    Button(
+                        onClick = onConfirmLogout,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = ProfileDanger,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("Log Out", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
     }
 }
 
