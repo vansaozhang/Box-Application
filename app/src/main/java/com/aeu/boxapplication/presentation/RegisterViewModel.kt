@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aeu.boxapplication.core.utils.ValidationUtils
 import com.aeu.boxapplication.domain.repository.AuthRepository
 import kotlinx.coroutines.launch
 
@@ -14,7 +15,8 @@ class RegisterViewModel(private val repository: AuthRepository) : ViewModel() {
         val isLoading: Boolean = false,
         val isSuccess: Boolean = false,
         val userName: String = "",
-        val userEmail: String = "",
+        val userPhone: String = "",
+        val userEmail: String? = null,
         val accessToken: String = "",
         val error: String? = null
     )
@@ -30,9 +32,15 @@ class RegisterViewModel(private val repository: AuthRepository) : ViewModel() {
         nameState.value = newName
     }
 
-    fun register(name: String, email: String, password: String) {
-        if (name.isBlank() || email.isBlank() || password.isBlank()) {
+    fun register(name: String, phoneNumber: String, password: String) {
+        if (name.isBlank() || phoneNumber.isBlank() || password.isBlank()) {
             state = state.copy(error = "All fields are required")
+            return
+        }
+
+        val apiPhoneNumber = ValidationUtils.toCambodianPhoneNumber(phoneNumber)
+        if (apiPhoneNumber == null) {
+            state = state.copy(error = "Enter a valid Cambodia phone number")
             return
         }
 
@@ -41,7 +49,7 @@ class RegisterViewModel(private val repository: AuthRepository) : ViewModel() {
 
             val result = repository.registerUser(
                 username = name.trim(),
-                email = email.trim(),
+                phoneNumber = apiPhoneNumber,
                 password = password.trim()
             )
 
@@ -50,7 +58,8 @@ class RegisterViewModel(private val repository: AuthRepository) : ViewModel() {
                     isLoading = false,
                     isSuccess = true,
                     userName = authResponse.user?.name ?: "",
-                    userEmail = authResponse.user?.email ?: "",
+                    userPhone = authResponse.user?.phoneNumber ?: apiPhoneNumber,
+                    userEmail = authResponse.user?.email,
                     accessToken = authResponse.accessToken ?: ""
                 )
             }.onFailure { exception ->

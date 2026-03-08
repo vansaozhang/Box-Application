@@ -17,7 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.text.input.*
 import androidx.navigation.NavController
-import androidx.navigation.NavHostController
 import com.aeu.boxapplication.core.utils.ValidationUtils
 import com.aeu.boxapplication.presentation.navigation.Screen
 import com.aeu.boxapplication.ui.components.AppGlobalLoadingEffect
@@ -28,28 +27,26 @@ import com.aeu.boxapplication.ui.components.AppTextField
 fun RegisterScreen(
     navController: NavController,
     viewModel: RegisterViewModel,
-    // FIX: Change callback to accept the name string
-    onRegisterSuccess: (String, String, String) -> Unit
+    onRegisterSuccess: (String, String, String?, String) -> Unit
 ) {
     val state = viewModel.state
     val (username, setUsername) = remember { mutableStateOf("") }
-    val (email, setEmail) = remember { mutableStateOf("") }
+    val (phoneNumber, setPhoneNumber) = remember { mutableStateOf("") }
     val (password, setPassword) = remember { mutableStateOf("") }
     val (showErrors, setShowErrors) = remember { mutableStateOf(false) }
 
-    // Validation
     val isUsernameValid = username.isNotBlank()
-    val isEmailValid = ValidationUtils.isValidEmail(email)
+    val isPhoneValid = ValidationUtils.isValidPhone(phoneNumber)
     val isPasswordValid = ValidationUtils.isValidPassword(password)
-    val isFormValid = isUsernameValid && isEmailValid && isPasswordValid
+    val isFormValid = isUsernameValid && isPhoneValid && isPasswordValid
 
     AppGlobalLoadingEffect(isVisible = state.isLoading)
 
-    // FIX: Pass the username string back when navigation happens
     LaunchedEffect(state.isSuccess) {
         if (state.isSuccess) {
             onRegisterSuccess(
                 state.userName,
+                state.userPhone,
                 state.userEmail,
                 state.accessToken
             )
@@ -100,13 +97,15 @@ fun RegisterScreen(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 AppTextField(
-                    value = email,
-                    onValueChange = setEmail,
-                    label = "Email Address",
-                    leadingIcon = Icons.Outlined.Email,
-                    keyboardType = KeyboardType.Email,
-                    isError = showErrors && !isEmailValid,
-                    errorMessage = if (showErrors && !isEmailValid) "Enter a valid email" else null
+                    value = phoneNumber,
+                    onValueChange = { setPhoneNumber(ValidationUtils.normalizeCambodianPhoneInput(it)) },
+                    label = "Phone Number",
+                    leadingIcon = Icons.Outlined.Call,
+                    prefixText = "${ValidationUtils.CAMBODIA_PHONE_PREFIX} ",
+                    placeholder = "12 345 678",
+                    keyboardType = KeyboardType.Phone,
+                    isError = showErrors && !isPhoneValid,
+                    errorMessage = if (showErrors && !isPhoneValid) "Enter a valid Cambodia phone number" else null
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -136,7 +135,7 @@ fun RegisterScreen(
                     text = if (state.isLoading) "Registering..." else "Register",
                     onClick = {
                         if (isFormValid) {
-                            viewModel.register(username, email, password)
+                            viewModel.register(username, phoneNumber, password)
                         } else {
                             setShowErrors(true)
                         }

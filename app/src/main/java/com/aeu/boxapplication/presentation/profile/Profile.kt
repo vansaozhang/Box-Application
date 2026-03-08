@@ -1,96 +1,132 @@
 package com.aeu.boxapplication.presentation.subscriber
 
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.ExitToApp
+import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.navigation.NavController
-import coil.compose.AsyncImage
+import com.aeu.boxapplication.ui.components.AppGlobalLoadingEffect
+import com.aeu.boxapplication.ui.components.AppStatusBanner
+import com.aeu.boxapplication.ui.components.AppStatusTone
 
 private val ProfilePrimary = Color(0xFF1E88E5)
 private val ProfileTitle = Color(0xFF2F3A4A)
 private val ProfileBody = Color(0xFF7B8794)
 private val ProfileStroke = Color(0xFFE3E8EF)
-private val ProfileTint = Color(0xFFEAF3FF)
 private val ProfileDanger = Color(0xFFE11D48)
 private val ProfileDangerTint = Color(0xFFFFF1F3)
 
 @Composable
 fun ProfileScreen(
-    navController: NavController,
-    userName: String,      // Real name from API
-    userEmail: String,     // Real email from API
+    viewModel: SubscriberProfileViewModel,
+    activeSubscriptionCount: Int,
+    shipmentCount: Int,
     onShippingAddressClick: () -> Unit,
-    onPaymentMethodsClick: () -> Unit,
+    onSubscriptionDetailsClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
-    // State for Logout Confirmation
+    val uiState = viewModel.uiState
+    val profile = uiState.profile
+    val displayName = profile?.name?.takeIf { !it.isNullOrBlank() }
+        ?: "Subscriber"
+    val displayEmail = profile?.email?.takeIf { it.isNotBlank() }
+    val displayPhone = profile?.phoneNumber?.takeIf { it.isNotBlank() }
+    val primaryContact = displayPhone ?: displayEmail ?: "No contact information on file"
+    val initials = displayName
+        .split(" ")
+        .filter { it.isNotBlank() }
+        .take(2)
+        .joinToString("") { it.take(1).uppercase() }
+        .ifBlank { "BX" }
     var showLogoutDialog by remember { mutableStateOf(false) }
 
-    Scaffold(
+    LaunchedEffect(Unit) {
+        viewModel.loadProfile()
+    }
+
+    AppGlobalLoadingEffect(isVisible = uiState.isLoading && profile == null)
+
+    androidx.compose.material3.Scaffold(
         containerColor = Color.White
     ) { paddingValues ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
                 .fillMaxSize()
                 .background(Color.White)
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Header
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 28.dp, bottom = 20.dp),
-                contentAlignment = Alignment.Center
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box {
-                        AsyncImage(
-                            model = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
-                            contentDescription = "Profile Picture",
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(CircleShape)
-                                .border(2.dp, ProfilePrimary, CircleShape),
-                            contentScale = ContentScale.Crop
-                        )
-                        Surface(
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .size(28.dp),
-                            shape = CircleShape,
-                            color = ProfilePrimary,
-                            shadowElevation = 2.dp
-                        ) {
-                            Icon(
-                                Icons.Outlined.Edit,
-                                contentDescription = "Edit Profile",
-                                tint = Color.White,
-                                modifier = Modifier.padding(6.dp)
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Text(text = userName, fontSize = 30.sp, fontWeight = FontWeight.Bold, color = ProfileTitle)
-                    Text(text = userEmail, color = ProfileBody, fontSize = 14.sp)
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .background(ProfilePrimary.copy(alpha = 0.12f), CircleShape)
+                        .border(2.dp, ProfilePrimary, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = initials,
+                        color = ProfilePrimary,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 28.sp
+                    )
                 }
+                Spacer(modifier = Modifier.height(14.dp))
+                Text(text = displayName, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = ProfileTitle)
+                Text(text = primaryContact, color = ProfileBody, fontSize = 14.sp)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = viewModel.memberSinceLabel(), color = ProfileBody, fontSize = 12.sp)
+            }
+
+            uiState.errorMessage?.let { message ->
+                AppStatusBanner(
+                    title = "Profile unavailable",
+                    message = message,
+                    tone = AppStatusTone.Error,
+                    onDismiss = viewModel::dismissError,
+                    modifier = Modifier.padding(horizontal = 20.dp)
+                )
             }
 
             Row(
@@ -99,14 +135,34 @@ fun ProfileScreen(
                     .padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                StatCard("Active", "3", modifier = Modifier.weight(1f))
-                StatCard("Points", "1.2k", modifier = Modifier.weight(1f))
-                StatCard("Boxes", "12", modifier = Modifier.weight(1f))
+                StatCard("Active", activeSubscriptionCount.toString(), modifier = Modifier.weight(1f))
+                StatCard("Addresses", uiState.addresses.size.toString(), modifier = Modifier.weight(1f))
+                StatCard("Shipments", shipmentCount.toString(), modifier = Modifier.weight(1f))
             }
 
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp)) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFFF8FAFC),
+                    border = BorderStroke(1.dp, ProfileStroke)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Account Overview", fontWeight = FontWeight.Bold, color = ProfileTitle, fontSize = 16.sp)
+                        Spacer(modifier = Modifier.height(10.dp))
+                        ProfileValueRow(label = "Phone", value = displayPhone ?: "No phone number on file")
+                        displayEmail?.let { email ->
+                            ProfileValueRow(label = "Email", value = email)
+                        }
+                        ProfileValueRow(label = "Role", value = profile?.role ?: "Subscriber")
+                        ProfileValueRow(label = "Status", value = profile?.status ?: "Active")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
                 Text(
-                    text = "Account Settings",
+                    text = "Manage Account",
                     fontWeight = FontWeight.SemiBold,
                     color = ProfileBody,
                     fontSize = 13.sp
@@ -116,12 +172,20 @@ fun ProfileScreen(
                 ProfileMenuItem(
                     icon = Icons.Outlined.LocationOn,
                     title = "Shipping Addresses",
+                    subtitle = if (uiState.addresses.isEmpty()) "No saved addresses yet" else "${uiState.addresses.size} saved address(es)",
                     onClick = onShippingAddressClick
                 )
                 ProfileMenuItem(
-                    icon = Icons.Outlined.Payment,
-                    title = "Payment Methods",
-                    onClick = onPaymentMethodsClick
+                    icon = Icons.Outlined.Inventory2,
+                    title = "Subscription Details",
+                    subtitle = if (activeSubscriptionCount > 0) "Manage your active plan" else "Explore plans to get started",
+                    onClick = onSubscriptionDetailsClick
+                )
+                ProfileMenuItem(
+                    icon = Icons.Outlined.Person,
+                    title = "Account Identity",
+                    subtitle = primaryContact,
+                    onClick = {}
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -139,7 +203,7 @@ fun ProfileScreen(
                         contentDescription = null,
                         tint = Color(0xFFEF4444)
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.size(10.dp))
                     Text("Log Out", color = Color(0xFFEF4444), fontWeight = FontWeight.SemiBold)
                 }
                 Spacer(modifier = Modifier.height(20.dp))
@@ -147,7 +211,6 @@ fun ProfileScreen(
         }
     }
 
-    // --- Logout Confirmation Dialog ---
     if (showLogoutDialog) {
         LogoutConfirmationDialog(
             onDismiss = { showLogoutDialog = false },
@@ -168,7 +231,6 @@ private fun LogoutConfirmationDialog(
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = Color.White,
-            tonalElevation = 0.dp,
             shadowElevation = 8.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -213,7 +275,7 @@ private fun LogoutConfirmationDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    OutlinedButton(
+                    androidx.compose.material3.OutlinedButton(
                         onClick = onDismiss,
                         modifier = Modifier
                             .weight(1f)
@@ -259,42 +321,63 @@ private fun StatCard(label: String, value: String, modifier: Modifier) {
             modifier = Modifier.padding(vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = value, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = ProfilePrimary)
-            Text(text = label, fontSize = 12.sp, color = ProfileBody)
+            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = ProfileTitle)
+            Text(label, fontSize = 12.sp, color = ProfileBody)
         }
     }
 }
 
 @Composable
-private fun ProfileMenuItem(icon: ImageVector, title: String, onClick: () -> Unit) {
+private fun ProfileMenuItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
     Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, ProfileStroke),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 8.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
-        color = Color.White,
-        border = BorderStroke(1.dp, ProfileStroke)
+            .padding(bottom = 10.dp)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .background(ProfileTint, RoundedCornerShape(12.dp)),
+                    .size(42.dp)
+                    .background(ProfilePrimary.copy(alpha = 0.1f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = ProfilePrimary, modifier = Modifier.size(20.dp))
+                Icon(icon, contentDescription = null, tint = ProfilePrimary)
             }
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(text = title, modifier = Modifier.weight(1f), fontWeight = FontWeight.Medium, color = ProfileTitle)
-            Icon(
-                Icons.Outlined.KeyboardArrowRight,
-                contentDescription = null,
-                tint = ProfileBody.copy(alpha = 0.65f)
-            )
+            Column(
+                modifier = Modifier
+                    .padding(start = 12.dp)
+                    .weight(1f)
+            ) {
+                Text(title, fontWeight = FontWeight.Bold, color = ProfileTitle, fontSize = 15.sp)
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(subtitle, color = ProfileBody, fontSize = 12.sp)
+            }
+            Text("View", color = ProfilePrimary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
         }
+    }
+}
+
+@Composable
+private fun ProfileValueRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, color = ProfileBody, fontSize = 13.sp)
+        Text(value, color = ProfileTitle, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
     }
 }

@@ -1,6 +1,8 @@
 package com.aeu.boxapplication.core.utils
 
 object ValidationUtils {
+
+    const val CAMBODIA_PHONE_PREFIX = "+855"
     
     fun isValidEmail(email: String): Boolean {
         if (email.isBlank()) return false
@@ -19,9 +21,27 @@ object ValidationUtils {
     }
 
     fun isValidPhone(phone: String): Boolean {
-        if (phone.isBlank()) return false
-        val cleanPhone = phone.replace(Regex("[^0-9+]"), "")
-        return cleanPhone.matches(Regex("^[+]?[0-9]{10,13}$"))
+        return toCambodianPhoneNumber(phone) != null
+    }
+
+    fun normalizeCambodianPhoneInput(phone: String): String {
+        val digits = phone.filter { it.isDigit() }
+        val localDigits = when {
+            digits.startsWith("855") -> digits.removePrefix("855")
+            digits.startsWith("0") -> digits.drop(1)
+            else -> digits
+        }
+
+        return localDigits.take(9)
+    }
+
+    fun toCambodianPhoneNumber(phone: String): String? {
+        val localDigits = normalizeCambodianPhoneInput(phone)
+        if (localDigits.length !in 8..9) {
+            return null
+        }
+
+        return "$CAMBODIA_PHONE_PREFIX$localDigits"
     }
 
     fun isValidZipCode(zipCode: String): Boolean {
@@ -87,14 +107,14 @@ object ValidationUtils {
     )
 
     fun validateRegistration(
-        email: String,
+        phoneNumber: String,
         password: String,
         confirmPassword: String,
         name: String
     ): ValidationResult {
         return when {
             name.isBlank() -> ValidationResult(false, "Name is required")
-            !isValidEmail(email) -> ValidationResult(false, "Invalid email address")
+            !isValidPhone(phoneNumber) -> ValidationResult(false, "Invalid phone number")
             !isValidPassword(password) -> ValidationResult(
                 false,
                 "Password must be at least 8 characters with uppercase, lowercase, and number"
@@ -104,9 +124,9 @@ object ValidationUtils {
         }
     }
 
-    fun validateLogin(email: String, password: String): ValidationResult {
+    fun validateLogin(identifier: String, password: String): ValidationResult {
         return when {
-            !isValidEmail(email) -> ValidationResult(false, "Invalid email address")
+            !isValidPhone(identifier) -> ValidationResult(false, "Invalid phone number")
             password.isBlank() -> ValidationResult(false, "Password is required")
             else -> ValidationResult(true)
         }

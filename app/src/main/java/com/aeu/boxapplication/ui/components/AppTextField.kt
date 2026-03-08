@@ -35,6 +35,7 @@ fun AppTextField(
     onValueChange: (String) -> Unit,
     label: String,
     leadingIcon: ImageVector? = null,
+    prefixText: String? = null,
     placeholder: String? = null,
     isPassword: Boolean = false,
     keyboardType: KeyboardType = KeyboardType.Text,
@@ -42,7 +43,10 @@ fun AppTextField(
     keyboardOptions: KeyboardOptions? = null,
     modifier: Modifier = Modifier,
     isError: Boolean = false,
-    errorMessage: String? = null
+    errorMessage: String? = null,
+    singleLine: Boolean = true,
+    minLines: Int = 1,
+    maxLines: Int = 1
 ) {
     val shape = RoundedCornerShape(16.dp)
     OutlinedTextField(
@@ -51,7 +55,9 @@ fun AppTextField(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 64.dp),
-        singleLine = true,
+        singleLine = singleLine,
+        minLines = minLines,
+        maxLines = maxLines,
         label = {
             Text(
                 text = label,
@@ -74,6 +80,16 @@ fun AppTextField(
                     text = placeholder,
                     fontSize = 14.sp,
                     color = Color(0xFF98A2B3)
+                )
+            }
+        },
+        prefix = {
+            if (!prefixText.isNullOrBlank()) {
+                Text(
+                    text = prefixText,
+                    fontSize = 15.sp,
+                    color = Color(0xFF2F3A4A),
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         },

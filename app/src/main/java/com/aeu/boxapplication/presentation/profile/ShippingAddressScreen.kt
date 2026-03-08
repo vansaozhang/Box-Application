@@ -1,17 +1,37 @@
 package com.aeu.boxapplication.presentation.profile
 
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,6 +39,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.aeu.boxapplication.presentation.navigation.Screen
+import com.aeu.boxapplication.presentation.subscriber.SubscriberProfileViewModel
+import com.aeu.boxapplication.ui.components.AppGlobalLoadingEffect
+import com.aeu.boxapplication.ui.components.AppPrimaryButton
+import com.aeu.boxapplication.ui.components.AppStatusBanner
+import com.aeu.boxapplication.ui.components.AppStatusTone
 
 private val AddressPrimary = Color(0xFF1E88E5)
 private val AddressTitle = Color(0xFF2F3A4A)
@@ -26,38 +52,19 @@ private val AddressBody = Color(0xFF7B8794)
 private val AddressStroke = Color(0xFFE3E8EF)
 private val AddressTint = Color(0xFFEAF3FF)
 
-private data class ShippingAddressUi(
-    val id: String,
-    val label: String,
-    val fullName: String,
-    val address: String,
-    val phoneNumber: String,
-    val isDefault: Boolean
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ShippingAddressScreen(navController: NavController) {
-    val addresses = remember {
-        listOf(
-            ShippingAddressUi(
-                id = "home",
-                label = "Home",
-                fullName = "Sarah Jenkins",
-                address = "123 Sunshine Boulevard, Apt 4B\nLos Angeles, CA 90001",
-                phoneNumber = "+1 234 567 890",
-                isDefault = true
-            ),
-            ShippingAddressUi(
-                id = "office",
-                label = "Office",
-                fullName = "Sarah Jenkins",
-                address = "456 Corporate Way, Level 12\nSanta Monica, CA 90401",
-                phoneNumber = "+1 098 765 432",
-                isDefault = false
-            )
-        )
+fun ShippingAddressScreen(
+    navController: NavController,
+    viewModel: SubscriberProfileViewModel
+) {
+    val uiState = viewModel.uiState
+
+    LaunchedEffect(Unit) {
+        viewModel.loadProfile()
     }
+
+    AppGlobalLoadingEffect(isVisible = uiState.isLoading && uiState.addresses.isEmpty())
 
     Scaffold(
         containerColor = Color.White,
@@ -65,7 +72,7 @@ fun ShippingAddressScreen(navController: NavController) {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "Shipping Address",
+                        text = "Shipping Addresses",
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = AddressTitle
@@ -81,89 +88,107 @@ fun ShippingAddressScreen(navController: NavController) {
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* Handle Add New Address */ }) {
+                    IconButton(onClick = { navController.navigate(Screen.AddShipAddress.route) }) {
                         Icon(
-                            imageVector = Icons.Outlined.Add,
-                            contentDescription = "Add",
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = "Add address",
+                            tint = AddressPrimary
+                        )
+                    }
+                    IconButton(onClick = { viewModel.loadProfile(forceRefresh = true) }) {
+                        Icon(
+                            imageVector = Icons.Outlined.Refresh,
+                            contentDescription = "Refresh",
                             tint = AddressPrimary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
             )
-        },
-        bottomBar = {
-            Surface(
-                color = Color.White,
-                shadowElevation = 8.dp
-            ) {
-                Button(
-                    onClick = { /* Add Address */ },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 14.dp)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AddressPrimary,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Add,
-                        contentDescription = null
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Add New Address", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                }
-            }
         }
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 8.dp),
+                .padding(paddingValues)
+                .background(Color.White),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
-                Text(
-                    text = "Saved Addresses",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AddressBody
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = "Saved Addresses",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AddressBody
+                    )
+                    Text(
+                        text = "You can keep multiple addresses here. The newest saved address is treated as your default shipping address.",
+                        fontSize = 12.sp,
+                        color = AddressBody
+                    )
+                }
             }
-            items(addresses, key = { it.id }) { address ->
-                AddressCard(
-                    label = address.label,
-                    fullName = address.fullName,
-                    address = address.address,
-                    phoneNumber = address.phoneNumber,
-                    isDefault = address.isDefault,
-                    onEditClick = { /* Navigate to Edit */ }
-                )
+
+            if (uiState.isSavingAddress) {
+                item {
+                    AppStatusBanner(
+                        title = "Saving address",
+                        message = "Your address is being synced to your account.",
+                        tone = AppStatusTone.Info
+                    )
+                }
+            }
+
+            uiState.errorMessage?.let { message ->
+                item {
+                    AppStatusBanner(
+                        title = "Addresses unavailable",
+                        message = message,
+                        tone = AppStatusTone.Error,
+                        onDismiss = viewModel::dismissError
+                    )
+                }
+            }
+
+            if (uiState.addresses.isEmpty() && !uiState.isLoading && uiState.errorMessage == null) {
+                item {
+                    EmptyAddressCard(
+                        onAddAddressClick = {
+                            navController.navigate(Screen.AddShipAddress.route)
+                        }
+                    )
+                }
+            } else {
+                items(uiState.addresses, key = { it.id }) { address ->
+                    AddressCard(
+                        label = address.label,
+                        address = address.address,
+                        phoneNumber = address.phone,
+                        isDefault = address.isPrimary
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun AddressCard(
+private fun AddressCard(
     label: String,
-    fullName: String,
     address: String,
-    phoneNumber: String,
-    isDefault: Boolean,
-    onEditClick: () -> Unit
+    phoneNumber: String?,
+    isDefault: Boolean
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         color = Color.White,
-        border = BorderStroke(if (isDefault) 1.5.dp else 1.dp, if (isDefault) AddressPrimary else AddressStroke),
-        shadowElevation = if (isDefault) 2.dp else 1.dp
+        border = BorderStroke(
+            if (isDefault) 1.5.dp else 1.dp,
+            if (isDefault) AddressPrimary else AddressStroke
+        )
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
@@ -179,13 +204,13 @@ fun AddressCard(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = if (label == "Home") Icons.Outlined.Home else Icons.Outlined.LocationOn,
+                            imageVector = Icons.Outlined.LocationOn,
                             contentDescription = null,
                             modifier = Modifier.size(16.dp),
                             tint = AddressPrimary
                         )
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.size(12.dp))
                     Text(text = label, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = AddressTitle)
                 }
 
@@ -195,7 +220,7 @@ fun AddressCard(
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            "DEFAULT",
+                            "RECENT",
                             color = AddressPrimary,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
@@ -207,32 +232,60 @@ fun AddressCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Text(text = fullName, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = AddressTitle)
             Text(
                 text = address,
                 color = AddressBody,
                 fontSize = 13.sp,
-                lineHeight = 19.sp,
-                modifier = Modifier.padding(vertical = 4.dp)
-            )
-            Text(text = phoneNumber, color = AddressBody, fontSize = 13.sp)
-
-            Divider(
-                modifier = Modifier.padding(vertical = 12.dp),
-                color = AddressStroke
+                lineHeight = 19.sp
             )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(onClick = onEditClick) {
-                    Text("Edit", color = AddressPrimary, fontWeight = FontWeight.SemiBold)
-                }
-                TextButton(onClick = { /* Delete logic */ }) {
-                    Text("Delete", color = AddressBody.copy(alpha = 0.55f))
-                }
+            phoneNumber?.takeIf { it.isNotBlank() }?.let { phone ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = phone, color = AddressBody, fontSize = 13.sp)
             }
+        }
+    }
+}
+
+@Composable
+private fun EmptyAddressCard(
+    onAddAddressClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, AddressStroke)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(AddressTint, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.LocationOn,
+                    contentDescription = null,
+                    tint = AddressPrimary
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text("No addresses saved", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = AddressTitle)
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                "Add your first shipping address so it can be used for checkout and deliveries.",
+                fontSize = 13.sp,
+                color = AddressBody
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            AppPrimaryButton(
+                text = "Add Address",
+                onClick = onAddAddressClick
+            )
         }
     }
 }

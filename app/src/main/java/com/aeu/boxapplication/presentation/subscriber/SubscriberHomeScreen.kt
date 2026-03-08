@@ -78,6 +78,7 @@ fun SubscriberHomeScreen(
     val uiState = viewModel.uiState
     val dashboard = uiState.dashboard
     val activeSubscriptions = dashboard?.activeSubscriptions.orEmpty()
+    val activeSubscription = activeSubscriptions.firstOrNull()
 
     LaunchedEffect(Unit) {
         viewModel.loadDashboard()
@@ -124,7 +125,7 @@ fun SubscriberHomeScreen(
             BillingCard(
                 billing = dashboard?.billing,
                 onViewDetails = {
-                    if (activeSubscriptions.isNotEmpty()) {
+                    if (activeSubscription != null) {
                         navController.navigate(Screen.SubscribDetail.route)
                     } else {
                         navController.navigate(Screen.ExplorePlans.route)
@@ -146,10 +147,10 @@ fun SubscriberHomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                SectionTitle("Active Subscriptions")
+                SectionTitle("Your Subscription")
                 TextButton(
                     onClick = {
-                        if (activeSubscriptions.isNotEmpty()) {
+                        if (activeSubscription != null) {
                             navController.navigate(Screen.SubscribDetail.route)
                         } else {
                             navController.navigate(Screen.ExplorePlans.route)
@@ -157,7 +158,7 @@ fun SubscriberHomeScreen(
                     }
                 ) {
                     Text(
-                        text = if (activeSubscriptions.isNotEmpty()) "View All" else "Explore",
+                        text = if (activeSubscription != null) "Manage" else "Explore",
                         color = HomePrimary,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold
@@ -165,14 +166,12 @@ fun SubscriberHomeScreen(
                 }
             }
 
-            if (activeSubscriptions.isEmpty()) {
+            if (activeSubscription == null) {
                 EmptySubscriptionsCard(
                     onExplore = { navController.navigate(Screen.ExplorePlans.route) }
                 )
             } else {
-                activeSubscriptions.forEach { subscription ->
-                    SubscriptionListItem(subscription = subscription)
-                }
+                SubscriptionListItem(subscription = activeSubscription)
             }
 
             Spacer(modifier = Modifier.height(16.dp))

@@ -1,190 +1,342 @@
-    package com.aeu.boxapplication.presentation.subscriber
+package com.aeu.boxapplication.presentation.subscriber
 
-    import androidx.compose.foundation.background
-    import androidx.compose.foundation.border
-    import androidx.compose.foundation.clickable
-    import androidx.compose.foundation.layout.*
-    import androidx.compose.foundation.rememberScrollState
-    import androidx.compose.foundation.shape.CircleShape
-    import androidx.compose.foundation.shape.RoundedCornerShape
-    import androidx.compose.foundation.verticalScroll
-    import androidx.compose.material.icons.Icons
-    import androidx.compose.material.icons.outlined.AccountCircle
-    import androidx.compose.material.icons.outlined.ArrowForward
-    import androidx.compose.material.icons.outlined.Notifications
-    import androidx.compose.material3.*
-    import androidx.compose.runtime.Composable
-    import androidx.compose.ui.Alignment
-    import androidx.compose.ui.Modifier
-    import androidx.compose.ui.draw.clip
-    import androidx.compose.ui.graphics.Brush
-    import androidx.compose.ui.graphics.Color
-    import androidx.compose.ui.text.font.FontWeight
-    import androidx.compose.ui.text.style.TextAlign
-    import androidx.compose.ui.unit.dp
-    import androidx.compose.ui.unit.sp
-    import androidx.navigation.NavController
-    import com.aeu.boxapplication.domain.model.OrderHistoryItem
-    import com.aeu.boxapplication.domain.model.dummyOrders
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.LocalShipping
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.ArrowForward
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import com.aeu.boxapplication.ui.components.AppGlobalLoadingEffect
+import com.aeu.boxapplication.ui.components.AppStatusBanner
+import com.aeu.boxapplication.ui.components.AppStatusTone
+
+private val HistoryPrimary = Color(0xFF1E88E5)
+private val HistoryTitle = Color(0xFF2F3A4A)
+private val HistoryBody = Color(0xFF7B8794)
+private val HistoryStroke = Color(0xFFE3E8EF)
+private val HistoryBackground = Color(0xFFF7F7F9)
 
 @Composable
 fun OrderHistoryScreen(
     navController: NavController,
     userName: String,
-    onOrderClick: (String) -> Unit = {}, // FIXED: Now takes a String ID
-    onLoadPrevious: () -> Unit = {},
+    viewModel: SubscriberHistoryViewModel,
+    onOrderClick: (String) -> Unit = {},
     onNotificationsClick: () -> Unit = {}
 ) {
-        Box(
+    val uiState = viewModel.uiState
+
+    LaunchedEffect(Unit) {
+        viewModel.loadHistory()
+    }
+
+    AppGlobalLoadingEffect(isVisible = uiState.isLoading && uiState.history.isEmpty())
+
+    Scaffold(
+        containerColor = HistoryBackground
+    ) { paddingValues ->
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF7F7F9))
+                .background(HistoryBackground)
+                .padding(paddingValues)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 16.dp)
-                    .padding(bottom = 84.dp)
-            ) {
             OrderHistoryHeader(
                 userName = userName,
+                onRefresh = { viewModel.loadHistory(forceRefresh = true) },
                 onNotificationsClick = onNotificationsClick
             )
-                Spacer(modifier = Modifier.height(18.dp))
-                OrderHistoryTitle()
-                Spacer(modifier = Modifier.height(16.dp))
 
-                // FIXED: Passing the lambda to the list
-                OrderHistoryList(onOrderClick = onOrderClick)
-
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = "Load previous orders",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF1E88E5),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onLoadPrevious)
-                        .padding(vertical = 6.dp),
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-    }
-
-    @Composable
-private fun OrderHistoryHeader(
-    userName: String,
-    onNotificationsClick: () -> Unit
-) {
-        Row(
-            modifier = Modifier.fillMaxWidth().statusBarsPadding(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFE3F2FD)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.AccountCircle,
-                        contentDescription = null,
-                        tint = Color(0xFF1E88E5),
-                        modifier = Modifier.size(30.dp)
-                    )
-                }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(userName, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                Text("Member since 2021", fontSize = 12.sp, color = Color.Gray)
-            }
-        }
-            IconButton(onClick = onNotificationsClick) {
-                Icon(Icons.Outlined.Notifications, contentDescription = null)
-            }
-        }
-    }
-
-    @Composable
-    private fun OrderHistoryTitle() {
-        Column {
-            Text("History", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text("Track your past boxes and re-orders", fontSize = 12.sp, color = Color.Gray)
-        }
-    }
-
-    @Composable
-    private fun OrderHistoryList(onOrderClick: (String) -> Unit) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            // Explicitly tell Kotlin to use the Domain OrderHistoryItem
-            dummyOrders.forEach { order: com.aeu.boxapplication.domain.model.OrderHistoryItem ->
-                OrderHistoryCard(
-                    order = order, // This should now be blue (valid)
-                    onClick = { onOrderClick(order.id) }
-                )
-            }
-        }
-    }
-    @Composable
-    private fun OrderHistoryCard(
-        order: OrderHistoryItem,
-        onClick: () -> Unit
-    ) {
-        Surface(
-            onClick = onClick,
-            shape = RoundedCornerShape(18.dp),
-            color = Color.White,
-            shadowElevation = 1.dp,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    start = 20.dp,
+                    end = 20.dp,
+                    top = 8.dp,
+                    bottom = 100.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(70.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Brush.linearGradient(order.imageColors)),
-                    contentAlignment = Alignment.BottomStart
-                ) {
-                    Text(
-                        text = order.imageLabel,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        modifier = Modifier.padding(8.dp)
-                    )
+                item {
+                    OrderHistoryTitle()
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(order.title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                    Text("${order.date} • ${order.type}", fontSize = 11.sp, color = Color.Gray)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(order.price, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Box(
-                            modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(order.statusBg).padding(horizontal = 8.dp, vertical = 2.dp)
-                        ) {
-                            Text(order.status, fontSize = 10.sp, color = order.statusColor, fontWeight = FontWeight.Bold)
-                        }
+                uiState.errorMessage?.let { message ->
+                    item {
+                        AppStatusBanner(
+                            title = "Shipment history unavailable",
+                            message = message,
+                            tone = AppStatusTone.Error,
+                            onDismiss = viewModel::dismissError
+                        )
                     }
                 }
 
-                Icon(
-                    imageVector = Icons.Outlined.ArrowForward,
-                    contentDescription = null,
-                    tint = Color(0xFF1E88E5),
-                    modifier = Modifier.size(16.dp)
-                )
+                if (uiState.history.isEmpty() && !uiState.isLoading && uiState.errorMessage == null) {
+                    item {
+                        EmptyHistoryCard(onRefresh = { viewModel.loadHistory(forceRefresh = true) })
+                    }
+                } else {
+                    items(uiState.history, key = { it.id }) { order ->
+                        OrderHistoryCard(
+                            order = order,
+                            onClick = { onOrderClick(order.id) }
+                        )
+                    }
+                }
             }
         }
     }
+}
+
+@Composable
+private fun OrderHistoryHeader(
+    userName: String,
+    onRefresh: () -> Unit,
+    onNotificationsClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFE3F2FD)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.AccountCircle,
+                    contentDescription = null,
+                    tint = HistoryPrimary,
+                    modifier = Modifier.size(30.dp)
+                )
+            }
+            Spacer(modifier = Modifier.size(12.dp))
+            Column {
+                Text(userName, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = HistoryTitle)
+                Text("Your recent deliveries", fontSize = 12.sp, color = HistoryBody)
+            }
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onRefresh) {
+                Icon(Icons.Outlined.Refresh, contentDescription = "Refresh history", tint = HistoryTitle)
+            }
+            IconButton(onClick = onNotificationsClick) {
+                Icon(Icons.Outlined.Notifications, contentDescription = "Notifications", tint = HistoryTitle)
+            }
+        }
+    }
+}
+
+@Composable
+private fun OrderHistoryTitle() {
+    Column {
+        Text("Shipment History", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = HistoryTitle)
+        Text(
+            "Review your recurring deliveries and shipment progress.",
+            fontSize = 13.sp,
+            color = HistoryBody
+        )
+    }
+}
+
+@Composable
+private fun OrderHistoryCard(
+    order: ShipmentHistoryUiModel,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(18.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, HistoryStroke),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Color(0xFFF1F5F9)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.LocalShipping,
+                    contentDescription = null,
+                    tint = HistoryPrimary,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .padding(start = 14.dp)
+                    .weight(1f)
+            ) {
+                Text(
+                    text = order.title,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = HistoryTitle,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = order.dateLabel,
+                    fontSize = 12.sp,
+                    color = HistoryBody
+                )
+                order.trackingLabel?.let { tracking ->
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = tracking,
+                        fontSize = 11.sp,
+                        color = HistoryPrimary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = order.amountLabel,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = HistoryTitle
+                    )
+                    StatusChip(label = order.statusLabel, status = order.status)
+                }
+            }
+
+            Icon(
+                imageVector = Icons.Outlined.ArrowForward,
+                contentDescription = null,
+                tint = HistoryPrimary,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatusChip(label: String, status: String) {
+    val normalized = status.lowercase()
+    val containerColor = when {
+        "delivered" in normalized -> Color(0xFFE6F7EE)
+        "shipped" in normalized -> Color(0xFFEAF3FF)
+        else -> Color(0xFFFFF4E5)
+    }
+    val contentColor = when {
+        "delivered" in normalized -> Color(0xFF1E9E62)
+        "shipped" in normalized -> HistoryPrimary
+        else -> Color(0xFFB45309)
+    }
+
+    Surface(
+        color = containerColor,
+        shape = RoundedCornerShape(999.dp)
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            color = contentColor
+        )
+    }
+}
+
+@Composable
+private fun EmptyHistoryCard(onRefresh: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, HistoryStroke),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(Color(0xFFEAF3FF), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.LocalShipping,
+                    contentDescription = null,
+                    tint = HistoryPrimary
+                )
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+            Text(
+                text = "No shipments yet",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = HistoryTitle
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "Once your subscription starts shipping, it will appear here.",
+                fontSize = 13.sp,
+                color = HistoryBody
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+            Text(
+                text = "Refresh",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = HistoryPrimary,
+                modifier = Modifier.clickable(onClick = onRefresh)
+            )
+        }
+    }
+}

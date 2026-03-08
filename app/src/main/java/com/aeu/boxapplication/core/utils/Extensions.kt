@@ -16,7 +16,7 @@ fun String.isValidEmail(): Boolean {
 }
 
 fun String.isValidPhone(): Boolean {
-    return this.matches(Regex("^[+]?[0-9]{10,13}$"))
+    return this.matches(Regex("^[+]?[0-9]{8,15}$"))
 }
 
 fun String.capitalizeWords(): String {

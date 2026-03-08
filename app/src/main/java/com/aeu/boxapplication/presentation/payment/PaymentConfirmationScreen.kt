@@ -18,16 +18,21 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,13 +43,41 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aeu.boxapplication.ui.components.AppPrimaryButton
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentConfirmationScreen(
+    selectedPlanName: String = "Subscription",
+    selectedPlanPrice: String = "$19.00",
+    selectedPlanPeriod: String = "per month",
+    shippingAddress: String? = null,
+    onBack: () -> Unit = {},
     onViewDashboard: () -> Unit = {},
     onGoToHistory: () -> Unit = {}
 ) {
     Scaffold(
-        containerColor = Color.White
+        containerColor = Color.White,
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = "Payment Confirmation",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2F3A4A)
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.Outlined.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color(0xFF2F3A4A)
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
+            )
+        }
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -60,15 +93,7 @@ fun PaymentConfirmationScreen(
                     .padding(bottom = 88.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = "Payment Confirmation",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF2F3A4A),
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 Box(
                     modifier = Modifier
@@ -112,13 +137,17 @@ fun PaymentConfirmationScreen(
 
                 SectionTitle(text = "SUBSCRIPTION DETAILS")
                 Spacer(modifier = Modifier.height(10.dp))
-                SubscriptionDetailsCard()
+                SubscriptionDetailsCard(
+                    selectedPlanName = selectedPlanName,
+                    selectedPlanPrice = selectedPlanPrice,
+                    selectedPlanPeriod = selectedPlanPeriod
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 SectionTitle(text = "FIRST SHIPMENT")
                 Spacer(modifier = Modifier.height(10.dp))
-                FirstShipmentCard()
+                FirstShipmentCard(shippingAddress = shippingAddress)
             }
 
             Column(
@@ -167,7 +196,11 @@ private fun SectionTitle(text: String) {
 }
 
 @Composable
-private fun SubscriptionDetailsCard() {
+private fun SubscriptionDetailsCard(
+    selectedPlanName: String,
+    selectedPlanPrice: String,
+    selectedPlanPeriod: String
+) {
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = Color.White,
@@ -189,7 +222,7 @@ private fun SubscriptionDetailsCard() {
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Pro Membership",
+                        text = selectedPlanName,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF2F3A4A)
@@ -197,13 +230,13 @@ private fun SubscriptionDetailsCard() {
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = "$19.00",
+                        text = selectedPlanPrice,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1E88E5)
                     )
                     Text(
-                        text = "per month",
+                        text = selectedPlanPeriod,
                         fontSize = 11.sp,
                         color = Color(0xFF7B8794)
                     )
@@ -240,7 +273,7 @@ private fun SubscriptionDetailsCard() {
 }
 
 @Composable
-private fun FirstShipmentCard() {
+private fun FirstShipmentCard(shippingAddress: String?) {
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = Color.White,
@@ -297,8 +330,8 @@ private fun FirstShipmentCard() {
             Spacer(modifier = Modifier.height(10.dp))
             InfoRow(
                 icon = Icons.Outlined.LocationOn,
-                title = "Shipping Address",
-                value = "123 Design Street, Apt 4B\nCreative City, CA 90210"
+                title = "Current Address On File",
+                value = shippingAddress ?: "No saved shipping address yet. Add one from your profile."
             )
         }
     }

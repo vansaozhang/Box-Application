@@ -8,7 +8,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -31,7 +31,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.navigation.NavController
 import com.aeu.boxapplication.core.utils.ValidationUtils
-import com.aeu.boxapplication.presentation.LoginViewModel // Ensure this import is correct
+import com.aeu.boxapplication.presentation.LoginViewModel
 import com.aeu.boxapplication.presentation.PostLoginDestination
 import com.aeu.boxapplication.ui.components.AppGlobalLoadingEffect
 import com.aeu.boxapplication.ui.components.AppPrimaryButton
@@ -44,22 +44,20 @@ import com.aeu.boxapplication.ui.components.LocalAppNotificationHostState
 @Composable
 fun LoginScreen(
     navController: NavController,
-    viewModel: LoginViewModel, // ADDED: Use your ViewModel for API logic
+    viewModel: LoginViewModel,
     onLoginSuccess: (String, PostLoginDestination) -> Unit,
     onBack: () -> Unit,
     onSignupClick: () -> Unit = {},
     onForgotPassword: () -> Unit = {}
 ) {
-    // UI Local State
-    var email by remember { mutableStateOf("") }
+    var phoneNumber by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var showErrors by remember { mutableStateOf(false) }
     val notificationHostState = LocalAppNotificationHostState.current
 
-    // Validation Logic
-    val isEmailValid = ValidationUtils.isValidEmail(email)
+    val isPhoneValid = ValidationUtils.isValidPhone(phoneNumber)
     val isPasswordValid = password.length >= 6
-    val isFormValid = isEmailValid && isPasswordValid
+    val isFormValid = isPhoneValid && isPasswordValid
 
     AppGlobalLoadingEffect(isVisible = viewModel.isLoading)
 
@@ -136,18 +134,19 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 AppTextField(
-                    value = email,
+                    value = phoneNumber,
                     onValueChange = {
-                        email = it
+                        phoneNumber = ValidationUtils.normalizeCambodianPhoneInput(it)
                         notificationHostState.dismiss()
                         viewModel.clearUiMessage()
                     },
-                    label = "Email Address",
-                    leadingIcon = Icons.Outlined.Email,
-                    placeholder = "example@mail.com",
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
-                    isError = showErrors && !isEmailValid,
-                    errorMessage = if (showErrors && !isEmailValid) "Please enter a valid email" else null
+                    label = "Phone Number",
+                    leadingIcon = Icons.Outlined.Call,
+                    prefixText = "${ValidationUtils.CAMBODIA_PHONE_PREFIX} ",
+                    placeholder = "12 345 678",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
+                    isError = showErrors && !isPhoneValid,
+                    errorMessage = if (showErrors && !isPhoneValid) "Please enter a valid Cambodia phone number" else null
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -185,7 +184,7 @@ fun LoginScreen(
                     enabled = isFormValid && !viewModel.isLoading,
                     onClick = {
                         if (isFormValid) {
-                            viewModel.performLogin(email, password) { name, destination ->
+                            viewModel.performLogin(phoneNumber, password) { name, destination ->
                                 onLoginSuccess(name, destination)
                             }
                         } else {

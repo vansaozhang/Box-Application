@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aeu.boxapplication.core.utils.ValidationUtils
 import com.aeu.boxapplication.core.utils.SessionManager
 import com.aeu.boxapplication.data.remote.AuthApiService
 import com.aeu.boxapplication.data.remote.getMySubscriptionSafely
@@ -35,7 +36,7 @@ class LoginViewModel(private val authService: AuthApiService,private val session
     }
 
     fun performLogin(
-        email: String,
+        phoneNumber: String,
         password: String,
         onSuccess: (String, PostLoginDestination) -> Unit
     ) {
@@ -43,8 +44,17 @@ class LoginViewModel(private val authService: AuthApiService,private val session
             isLoading = true
             clearUiMessage()
             try {
+                val apiPhoneNumber = ValidationUtils.toCambodianPhoneNumber(phoneNumber)
+                if (apiPhoneNumber == null) {
+                    showUiMessage(
+                        title = "Invalid phone number",
+                        message = "Enter a valid Cambodia phone number to continue."
+                    )
+                    return@launch
+                }
+
                 val loginRequest = LoginRequest(
-                    email = email.trim(),
+                    phoneNumber = apiPhoneNumber,
                     password = password.trim()
                 )
                 val response = authService.login(loginRequest)
@@ -58,9 +68,12 @@ class LoginViewModel(private val authService: AuthApiService,private val session
                         if (meResponse.isSuccessful) {
                             val meBody = meResponse.body()
                             if (meBody != null) {
-                                val userName = body?.user?.name?.takeIf { it.isNotBlank() }
+                                val userName = body?.user?.name?.takeIf { !it.isNullOrBlank() }
                                     ?: sessionManager.getUserName().takeUnless { it.isNullOrBlank() }
-                                    ?: meBody.email.substringBefore("@")
+                                    ?: meBody.name?.takeIf { !it.isNullOrBlank() }
+                                    ?: meBody.phoneNumber?.takeIf { it.isNotBlank() }
+                                    ?: meBody.email?.substringBefore("@")?.takeIf { it.isNotBlank() }
+                                    ?: "Subscriber"
 
                                 val subscriptionResponse = authService.getMySubscriptionSafely("Bearer $accessToken")
                                 if (
@@ -72,6 +85,7 @@ class LoginViewModel(private val authService: AuthApiService,private val session
                                     sessionManager.saveUserDetail(
                                         name = userName,
                                         email = meBody.email,
+                                        phone = meBody.phoneNumber,
                                         token = accessToken
                                     )
                                     sessionManager.setHasAccount()
@@ -133,7 +147,7 @@ class LoginViewModel(private val authService: AuthApiService,private val session
         val serverMessage = extractServerMessage(errorBody)
         when (code) {
             400, 401 -> showUiMessage(
-                title = "Incorrect email or password",
+                title = "Incorrect phone number or password",
                 message = "Check your login details and try again."
             )
 

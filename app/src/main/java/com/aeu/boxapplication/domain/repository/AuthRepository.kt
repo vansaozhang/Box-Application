@@ -6,9 +6,15 @@ import com.aeu.boxapplication.data.remote.dto.response.AuthResponse
 import org.json.JSONObject
 
 class AuthRepository(private val api: AuthApiService) {
-        suspend fun registerUser(username: String, email: String, password: String): Result<AuthResponse> {
+        suspend fun registerUser(username: String, phoneNumber: String, password: String): Result<AuthResponse> {
             return try {
-                val response = api.register(RegisterRequest(username, email, password))
+                val response = api.register(
+                    RegisterRequest(
+                        name = username,
+                        phoneNumber = phoneNumber,
+                        password = password
+                    )
+                )
 
                 if (response.isSuccessful && response.body() != null) {
                     Result.success(response.body()!!)

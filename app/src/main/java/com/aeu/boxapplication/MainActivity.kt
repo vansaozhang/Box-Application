@@ -1,7 +1,10 @@
 package com.aeu.boxapplication
+import android.Manifest
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -25,6 +28,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
@@ -38,8 +42,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -62,11 +69,15 @@ import com.aeu.boxapplication.presentation.onboarding.LoadingScreen
 import com.aeu.boxapplication.presentation.payment.PaymentCardInput
 import com.aeu.boxapplication.presentation.payment.PaymentConfirmationScreen
 import com.aeu.boxapplication.presentation.payment.PaymentDetailsScreen
+import com.aeu.boxapplication.presentation.profile.AddShippingAddressScreen
+import com.aeu.boxapplication.presentation.profile.hasLocationPermission
+import com.aeu.boxapplication.presentation.profile.resolveCurrentAddress
 import com.aeu.boxapplication.presentation.profile.ShippingAddressScreen
 import com.aeu.boxapplication.presentation.subscription.ConfirmSubscriptionScreen
 import com.aeu.boxapplication.presentation.subscription.ExplorePlansScreen
 import com.aeu.boxapplication.presentation.subscription.SubscriptionsEmptyScreen
 import com.aeu.boxapplication.presentation.subscription.SubscriptionViewModel
+import com.aeu.boxapplication.ui.components.AppGlobalLoadingEffect
 import com.aeu.boxapplication.ui.components.AppLoadingHost
 import com.aeu.boxapplication.presentation.subscriber.*
 import com.aeu.boxapplication.ui.components.LocalAppLoadingHostState
@@ -96,6 +107,7 @@ class MainActivity : ComponentActivity() {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
             val context = LocalContext.current
+            val lifecycleOwner = LocalLifecycleOwner.current
             val sessionManager = remember { SessionManager.getInstance(context) }
             val notificationHostState = rememberAppNotificationHostState()
             val loadingHostState = rememberAppLoadingHostState()
@@ -126,18 +138,153 @@ class MainActivity : ComponentActivity() {
                     }
                 )[ShopProductsViewModel::class.java]
             }
+            val sharedHistoryViewModel = remember(sessionManager) {
+                ViewModelProvider(
+                    this@MainActivity,
+                    object : androidx.lifecycle.ViewModelProvider.Factory {
+                        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                            return SubscriberHistoryViewModel(
+                                authService = RetrofitClient.authApiService,
+                                sessionManager = sessionManager
+                            ) as T
+                        }
+                    }
+                )[SubscriberHistoryViewModel::class.java]
+            }
+            val sharedProfileViewModel = remember(sessionManager) {
+                ViewModelProvider(
+                    this@MainActivity,
+                    object : androidx.lifecycle.ViewModelProvider.Factory {
+                        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                            return SubscriberProfileViewModel(
+                                authService = RetrofitClient.authApiService,
+                                sessionManager = sessionManager
+                            ) as T
+                        }
+                    }
+                )[SubscriberProfileViewModel::class.java]
+            }
+            var hasHandledAutoAddressPrompt by remember(authToken) { mutableStateOf(false) }
+            var isAutoCreatingDefaultAddress by remember(authToken) { mutableStateOf(false) }
+            val profileUiState = sharedProfileViewModel.uiState
+            val activeSubscriptionCount = sharedSubscriberHomeViewModel.uiState.dashboard
+                ?.activeSubscriptions
+                ?.size
+                ?: 0
+            val autoAddressScope = rememberCoroutineScope()
+
+            fun createDefaultAddressFromCurrentLocation() {
+                if (isAutoCreatingDefaultAddress || profileUiState.isSavingAddress) {
+                    return
+                }
+
+                autoAddressScope.launch {
+                    isAutoCreatingDefaultAddress = true
+                    val result = resolveCurrentAddress(context)
+                    isAutoCreatingDefaultAddress = false
+
+                    result.fold(
+                        onSuccess = { resolvedAddress ->
+                            sharedProfileViewModel.addShippingAddress(
+                                address = resolvedAddress,
+                                phone = profileUiState.profile?.phoneNumber,
+                                onSuccess = {},
+                                onError = {}
+                            )
+                        },
+                        onFailure = {}
+                    )
+                }
+            }
+
+            val locationPermissionLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestMultiplePermissions()
+            ) { result ->
+                if (result.values.any { it }) {
+                    createDefaultAddressFromCurrentLocation()
+                }
+            }
             val shouldPreloadSubscriberTabs = !authToken.isNullOrBlank() &&
                     currentRoute != Screen.Loading.route &&
                     currentRoute != Screen.Login.route &&
                     currentRoute != Screen.Register.route
+            val shouldOfferAutoAddressPrompt = !authToken.isNullOrBlank() &&
+                    currentRoute?.startsWith(Screen.SubscriberHome.route) == true
+
+            DisposableEffect(lifecycleOwner, authToken) {
+                val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_START && !authToken.isNullOrBlank()) {
+                        hasHandledAutoAddressPrompt = false
+                    }
+                }
+                lifecycleOwner.lifecycle.addObserver(observer)
+                onDispose {
+                    lifecycleOwner.lifecycle.removeObserver(observer)
+                }
+            }
 
             LaunchedEffect(authToken, shouldPreloadSubscriberTabs) {
                 if (authToken.isNullOrBlank()) {
                     sharedSubscriberHomeViewModel.reset()
                     sharedShopProductsViewModel.reset()
+                    sharedHistoryViewModel.reset()
+                    sharedProfileViewModel.reset()
                 } else if (shouldPreloadSubscriberTabs) {
                     sharedSubscriberHomeViewModel.loadDashboard()
                     sharedShopProductsViewModel.loadStorefront()
+                    sharedHistoryViewModel.loadHistory()
+                    sharedProfileViewModel.loadProfile()
+                }
+            }
+
+            LaunchedEffect(
+                authToken,
+                currentRoute,
+                hasHandledAutoAddressPrompt,
+                profileUiState.profile?.id,
+                profileUiState.profile?.phoneNumber,
+                profileUiState.addresses.size,
+                profileUiState.isLoading,
+                profileUiState.isRefreshing,
+                profileUiState.isSavingAddress,
+                profileUiState.errorMessage
+            ) {
+                if (authToken.isNullOrBlank()) {
+                    return@LaunchedEffect
+                }
+
+                if (
+                    !shouldOfferAutoAddressPrompt ||
+                    hasHandledAutoAddressPrompt ||
+                    profileUiState.isLoading ||
+                    profileUiState.isRefreshing ||
+                    profileUiState.isSavingAddress ||
+                    profileUiState.errorMessage != null
+                ) {
+                    return@LaunchedEffect
+                }
+
+                val profile = profileUiState.profile ?: return@LaunchedEffect
+                if (profileUiState.addresses.isNotEmpty()) {
+                    hasHandledAutoAddressPrompt = true
+                    return@LaunchedEffect
+                }
+
+                if (profile.phoneNumber.isNullOrBlank()) {
+                    hasHandledAutoAddressPrompt = true
+                    return@LaunchedEffect
+                }
+
+                hasHandledAutoAddressPrompt = true
+                if (hasLocationPermission(context)) {
+                    createDefaultAddressFromCurrentLocation()
+                } else {
+                    locationPermissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
                 }
             }
 
@@ -152,6 +299,7 @@ class MainActivity : ComponentActivity() {
                 LocalAppLoadingHostState provides loadingHostState
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
+                    AppGlobalLoadingEffect(isVisible = isAutoCreatingDefaultAddress)
                     Scaffold(
                         containerColor = Color.White,
                         bottomBar = {
@@ -214,7 +362,11 @@ class MainActivity : ComponentActivity() {
                                             if (meResponse.isSuccessful && meBody != null) {
                                                 val resolvedName = savedName
                                                     .takeUnless { it.isNullOrBlank() }
-                                                    ?: meBody.email.substringBefore("@")
+                                                    ?: resolveSubscriberDisplayName(
+                                                        name = meBody.name,
+                                                        phone = meBody.phoneNumber,
+                                                        email = meBody.email
+                                                    )
 
                                                 val subscriptionResponse = RetrofitClient.authApiService
                                                     .getMySubscriptionSafely("Bearer $savedToken")
@@ -225,6 +377,7 @@ class MainActivity : ComponentActivity() {
                                                     sessionManager.saveUserDetail(
                                                         name = resolvedName,
                                                         email = meBody.email,
+                                                        phone = meBody.phoneNumber,
                                                         token = savedToken
                                                     )
                                                     sessionManager.setHasAccount()
@@ -335,10 +488,11 @@ class MainActivity : ComponentActivity() {
                         RegisterScreen(
                             navController = navController,
                             viewModel = viewModel,
-                            onRegisterSuccess = { name, email, token ->
+                            onRegisterSuccess = { name, phone, email, token ->
                                 sessionManager.saveUserDetail(
                                     name = name,
                                     email = email,
+                                    phone = phone,
                                     token = token
                                 )
                                 sessionManager.setHasAccount()
@@ -514,6 +668,13 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
+                        val handleSubscriptionActivated: () -> Unit = {
+                            sharedSubscriberHomeViewModel.loadDashboard(forceRefresh = true)
+                            sharedProfileViewModel.loadProfile(forceRefresh = true)
+                            sharedHistoryViewModel.loadHistory(forceRefresh = true)
+                            navigateToPaymentConfirmation()
+                        }
+
                         val navigateToSubscriberHome: () -> Unit = {
                             sessionManager.clearPendingPlan()
                             navController.navigate(Screen.SubscriberHome.route) {
@@ -536,7 +697,7 @@ class MainActivity : ComponentActivity() {
                                             subscriptionViewModel.confirmStripeSubscription(
                                                 planId = planIdToConfirm,
                                                 stripeSubscriptionId = stripeSubscriptionId,
-                                                onSuccess = navigateToPaymentConfirmation
+                                                onSuccess = handleSubscriptionActivated
                                             )
                                         }
                                     }
@@ -619,7 +780,7 @@ class MainActivity : ComponentActivity() {
                                                 subscriptionViewModel.confirmStripeSubscription(
                                                     planId = selectedPlanId,
                                                     stripeSubscriptionId = checkout.stripeSubscriptionId,
-                                                    onSuccess = navigateToPaymentConfirmation
+                                                    onSuccess = handleSubscriptionActivated
                                                 )
                                             }
 
@@ -649,16 +810,26 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable(Screen.PaymentConfirmation.route) {
+                        val pendingPlan = sessionManager.getPendingPlanSelection()
+                        val openDashboard: () -> Unit = {
+                            sessionManager.clearPendingPlan()
+                            sharedSubscriberHomeViewModel.loadDashboard(forceRefresh = true)
+                            sharedProfileViewModel.loadProfile(forceRefresh = true)
+                            navController.navigate(Screen.SubscriberHome.route) {
+                                popUpTo(Screen.ExplorePlans.route) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
                         PaymentConfirmationScreen(
-                            onViewDashboard = {
-                                sessionManager.clearPendingPlan()
-                                navController.navigate(Screen.SubscriberHome.route) {
-                                    popUpTo(Screen.ExplorePlans.route) { inclusive = true }
-                                    launchSingleTop = true
-                                }
-                            },
+                            selectedPlanName = pendingPlan?.name ?: "Subscription",
+                            selectedPlanPrice = pendingPlan?.price ?: "$19.00",
+                            selectedPlanPeriod = pendingPlan?.period.toReadablePlanPeriod(),
+                            shippingAddress = sharedProfileViewModel.uiState.addresses.firstOrNull()?.address,
+                            onBack = openDashboard,
+                            onViewDashboard = openDashboard,
                             onGoToHistory = {
                                 sessionManager.clearPendingPlan()
+                                sharedHistoryViewModel.loadHistory(forceRefresh = true)
                                 navController.navigate(Screen.OrderHistory.route) {
                                     popUpTo(Screen.ExplorePlans.route) { inclusive = true }
                                 }
@@ -683,6 +854,7 @@ class MainActivity : ComponentActivity() {
                         OrderHistoryScreen(
                             navController = navController,
                             userName = historyUserName,
+                            viewModel = sharedHistoryViewModel,
                             onOrderClick = { orderId ->
                                 navController.navigate("${Screen.HistoryDetail.route}/$orderId")
                             }
@@ -693,7 +865,8 @@ class MainActivity : ComponentActivity() {
                         val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
                         HistoryDetailScreen(
                             orderId = orderId,
-                            navController = navController
+                            navController = navController,
+                            viewModel = sharedHistoryViewModel
                         )
                     }
                     composable(Screen.ShopProducts.route) {
@@ -712,16 +885,15 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable(Screen.Profile.route) {
-                        // 1. Get the data from your session/storage
-                        val userName = sessionManager.getUserName() ?: "User"
-                        val userEmail = sessionManager.getUserEmail() ?: "No Email"
-
                         ProfileScreen(
-                            navController = navController,
-                            userName = userName,      // 2. Pass it here
-                            userEmail = userEmail,    // 3. Pass it here
+                            viewModel = sharedProfileViewModel,
+                            activeSubscriptionCount = sharedSubscriberHomeViewModel.uiState.dashboard
+                                ?.activeSubscriptions
+                                ?.size
+                                ?: 0,
+                            shipmentCount = sharedHistoryViewModel.uiState.history.size,
                             onShippingAddressClick = { navController.navigate("shipping_address") },
-                            onPaymentMethodsClick = { navController.navigate("payment_methods") },
+                            onSubscriptionDetailsClick = { navController.navigate(Screen.SubscribDetail.route) },
                             onLogoutClick = {
                                 sessionManager.clearSession()
                                 navController.navigate(Screen.Login.route) {
@@ -733,12 +905,28 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable(Screen.ShipAddress.route) {
-                        ShippingAddressScreen(navController)
+                        ShippingAddressScreen(
+                            navController = navController,
+                            viewModel = sharedProfileViewModel
+                        )
+                    }
+
+                    composable(Screen.AddShipAddress.route) {
+                        AddShippingAddressScreen(
+                            navController = navController,
+                            viewModel = sharedProfileViewModel
+                        )
                     }
 
 
                     // 4. Secondary/Detail Screens
-                    composable(Screen.SubscribDetail.route) { SubscriptionDetailsScreen(navController) }
+                    composable(Screen.SubscribDetail.route) {
+                        SubscriptionDetailsScreen(
+                            navController = navController,
+                            homeViewModel = sharedSubscriberHomeViewModel,
+                            profileViewModel = sharedProfileViewModel
+                        )
+                    }
                     composable(Screen.OrderConfirmed.route) { OrderConfirmScreen(navController) }
                     composable(Screen.CheckoutPayment.route) { CheckoutPayment(navController) }
                     composable(Screen.CompletePayment.route) { CompletePayment(navController) }
@@ -760,6 +948,29 @@ class MainActivity : ComponentActivity() {
 }
 
 // --- UI Components ---
+private fun resolveSubscriberDisplayName(
+    name: String?,
+    phone: String?,
+    email: String?
+): String {
+    return name?.takeIf { it.isNotBlank() }
+        ?: phone?.takeIf { it.isNotBlank() }
+        ?: email?.substringBefore("@")?.takeIf { it.isNotBlank() }
+        ?: "Subscriber"
+}
+
+private fun String?.toReadablePlanPeriod(): String {
+    return when (this) {
+        "/yr" -> "per year"
+        "/3mo" -> "every 3 months"
+        "/2wk" -> "every 2 weeks"
+        "/wk" -> "per week"
+        "/mo" -> "per month"
+        null, "" -> "per month"
+        else -> this.removePrefix("/")
+    }
+}
+
 private fun NavHostController.navigateToBottomTab(route: String) {
     if (currentDestination?.route == route) {
         return

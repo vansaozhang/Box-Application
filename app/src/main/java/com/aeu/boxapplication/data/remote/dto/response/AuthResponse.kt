@@ -11,8 +11,21 @@ data class AuthResponse(
 )
 
 data class UserData(
+    @SerializedName("id")
     val id: String,
-    val name: String,
-    val email: String,
-    val role: String
+
+    @SerializedName("name")
+    val name: String?,
+
+    @SerializedName("email")
+    val email: String?,
+
+    @SerializedName("phone_number")
+    val phoneNumber: String?,
+
+    @SerializedName("role")
+    val role: String?,
+
+    @SerializedName("status")
+    val status: String?
 )

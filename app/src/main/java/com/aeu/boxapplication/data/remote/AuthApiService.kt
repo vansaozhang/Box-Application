@@ -3,6 +3,7 @@ package com.aeu.boxapplication.data.remote
 import com.aeu.boxapplication.data.remote.dto.response.AuthResponse
 import com.aeu.boxapplication.data.remote.dto.response.AuthMeResponse
 import com.aeu.boxapplication.data.remote.dto.request.ConfirmStripeSubscriptionRequest
+import com.aeu.boxapplication.data.remote.dto.request.CreateMyAddressRequest
 import com.aeu.boxapplication.data.remote.dto.request.CreateStripeCheckoutIntentRequest
 import com.aeu.boxapplication.data.remote.dto.request.LoginRequest
 import com.aeu.boxapplication.data.remote.dto.request.RegisterRequest
@@ -10,8 +11,11 @@ import com.aeu.boxapplication.data.remote.dto.request.SubscribeRequest
 import com.aeu.boxapplication.data.remote.dto.response.StripeCheckoutIntentResponse
 import com.aeu.boxapplication.data.remote.dto.response.SubscriptionApiResponse
 import com.aeu.boxapplication.data.remote.dto.response.SubscriptionPlanApiResponse
+import com.aeu.boxapplication.data.remote.dto.response.SubscriberAddressResponse
 import com.aeu.boxapplication.data.remote.dto.response.SubscriptionPlanStorefrontResponse
 import com.aeu.boxapplication.data.remote.dto.response.SubscriberDashboardResponse
+import com.aeu.boxapplication.data.remote.dto.response.SubscriberShipmentHistoryDetailResponse
+import com.aeu.boxapplication.data.remote.dto.response.SubscriberShipmentHistoryItemResponse
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
@@ -56,6 +60,28 @@ interface AuthApiService {
     suspend fun getSubscriberDashboard(
         @Header("Authorization") authHeader: String
     ): Response<SubscriberDashboardResponse>
+
+    @GET("shipments/history")
+    suspend fun getShipmentHistory(
+        @Header("Authorization") authHeader: String
+    ): Response<List<SubscriberShipmentHistoryItemResponse>>
+
+    @GET("shipments/history/{id}")
+    suspend fun getShipmentHistoryDetail(
+        @Header("Authorization") authHeader: String,
+        @retrofit2.http.Path("id") shipmentId: String
+    ): Response<SubscriberShipmentHistoryDetailResponse>
+
+    @GET("addresses/me")
+    suspend fun getMyAddresses(
+        @Header("Authorization") authHeader: String
+    ): Response<List<SubscriberAddressResponse>>
+
+    @POST("addresses/me")
+    suspend fun createMyAddress(
+        @Header("Authorization") authHeader: String,
+        @Body request: CreateMyAddressRequest
+    ): Response<SubscriberAddressResponse>
 
     @POST("subscriptions/subscribe")
     suspend fun subscribeToPlan(
