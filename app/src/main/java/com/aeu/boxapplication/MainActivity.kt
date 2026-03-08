@@ -1029,15 +1029,15 @@ private fun selectedPlanFeatures(planName: String): List<String> {
         )
 
         "starter" -> listOf(
-            "5 recurring orders",
+            "5 recurring deliveries",
             "Basic analytics",
             "Free shipping"
         )
 
         "pro" -> listOf(
-            "Unlimited recurring orders",
+            "Unlimited recurring deliveries",
             "Advanced analytics",
-            "Free shipping on all orders",
+            "Free shipping on every shipment",
             "Priority support"
         )
 
@@ -1093,7 +1093,7 @@ enum class SubscriberBottomNavItem(
 ) {
     Home("Home", Icons.Default.Home, "subscriber_home"),
     History("History", Icons.Default.Refresh, "order_history"),
-    Package("Package", Icons.Default.Send, "shop_products"),
+    Package("Plans", Icons.Default.Send, "shop_products"),
     Profile("Profile", Icons.Default.Person, "profile_screen")
 }
 

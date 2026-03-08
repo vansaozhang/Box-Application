@@ -243,9 +243,9 @@ class ShopProductsViewModel(
 
     private fun mapExceptionToMessage(error: Exception): String {
         return when (error) {
-            is SocketTimeoutException -> "Package catalog request timed out. Please try again."
+            is SocketTimeoutException -> "Plan catalog request timed out. Please try again."
             is IOException -> "No internet connection. Please reconnect and retry."
-            else -> "Something unexpected happened while loading packages."
+            else -> "Something unexpected happened while loading plans."
         }
     }
 

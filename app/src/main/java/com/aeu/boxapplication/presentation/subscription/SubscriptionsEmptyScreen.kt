@@ -122,7 +122,7 @@ fun SubscriptionsEmptyScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "You aren’t subscribed to any products yet.\nStart a plan to automate your orders and save\nmoney.",
+                    text = "You aren’t subscribed to any products yet.\nStart a plan to automate your deliveries and save\nmoney.",
                     fontSize = 13.sp,
                     color = Color(0xFF7B8794),
                     textAlign = TextAlign.Center,
@@ -134,7 +134,7 @@ fun SubscriptionsEmptyScreen(
                 FeatureRow(
                     icon = Icons.Outlined.DateRange,
                     title = "Free Shipping",
-                    subtitle = "On every single recurring order, no\nminimums."
+                    subtitle = "On every recurring delivery cycle, no\nminimums."
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))

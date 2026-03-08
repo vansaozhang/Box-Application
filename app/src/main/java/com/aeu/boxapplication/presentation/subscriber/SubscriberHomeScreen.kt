@@ -348,7 +348,7 @@ private fun TrackingCard(
             Row(verticalAlignment = Alignment.Top) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "TRACK YOUR ORDER",
+                        text = "TRACK YOUR SHIPMENT",
                         fontSize = 11.sp,
                         color = HomePrimary,
                         fontWeight = FontWeight.Bold

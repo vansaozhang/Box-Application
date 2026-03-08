@@ -325,15 +325,15 @@ private fun subtitleFor(name: String): String = when (name.lowercase(Locale.US))
 
 private fun featuresFor(name: String): List<PlanFeatureUi> = when (name.lowercase(Locale.US)) {
     "starter" -> listOf(
-        PlanFeatureUi("5 recurring orders", true),
+        PlanFeatureUi("5 recurring deliveries", true),
         PlanFeatureUi("Basic analytics", true),
         PlanFeatureUi("Free shipping", false)
     )
 
     "pro" -> listOf(
-        PlanFeatureUi("Unlimited recurring orders", true),
+        PlanFeatureUi("Unlimited recurring deliveries", true),
         PlanFeatureUi("Advanced analytics", true),
-        PlanFeatureUi("Free shipping on all orders", true),
+        PlanFeatureUi("Free shipping on every shipment", true),
         PlanFeatureUi("Priority support", true)
     )
 

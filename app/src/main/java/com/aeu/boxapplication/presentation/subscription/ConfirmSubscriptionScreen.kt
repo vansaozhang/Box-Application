@@ -49,9 +49,9 @@ fun ConfirmSubscriptionScreen(
     selectedPlanPrice: String = "$19",
     selectedPlanPeriod: String = "/mo",
     selectedPlanFeatures: List<String> = listOf(
-        "Unlimited recurring orders",
+        "Unlimited recurring deliveries",
         "Advanced analytics",
-        "Free shipping on all orders"
+        "Free shipping on every shipment"
     ),
     isSubmitting: Boolean = false,
     errorMessage: String? = null
@@ -152,7 +152,7 @@ fun ConfirmSubscriptionScreen(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                SectionTitle(text = "ORDER SUMMARY")
+                SectionTitle(text = "BILLING SUMMARY")
                 Spacer(modifier = Modifier.height(10.dp))
 
                 OrderSummaryCard(totalPrice = selectedPlanPrice)

@@ -174,7 +174,7 @@ fun PaymentConfirmationScreen(
                     )
                 ) {
                     Text(
-                        text = "Go to Order History",
+                        text = "Go to Shipment History",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold
                     )

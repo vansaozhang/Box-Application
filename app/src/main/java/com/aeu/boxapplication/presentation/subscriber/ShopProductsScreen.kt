@@ -124,7 +124,7 @@ fun ShopProductsScreen(
 
                 uiState.errorMessage?.let { message ->
                     AppStatusBanner(
-                        title = "Package catalog unavailable",
+                        title = "Plan catalog unavailable",
                         message = message,
                         tone = AppStatusTone.Error,
                         onDismiss = viewModel::dismissError,
@@ -236,14 +236,14 @@ private fun TopHeader(onRefresh: () -> Unit) {
             IconButton(onClick = onRefresh) {
                 Icon(
                     Icons.Outlined.ShoppingCart,
-                    contentDescription = "Refresh packages",
+                    contentDescription = "Refresh plans",
                     tint = ShopTitle
                 )
             }
             IconButton(onClick = onRefresh) {
                 Icon(
                     Icons.Default.Notifications,
-                    contentDescription = "Refresh packages",
+                    contentDescription = "Refresh plans",
                     tint = ShopTitle
                 )
             }
