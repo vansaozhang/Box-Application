@@ -116,7 +116,7 @@ fun SubscriptionDetailsScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = DetailsPrimary)
                 ) {
                     Text(
-                        if (subscription == null) "Explore Plans" else "Manage Shipping Address",
+                        if (subscription == null) "Browse Boxes" else "Manage Shipping Address",
                         color = Color.White,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 16.sp
@@ -314,7 +314,7 @@ private fun EmptySubscriptionState(onExplore: () -> Unit) {
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = DetailsPrimary)
             ) {
-                Text("Explore Plans", color = Color.White)
+                Text("Browse Boxes", color = Color.White)
             }
         }
     }

@@ -21,9 +21,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ExitToApp
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -90,10 +92,40 @@ fun ProfileScreen(
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 18.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "PROFILE",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = ProfilePrimary
+                    )
+                    Text(
+                        text = "Your account",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = ProfileTitle
+                    )
+                }
+                IconButton(onClick = { viewModel.loadProfile(forceRefresh = true) }) {
+                    Icon(
+                        imageVector = Icons.Outlined.Refresh,
+                        contentDescription = "Refresh profile",
+                        tint = ProfileTitle
+                    )
+                }
+            }
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 28.dp, bottom = 20.dp),
+                    .padding(top = 8.dp, bottom = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Box(

@@ -171,7 +171,7 @@ fun SubscriptionsEmptyScreen(
                 Spacer(modifier = Modifier.height(18.dp))
 
                 AppPrimaryButton(
-                    text = "Explore Plans  →",
+                    text = "Browse Boxes  →",
                     onClick = onExplorePlans
                 )
 

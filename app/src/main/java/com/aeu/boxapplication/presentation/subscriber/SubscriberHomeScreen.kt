@@ -21,8 +21,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -234,7 +234,7 @@ private fun DashboardHeader(
                 .border(1.dp, HomeStroke, CircleShape)
         ) {
             Icon(
-                Icons.Default.Notifications,
+                Icons.Default.Refresh,
                 contentDescription = "Refresh dashboard",
                 tint = HomeTitle
             )
@@ -311,7 +311,7 @@ private fun BillingCard(
                 colors = ButtonDefaults.buttonColors(containerColor = HomePrimary)
             ) {
                 Text(
-                    text = if (hasSubscriptions) "View Details" else "Explore Plans",
+                    text = if (hasSubscriptions) "View Details" else "Browse Boxes",
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp
@@ -521,7 +521,7 @@ private fun EmptySubscriptionsCard(onExplore: () -> Unit) {
                 color = HomeTitle
             )
             Text(
-                text = "Explore available plans to populate your dashboard.",
+                text = "Browse the available boxes and choose how often you want them delivered.",
                 fontSize = 12.sp,
                 color = HomeBody,
                 modifier = Modifier.padding(top = 4.dp)
@@ -530,7 +530,7 @@ private fun EmptySubscriptionsCard(onExplore: () -> Unit) {
                 onClick = onExplore,
                 contentPadding = PaddingValues(top = 8.dp)
             ) {
-                Text("Browse plans", color = HomePrimary, fontWeight = FontWeight.SemiBold)
+                Text("Browse boxes", color = HomePrimary, fontWeight = FontWeight.SemiBold)
             }
         }
     }

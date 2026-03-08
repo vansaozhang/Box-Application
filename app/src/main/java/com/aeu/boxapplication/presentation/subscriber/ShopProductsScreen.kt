@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.ShoppingCart
@@ -160,20 +161,9 @@ fun ShopProductsScreen(
                         modifier = Modifier.clickable { viewModel.toggleSort() }
                     ) {
                         Text(
-                            text = "Sort by",
+                            text = uiState.sort.label,
                             color = ShopPrimary,
                             fontSize = 14.sp
-                        )
-                        Spacer(modifier = Modifier.width(2.dp))
-                        Icon(
-                            imageVector = if (uiState.sort == ShopCatalogSort.Rating) {
-                                Icons.Default.Star
-                            } else {
-                                Icons.Outlined.ShoppingCart
-                            },
-                            contentDescription = "Toggle sort",
-                            tint = ShopPrimary,
-                            modifier = Modifier.size(14.dp)
                         )
                     }
                 }
@@ -232,21 +222,12 @@ private fun TopHeader(onRefresh: () -> Unit) {
             )
         }
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onRefresh) {
-                Icon(
-                    Icons.Outlined.ShoppingCart,
-                    contentDescription = "Refresh plans",
-                    tint = ShopTitle
-                )
-            }
-            IconButton(onClick = onRefresh) {
-                Icon(
-                    Icons.Default.Notifications,
-                    contentDescription = "Refresh plans",
-                    tint = ShopTitle
-                )
-            }
+        IconButton(onClick = onRefresh) {
+            Icon(
+                Icons.Default.Refresh,
+                contentDescription = "Refresh plans",
+                tint = ShopTitle
+            )
         }
     }
 }
@@ -396,6 +377,13 @@ private fun FeaturedBoxCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+                if (plan.frequencyOptions.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    FrequencyOptionsPreview(
+                        options = plan.frequencyOptions,
+                        isCompact = isCompact
+                    )
+                }
                 Spacer(modifier = Modifier.height(if (isCompact) 10.dp else 14.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -423,10 +411,10 @@ private fun FeaturedBoxCard(
                         shape = RoundedCornerShape(14.dp)
                     ) {
                         Text(
-                            text = "Get Started",
+                            text = "Choose Delivery",
                             color = Color.White,
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = if (isCompact) 14.sp else 16.sp
+                            fontSize = if (isCompact) 12.sp else 14.sp
                         )
                     }
                 }
@@ -516,6 +504,13 @@ private fun SubscriptionItem(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+                if (plan.frequencyOptions.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    FrequencyOptionsPreview(
+                        options = plan.frequencyOptions,
+                        isCompact = true
+                    )
+                }
                 Spacer(modifier = Modifier.height(if (isCompact) 6.dp else 8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -537,17 +532,48 @@ private fun SubscriptionItem(
                         modifier = Modifier.clickable { onSelectPlan(plan) }
                     ) {
                         Text(
-                            text = "View Details",
+                            text = "Choose Delivery",
                             modifier = Modifier.padding(
                                 horizontal = if (isCompact) 10.dp else 12.dp,
                                 vertical = if (isCompact) 5.dp else 6.dp
                             ),
-                            fontSize = if (isCompact) 11.sp else 12.sp,
+                            fontSize = if (isCompact) 10.sp else 11.sp,
                             color = ShopPrimary,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FrequencyOptionsPreview(
+    options: List<ShopPlanFrequencyOptionUiModel>,
+    isCompact: Boolean
+) {
+    val labels = options.map { it.label }.distinct()
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        labels.forEach { label ->
+            Surface(
+                color = ShopTint,
+                shape = RoundedCornerShape(999.dp),
+                border = BorderStroke(1.dp, ShopStroke)
+            ) {
+                Text(
+                    text = label,
+                    modifier = Modifier.padding(
+                        horizontal = if (isCompact) 8.dp else 10.dp,
+                        vertical = 4.dp
+                    ),
+                    fontSize = if (isCompact) 10.sp else 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = ShopPrimary
+                )
             }
         }
     }

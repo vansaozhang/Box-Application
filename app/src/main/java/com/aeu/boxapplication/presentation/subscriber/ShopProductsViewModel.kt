@@ -17,8 +17,8 @@ import java.net.SocketTimeoutException
 import java.util.Locale
 
 enum class ShopCatalogSort(val label: String) {
-    Rating("Sort by ★"),
-    Price("Sort by $")
+    Rating("Top rated"),
+    Price("Lowest price")
 }
 
 data class ShopPlanUiModel(
