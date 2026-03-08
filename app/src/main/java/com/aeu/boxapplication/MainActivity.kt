@@ -1,5 +1,4 @@
 package com.aeu.boxapplication
-import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -42,12 +41,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.NavType
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import com.aeu.boxapplication.core.utils.PendingPlanSelection
 import com.aeu.boxapplication.core.utils.SessionManager
 import com.aeu.boxapplication.data.remote.RetrofitClient
 import com.aeu.boxapplication.data.remote.getMySubscriptionSafely
@@ -100,6 +99,47 @@ class MainActivity : ComponentActivity() {
             val sessionManager = remember { SessionManager.getInstance(context) }
             val notificationHostState = rememberAppNotificationHostState()
             val loadingHostState = rememberAppLoadingHostState()
+            val authToken = sessionManager.getAuthToken()
+            val sharedSubscriberHomeViewModel = remember(sessionManager) {
+                ViewModelProvider(
+                    this@MainActivity,
+                    object : androidx.lifecycle.ViewModelProvider.Factory {
+                        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                            return SubscriberHomeViewModel(
+                                authService = RetrofitClient.authApiService,
+                                sessionManager = sessionManager
+                            ) as T
+                        }
+                    }
+                )[SubscriberHomeViewModel::class.java]
+            }
+            val sharedShopProductsViewModel = remember(sessionManager) {
+                ViewModelProvider(
+                    this@MainActivity,
+                    object : androidx.lifecycle.ViewModelProvider.Factory {
+                        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                            return ShopProductsViewModel(
+                                authService = RetrofitClient.authApiService,
+                                sessionManager = sessionManager
+                            ) as T
+                        }
+                    }
+                )[ShopProductsViewModel::class.java]
+            }
+            val shouldPreloadSubscriberTabs = !authToken.isNullOrBlank() &&
+                    currentRoute != Screen.Loading.route &&
+                    currentRoute != Screen.Login.route &&
+                    currentRoute != Screen.Register.route
+
+            LaunchedEffect(authToken, shouldPreloadSubscriberTabs) {
+                if (authToken.isNullOrBlank()) {
+                    sharedSubscriberHomeViewModel.reset()
+                    sharedShopProductsViewModel.reset()
+                } else if (shouldPreloadSubscriberTabs) {
+                    sharedSubscriberHomeViewModel.loadDashboard()
+                    sharedShopProductsViewModel.loadStorefront()
+                }
+            }
 
             // Define which screens should show the Bottom Navigation Bar
             val showBottomBar = currentRoute?.startsWith(Screen.SubscriberHome.route) == true ||
@@ -125,30 +165,16 @@ class MainActivity : ComponentActivity() {
                                         else -> SubscriberBottomNavItem.Home
                                     },
                                     onHomeClick = {
-                                        val homeUserName = sessionManager.getUserName().takeUnless { it.isNullOrBlank() } ?: "Guest"
-                                        val encodedName = Uri.encode(homeUserName)
-                                        navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
+                                        navController.navigateToBottomTab(Screen.SubscriberHome.route)
                                     },
                                     onHistoryClick = {
-                                        navController.navigate(Screen.OrderHistory.route) {
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
+                                        navController.navigateToBottomTab(Screen.OrderHistory.route)
                                     },
                                     onShopClick = {
-                                        navController.navigate(Screen.ShopProducts.route) {
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
+                                        navController.navigateToBottomTab(Screen.ShopProducts.route)
                                     },
                                     onProfileClick = {
-                                        navController.navigate(Screen.Profile.route) {
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
+                                        navController.navigateToBottomTab(Screen.Profile.route)
                                     }
                                 )
                             }
@@ -165,10 +191,10 @@ class MainActivity : ComponentActivity() {
                         LoadingScreen(
                             onFinished = {
                                 loadingScope.launch {
-                                    val navigateToHome: (String) -> Unit = { userName ->
-                                        val encodedName = Uri.encode(userName)
-                                        navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
+                                    val navigateToHome: () -> Unit = {
+                                        navController.navigate(Screen.SubscriberHome.route) {
                                             popUpTo(Screen.Loading.route) { inclusive = true }
+                                            launchSingleTop = true
                                         }
                                     }
                                     val navigateToSubscriptionsEmpty: () -> Unit = {
@@ -206,7 +232,7 @@ class MainActivity : ComponentActivity() {
                                                     val hasActiveSubscription = subscriptionResponse
                                                         .hasActiveSubscription
                                                     if (hasActiveSubscription) {
-                                                        navigateToHome(resolvedName)
+                                                        navigateToHome()
                                                     } else {
                                                         navigateToSubscriptionsEmpty()
                                                     }
@@ -219,7 +245,7 @@ class MainActivity : ComponentActivity() {
                                                 ) {
                                                     sessionManager.clearSession()
                                                 } else if (!savedName.isNullOrBlank()) {
-                                                    navigateToHome(savedName)
+                                                    navigateToHome()
                                                     return@launch
                                                 }
                                             }
@@ -227,12 +253,12 @@ class MainActivity : ComponentActivity() {
                                             if (meResponse.code() == 401 || meResponse.code() == 403) {
                                                 sessionManager.clearSession()
                                             } else if (!savedName.isNullOrBlank()) {
-                                                navigateToHome(savedName)
+                                                navigateToHome()
                                                 return@launch
                                             }
                                         } catch (_: Exception) {
                                             if (!savedName.isNullOrBlank()) {
-                                                navigateToHome(savedName)
+                                                navigateToHome()
                                                 return@launch
                                             }
                                         }
@@ -277,12 +303,12 @@ class MainActivity : ComponentActivity() {
                         LoginScreen(
                             navController = navController,
                             viewModel = loginViewModel,
-                            onLoginSuccess = { userName, destination ->
+                            onLoginSuccess = { _, destination ->
                                 when (destination) {
                                     PostLoginDestination.HOME -> {
-                                        val encodedName = Uri.encode(userName)
-                                        navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
+                                        navController.navigate(Screen.SubscriberHome.route) {
                                             popUpTo(Screen.Login.route) { inclusive = true }
+                                            launchSingleTop = true
                                         }
                                     }
 
@@ -344,10 +370,9 @@ class MainActivity : ComponentActivity() {
                             onRestorePurchases = {
                                 subscriptionViewModel.restorePurchases(
                                     onHasSubscription = {
-                                        val homeUserName = sessionManager.getUserName().takeUnless { it.isNullOrBlank() } ?: "User"
-                                        val encodedName = Uri.encode(homeUserName)
-                                        navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
+                                        navController.navigate(Screen.SubscriberHome.route) {
                                             popUpTo(Screen.SubscriptionsEmpty.route) { inclusive = true }
+                                            launchSingleTop = true
                                         }
                                     },
                                     onNoSubscription = {
@@ -389,10 +414,9 @@ class MainActivity : ComponentActivity() {
                             onRestorePurchases = {
                                 subscriptionViewModel.restorePurchases(
                                     onHasSubscription = {
-                                        val homeUserName = sessionManager.getUserName().takeUnless { it.isNullOrBlank() } ?: "User"
-                                        val encodedName = Uri.encode(homeUserName)
-                                        navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
+                                        navController.navigate(Screen.SubscriberHome.route) {
                                             popUpTo(Screen.ExplorePlans.route) { inclusive = true }
+                                            launchSingleTop = true
                                         }
                                     },
                                     onNoSubscription = {}
@@ -406,7 +430,10 @@ class MainActivity : ComponentActivity() {
                                     planId = selectedPlan.id,
                                     planName = selectedPlan.name,
                                     planPrice = selectedPlan.priceLabel,
-                                    planPeriod = selectedPlan.periodLabel
+                                    planPeriod = selectedPlan.periodLabel,
+                                    planFeatures = selectedPlan.features
+                                        .filter { it.included }
+                                        .map { it.text }
                                 )
                                 navController.navigate(Screen.ConfirmSubscription.route)
                             }
@@ -427,10 +454,11 @@ class MainActivity : ComponentActivity() {
                                 }
                             )[SubscriptionViewModel::class.java]
                         }
-                        val selectedPlanId = sessionManager.getPendingPlanId()
-                        val selectedPlanName = sessionManager.getPendingPlanName() ?: "Pro"
-                        val selectedPlanPrice = sessionManager.getPendingPlanPrice() ?: "$19"
-                        val selectedPlanPeriod = sessionManager.getPendingPlanPeriod() ?: "/mo"
+                        val pendingPlan = sessionManager.getPendingPlanSelection()
+                        val selectedPlanId = pendingPlan?.id
+                        val selectedPlanName = pendingPlan?.name ?: "Pro"
+                        val selectedPlanPrice = pendingPlan?.price ?: "$19"
+                        val selectedPlanPeriod = pendingPlan?.period ?: "/mo"
 
                         ConfirmSubscriptionScreen(
                             onBack = { navController.popBackStack() },
@@ -445,7 +473,10 @@ class MainActivity : ComponentActivity() {
                             selectedPlanName = selectedPlanName,
                             selectedPlanPrice = selectedPlanPrice,
                             selectedPlanPeriod = selectedPlanPeriod,
-                            selectedPlanFeatures = selectedPlanFeatures(selectedPlanName),
+                            selectedPlanFeatures = resolvePendingPlanFeatures(
+                                pendingPlan = pendingPlan,
+                                fallbackPlanName = selectedPlanName
+                            ),
                             isSubmitting = subscriptionViewModel.isSubmitting,
                             errorMessage = subscriptionViewModel.errorMessage
                         )
@@ -465,10 +496,11 @@ class MainActivity : ComponentActivity() {
                                 }
                             )[SubscriptionViewModel::class.java]
                         }
-                        val selectedPlanId = sessionManager.getPendingPlanId()
-                        val selectedPlanName = sessionManager.getPendingPlanName() ?: "Pro"
-                        val selectedPlanPrice = sessionManager.getPendingPlanPrice() ?: "$19"
-                        val selectedPlanPeriod = sessionManager.getPendingPlanPeriod() ?: "/mo"
+                        val pendingPlan = sessionManager.getPendingPlanSelection()
+                        val selectedPlanId = pendingPlan?.id
+                        val selectedPlanName = pendingPlan?.name ?: "Pro"
+                        val selectedPlanPrice = pendingPlan?.price ?: "$19"
+                        val selectedPlanPeriod = pendingPlan?.period ?: "/mo"
                         var stripePublishableKey by remember { mutableStateOf("") }
                         var pendingPlanId by remember { mutableStateOf<String?>(null) }
                         var pendingStripeSubscriptionId by remember { mutableStateOf<String?>(null) }
@@ -484,10 +516,9 @@ class MainActivity : ComponentActivity() {
 
                         val navigateToSubscriberHome: () -> Unit = {
                             sessionManager.clearPendingPlan()
-                            val homeUserName = sessionManager.getUserName().takeUnless { it.isNullOrBlank() } ?: "User"
-                            val encodedName = Uri.encode(homeUserName)
-                            navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
+                            navController.navigate(Screen.SubscriberHome.route) {
                                 popUpTo(Screen.ExplorePlans.route) { inclusive = true }
+                                launchSingleTop = true
                             }
                         }
 
@@ -610,8 +641,10 @@ class MainActivity : ComponentActivity() {
                             selectedPlanName = selectedPlanName,
                             selectedPlanPrice = selectedPlanPrice,
                             selectedPlanPeriod = selectedPlanPeriod,
+                            initialCardholderName = sessionManager.getUserName().orEmpty(),
                             isSubmitting = subscriptionViewModel.isSubmitting,
-                            errorMessage = subscriptionViewModel.errorMessage
+                            errorMessage = subscriptionViewModel.errorMessage,
+                            onDismissError = subscriptionViewModel::clearError
                         )
                     }
 
@@ -619,10 +652,9 @@ class MainActivity : ComponentActivity() {
                         PaymentConfirmationScreen(
                             onViewDashboard = {
                                 sessionManager.clearPendingPlan()
-                                val homeUserName = sessionManager.getUserName().takeUnless { it.isNullOrBlank() } ?: "User"
-                                val encodedName = Uri.encode(homeUserName)
-                                navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
+                                navController.navigate(Screen.SubscriberHome.route) {
                                     popUpTo(Screen.ExplorePlans.route) { inclusive = true }
+                                    launchSingleTop = true
                                 }
                             },
                             onGoToHistory = {
@@ -641,19 +673,8 @@ class MainActivity : ComponentActivity() {
                         val fallbackName = sessionManager.getUserName().takeUnless { it.isNullOrBlank() } ?: "Guest"
                         SubscriberHomeScreen(
                             navController = navController,
-                            userName = fallbackName
-                        )
-                    }
-
-                    composable(
-                        route = "${Screen.SubscriberHome.route}/{userName}",
-                        arguments = listOf(navArgument("userName") { type = NavType.StringType })
-                    ) { backStackEntry ->
-                        val extractedName = backStackEntry.arguments?.getString("userName") ?: "Guest"
-
-                        SubscriberHomeScreen(
-                            navController = navController,
-                            userName = extractedName
+                            userName = fallbackName,
+                            viewModel = sharedSubscriberHomeViewModel
                         )
                     }
                     // Inside your NavHost
@@ -676,7 +697,19 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable(Screen.ShopProducts.route) {
-                        ShopProductsScreen(navController)
+                        ShopProductsScreen(
+                            viewModel = sharedShopProductsViewModel,
+                            onSelectPlan = { selectedPlan ->
+                                sessionManager.savePendingPlan(
+                                    planId = selectedPlan.id,
+                                    planName = selectedPlan.title,
+                                    planPrice = selectedPlan.priceLabel,
+                                    planPeriod = selectedPlan.periodLabel,
+                                    planFeatures = selectedPlan.features
+                                )
+                                navController.navigate(Screen.ConfirmSubscription.route)
+                            }
+                        )
                     }
                     composable(Screen.Profile.route) {
                         // 1. Get the data from your session/storage
@@ -727,8 +760,63 @@ class MainActivity : ComponentActivity() {
 }
 
 // --- UI Components ---
+private fun NavHostController.navigateToBottomTab(route: String) {
+    if (currentDestination?.route == route) {
+        return
+    }
+
+    if (route == Screen.SubscriberHome.route) {
+        val poppedToHome = popBackStack(Screen.SubscriberHome.route, inclusive = false)
+        if (!poppedToHome && currentDestination?.route != Screen.SubscriberHome.route) {
+            navigate(Screen.SubscriberHome.route) {
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+        return
+    }
+
+    navigate(route) {
+        popUpTo(Screen.SubscriberHome.route) {
+            saveState = true
+        }
+        launchSingleTop = true
+        restoreState = true
+    }
+}
+
 private fun selectedPlanFeatures(planName: String): List<String> {
     return when (planName.lowercase()) {
+        "the wellness box" -> listOf(
+            "6 organic self-care essentials",
+            "Monthly wellness curation",
+            "Free doorstep delivery"
+        )
+
+        "eco-home essentials" -> listOf(
+            "Zero-waste home supplies",
+            "Thoughtfully sourced eco picks",
+            "Monthly refill-ready bundle"
+        )
+
+        "gamer's loot" -> listOf(
+            "Premium gaming accessories",
+            "High-performance gear picks",
+            "Late-night snack extras"
+        )
+
+        "snack stash express" -> listOf(
+            "Sweet and savory snack rotation",
+            "Seasonal limited-edition treats",
+            "Quick monthly delivery"
+        )
+
+        "glow ritual box" -> listOf(
+            "Beauty and skincare essentials",
+            "Glow-focused monthly routine",
+            "Exclusive editor picks"
+        )
+
         "starter" -> listOf(
             "5 recurring orders",
             "Basic analytics",
@@ -750,6 +838,14 @@ private fun selectedPlanFeatures(planName: String): List<String> {
 
         else -> listOf("Standard subscription access")
     }
+}
+
+private fun resolvePendingPlanFeatures(
+    pendingPlan: PendingPlanSelection?,
+    fallbackPlanName: String
+): List<String> {
+    return pendingPlan?.features?.takeIf { it.isNotEmpty() }
+        ?: selectedPlanFeatures(fallbackPlanName)
 }
 
 private sealed class PendingStripeConfirmation {

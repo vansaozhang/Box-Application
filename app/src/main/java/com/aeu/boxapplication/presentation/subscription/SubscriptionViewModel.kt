@@ -14,6 +14,8 @@ import com.aeu.boxapplication.data.remote.dto.request.SubscribeRequest
 import com.aeu.boxapplication.data.remote.dto.response.StripeCheckoutIntentResponse
 import com.aeu.boxapplication.data.remote.dto.response.SubscriptionPlanApiResponse
 import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
 import java.util.Locale
 
 enum class BillingCycle(val apiValue: String, val periodLabel: String) {
@@ -166,7 +168,10 @@ class SubscriptionViewModel(
                 if (response.isSuccessful) {
                     onSuccess()
                 } else {
-                    errorMessage = response.errorBody()?.string() ?: "Failed to subscribe"
+                    errorMessage = parseApiError(
+                        errorBody = response.errorBody()?.string(),
+                        fallback = "Failed to subscribe"
+                    )
                 }
             } catch (e: Exception) {
                 errorMessage = "Network error: ${e.localizedMessage}"
@@ -203,7 +208,10 @@ class SubscriptionViewModel(
                         errorMessage = "Failed to initialize Stripe checkout"
                     }
                 } else {
-                    errorMessage = response.errorBody()?.string() ?: "Failed to initialize Stripe checkout"
+                    errorMessage = parseApiError(
+                        errorBody = response.errorBody()?.string(),
+                        fallback = "Failed to initialize Stripe checkout"
+                    )
                 }
             } catch (e: Exception) {
                 errorMessage = "Network error: ${e.localizedMessage}"
@@ -239,7 +247,10 @@ class SubscriptionViewModel(
                 if (response.isSuccessful) {
                     onSuccess()
                 } else {
-                    errorMessage = response.errorBody()?.string() ?: "Failed to confirm subscription"
+                    errorMessage = parseApiError(
+                        errorBody = response.errorBody()?.string(),
+                        fallback = "Failed to confirm subscription"
+                    )
                 }
             } catch (e: Exception) {
                 errorMessage = "Network error: ${e.localizedMessage}"
@@ -255,6 +266,36 @@ class SubscriptionViewModel(
 
     fun setError(message: String) {
         errorMessage = message
+    }
+
+    private fun parseApiError(errorBody: String?, fallback: String): String {
+        if (errorBody.isNullOrBlank()) {
+            return fallback
+        }
+
+        val extracted = runCatching {
+            val json = JSONObject(errorBody)
+            val messageValue = json.opt("message")
+            when (messageValue) {
+                is JSONArray -> {
+                    buildList {
+                        for (index in 0 until messageValue.length()) {
+                            add(messageValue.optString(index))
+                        }
+                    }.firstOrNull { it.isNotBlank() }
+                }
+
+                else -> json.optString("message")
+            }
+        }.getOrNull()?.takeIf { it.isNotBlank() && it != "null" } ?: errorBody
+
+        val normalized = extracted.lowercase(Locale.US)
+        return when {
+            "already has an active subscription" in normalized ->
+                "You already have an active subscription."
+
+            else -> extracted
+        }
     }
 }
 

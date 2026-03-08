@@ -2,13 +2,13 @@ package com.aeu.boxapplication.presentation.subscriber
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,11 +28,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +44,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.aeu.boxapplication.core.utils.CurrencyUtils
+import com.aeu.boxapplication.data.remote.dto.response.DashboardBillingResponse
+import com.aeu.boxapplication.data.remote.dto.response.DashboardShipmentResponse
+import com.aeu.boxapplication.data.remote.dto.response.DashboardShipmentStepResponse
+import com.aeu.boxapplication.data.remote.dto.response.DashboardSubscriptionResponse
+import com.aeu.boxapplication.presentation.navigation.Screen
+import com.aeu.boxapplication.ui.components.AppGlobalLoadingEffect
+import com.aeu.boxapplication.ui.components.AppStatusBanner
+import com.aeu.boxapplication.ui.components.AppStatusTone
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 
 private val HomeBackground = Color(0xFFF3F5F9)
 private val HomeCard = Color(0xFFFFFFFF)
@@ -50,15 +64,35 @@ private val HomeTitle = Color(0xFF111827)
 private val HomeBody = Color(0xFF64748B)
 private val HomeStroke = Color(0xFFE6EAF0)
 private val HomePending = Color(0xFFF59E0B)
+private val HomeError = Color(0xFFDC2626)
 
 // Compatibility token used by other screens in the same package.
 val BoxlyTextGrey = HomeBody
 
 @Composable
-fun SubscriberHomeScreen(navController: NavController, userName: String) {
+fun SubscriberHomeScreen(
+    navController: NavController,
+    userName: String,
+    viewModel: SubscriberHomeViewModel
+) {
+    val uiState = viewModel.uiState
+    val dashboard = uiState.dashboard
+    val activeSubscriptions = dashboard?.activeSubscriptions.orEmpty()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadDashboard()
+    }
+
+    AppGlobalLoadingEffect(isVisible = uiState.isLoading && dashboard == null)
+
     Scaffold(
         containerColor = HomeBackground,
-        topBar = { DashboardHeader(userName = userName) }
+        topBar = {
+            DashboardHeader(
+                userName = userName,
+                onRefresh = { viewModel.loadDashboard(forceRefresh = true) }
+            )
+        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -67,11 +101,43 @@ fun SubscriberHomeScreen(navController: NavController, userName: String) {
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
         ) {
-            BillingCard()
+            if (uiState.isLoading && dashboard != null) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    color = HomePrimary,
+                    trackColor = HomePrimary.copy(alpha = 0.12f)
+                )
+            }
+
+            uiState.errorMessage?.let { message ->
+                AppStatusBanner(
+                    title = "Dashboard unavailable",
+                    message = message,
+                    tone = AppStatusTone.Error,
+                    onDismiss = viewModel::dismissError,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+            }
+
+            BillingCard(
+                billing = dashboard?.billing,
+                onViewDetails = {
+                    if (activeSubscriptions.isNotEmpty()) {
+                        navController.navigate(Screen.SubscribDetail.route)
+                    } else {
+                        navController.navigate(Screen.ExplorePlans.route)
+                    }
+                }
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            TrackingCard()
+            TrackingCard(
+                shipment = dashboard?.latestShipment,
+                onTrack = { navController.navigate(Screen.OrderHistory.route) }
+            )
 
             Spacer(modifier = Modifier.height(18.dp))
 
@@ -81,32 +147,33 @@ fun SubscriberHomeScreen(navController: NavController, userName: String) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 SectionTitle("Active Subscriptions")
-                TextButton(onClick = {}) {
-                    Text("View All", color = HomePrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                TextButton(
+                    onClick = {
+                        if (activeSubscriptions.isNotEmpty()) {
+                            navController.navigate(Screen.SubscribDetail.route)
+                        } else {
+                            navController.navigate(Screen.ExplorePlans.route)
+                        }
+                    }
+                ) {
+                    Text(
+                        text = if (activeSubscriptions.isNotEmpty()) "View All" else "Explore",
+                        color = HomePrimary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
 
-            SubscriptionListItem(
-                name = "Gourmet Coffee Box",
-                date = "Oct 24, 2023",
-                price = "$19.99/mo",
-                status = "PAID",
-                statusColor = HomePrimary
-            )
-            SubscriptionListItem(
-                name = "Artisan Tea Selection",
-                date = "Oct 28, 2023",
-                price = "$10.00/mo",
-                status = "PENDING",
-                statusColor = HomePending
-            )
-            SubscriptionListItem(
-                name = "Premium Sound Stream",
-                date = "Nov 02, 2023",
-                price = "$14.99/mo",
-                status = "PAID",
-                statusColor = HomePrimary
-            )
+            if (activeSubscriptions.isEmpty()) {
+                EmptySubscriptionsCard(
+                    onExplore = { navController.navigate(Screen.ExplorePlans.route) }
+                )
+            } else {
+                activeSubscriptions.forEach { subscription ->
+                    SubscriptionListItem(subscription = subscription)
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -114,7 +181,10 @@ fun SubscriberHomeScreen(navController: NavController, userName: String) {
 }
 
 @Composable
-private fun DashboardHeader(userName: String) {
+private fun DashboardHeader(
+    userName: String,
+    onRefresh: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -157,20 +227,35 @@ private fun DashboardHeader(userName: String) {
         }
 
         IconButton(
-            onClick = {},
+            onClick = onRefresh,
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
                 .background(Color.White)
                 .border(1.dp, HomeStroke, CircleShape)
         ) {
-            Icon(Icons.Default.Notifications, contentDescription = null, tint = HomeTitle)
+            Icon(
+                Icons.Default.Notifications,
+                contentDescription = "Refresh dashboard",
+                tint = HomeTitle
+            )
         }
     }
 }
 
 @Composable
-private fun BillingCard() {
+private fun BillingCard(
+    billing: DashboardBillingResponse?,
+    onViewDetails: () -> Unit
+) {
+    val hasSubscriptions = (billing?.subscriptionCount ?: 0) > 0
+    val billingDate = formatLongDate(billing?.nextBillingDate) ?: "No upcoming billing yet"
+    val totalCharge = if (hasSubscriptions) {
+        "Total to be charged: ${CurrencyUtils.formatPrice(billing?.totalAmount ?: 0.0)}"
+    } else {
+        "Choose a plan to start your next delivery."
+    }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -179,7 +264,7 @@ private fun BillingCard() {
         color = HomeCard,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, HomeStroke)
+        border = BorderStroke(1.dp, HomeStroke)
     ) {
         Column(
             modifier = Modifier
@@ -205,13 +290,13 @@ private fun BillingCard() {
 
             Column {
                 Text(
-                    text = "October 24, 2023",
+                    text = billingDate,
                     fontSize = 21.sp,
                     color = HomeTitle,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Total to be charged: $29.99",
+                    text = totalCharge,
                     fontSize = 13.sp,
                     color = HomeBody,
                     modifier = Modifier.padding(top = 2.dp)
@@ -219,30 +304,41 @@ private fun BillingCard() {
             }
 
             Button(
-                onClick = {},
+                onClick = onViewDetails,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(46.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = HomePrimary)
             ) {
-                Text("View Details", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Text(
+                    text = if (hasSubscriptions) "View Details" else "Explore Plans",
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp
+                )
             }
         }
     }
 }
 
 @Composable
-private fun TrackingCard() {
+private fun TrackingCard(
+    shipment: DashboardShipmentResponse?,
+    onTrack: () -> Unit
+) {
+    val steps = shipment?.steps ?: defaultShipmentSteps()
+    val progress = shipment?.progress?.toFloat() ?: 0f
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(150.dp),
+            .height(174.dp),
         shape = RoundedCornerShape(20.dp),
         color = HomeCard,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, HomeStroke)
+        border = BorderStroke(1.dp, HomeStroke)
     ) {
         Column(
             modifier = Modifier
@@ -259,21 +355,22 @@ private fun TrackingCard() {
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "In Transit",
+                        text = shipmentStatusTitle(shipment),
                         fontSize = 18.sp,
                         color = HomeTitle,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(top = 2.dp)
                     )
                     Text(
-                        text = "Arriving Oct 22, 2023",
+                        text = shipmentStatusSubtitle(shipment),
                         fontSize = 13.sp,
                         color = HomeBody
                     )
                 }
 
                 Button(
-                    onClick = {},
+                    onClick = onTrack,
+                    enabled = shipment != null,
                     modifier = Modifier.height(42.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
                     shape = RoundedCornerShape(12.dp),
@@ -290,14 +387,18 @@ private fun TrackingCard() {
                         .padding(bottom = 6.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Packed", fontSize = 11.sp, color = HomeBody)
-                    Text("Shipped", fontSize = 11.sp, color = HomePrimary, fontWeight = FontWeight.Bold)
-                    Text("Delivered", fontSize = 11.sp, color = HomeBody)
+                    steps.forEach { step ->
+                        Text(
+                            text = step.label,
+                            fontSize = 11.sp,
+                            color = if (step.current) HomePrimary else HomeBody,
+                            fontWeight = if (step.current) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
                 }
 
                 ShipmentProgressBar(
-                    packedProgress = 0.46f,
-                    totalProgress = 0.62f,
+                    progress = progress,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(8.dp)
@@ -309,80 +410,27 @@ private fun TrackingCard() {
 
 @Composable
 private fun ShipmentProgressBar(
-    packedProgress: Float,
-    totalProgress: Float,
+    progress: Float,
     modifier: Modifier = Modifier
 ) {
-    val packed = packedProgress.coerceIn(0f, 1f)
-    val total = totalProgress.coerceIn(packed, 1f)
-    val shipped = (total - packed).coerceAtLeast(0f)
-    val packedWeight = if (total > 0f) packed / total else 0f
-    val shippedWeight = if (total > 0f) shipped / total else 0f
-
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(50.dp))
             .background(HomePrimary.copy(alpha = 0.14f))
     ) {
-        if (total > 0f) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth(total)
-                    .fillMaxHeight()
-            ) {
-                if (packedWeight > 0f) {
-                    Box(
-                        modifier = Modifier
-                            .weight(packedWeight)
-                            .fillMaxHeight()
-                            .background(
-                                color = HomePrimary,
-                                shape = if (shippedWeight > 0f) {
-                                    RoundedCornerShape(
-                                        topStart = 50.dp,
-                                        bottomStart = 50.dp,
-                                        topEnd = 0.dp,
-                                        bottomEnd = 0.dp
-                                    )
-                                } else {
-                                    RoundedCornerShape(50.dp)
-                                }
-                            )
-                    )
-                }
-                if (shippedWeight > 0f) {
-                    Box(
-                        modifier = Modifier
-                            .weight(shippedWeight)
-                            .fillMaxHeight()
-                            .background(
-                                color = HomePrimary.copy(alpha = 0.82f),
-                                shape = if (packedWeight > 0f) {
-                                    RoundedCornerShape(
-                                        topStart = 0.dp,
-                                        bottomStart = 0.dp,
-                                        topEnd = 50.dp,
-                                        bottomEnd = 50.dp
-                                    )
-                                } else {
-                                    RoundedCornerShape(50.dp)
-                                }
-                            )
-                    )
-                }
-            }
-        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(progress.coerceIn(0f, 1f))
+                .height(8.dp)
+                .background(HomePrimary, RoundedCornerShape(50.dp))
+        )
     }
 }
 
 @Composable
-private fun SubscriptionListItem(
-    name: String,
-    date: String,
-    price: String,
-    status: String,
-    statusColor: Color
-) {
+private fun SubscriptionListItem(subscription: DashboardSubscriptionResponse) {
+    val statusColor = subscriptionStatusColor(subscription.billingStatus)
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -391,7 +439,7 @@ private fun SubscriptionListItem(
         shape = RoundedCornerShape(16.dp),
         color = HomeCard,
         shadowElevation = 0.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, HomeStroke)
+        border = BorderStroke(1.dp, HomeStroke)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
@@ -416,7 +464,7 @@ private fun SubscriptionListItem(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = name,
+                    text = subscription.name,
                     fontSize = 14.sp,
                     color = HomeTitle,
                     fontWeight = FontWeight.SemiBold,
@@ -424,13 +472,13 @@ private fun SubscriptionListItem(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "Recharge Date: $date",
+                    text = "Recharge Date: ${formatShortDate(subscription.rechargeDate) ?: "TBD"}",
                     fontSize = 11.sp,
                     color = HomeBody,
                     modifier = Modifier.padding(top = 1.dp)
                 )
                 Text(
-                    text = price,
+                    text = formatSubscriptionPrice(subscription),
                     fontSize = 13.sp,
                     color = HomePrimary,
                     fontWeight = FontWeight.Bold,
@@ -443,12 +491,47 @@ private fun SubscriptionListItem(
                 color = statusColor.copy(alpha = 0.12f)
             ) {
                 Text(
-                    text = status,
+                    text = subscription.billingStatus.uppercase(Locale.US),
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                     fontSize = 10.sp,
                     color = statusColor,
                     fontWeight = FontWeight.Bold
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptySubscriptionsCard(onExplore: () -> Unit) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = HomeCard,
+        border = BorderStroke(1.dp, HomeStroke)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
+        ) {
+            Text(
+                text = "No active subscriptions",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = HomeTitle
+            )
+            Text(
+                text = "Explore available plans to populate your dashboard.",
+                fontSize = 12.sp,
+                color = HomeBody,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+            TextButton(
+                onClick = onExplore,
+                contentPadding = PaddingValues(top = 8.dp)
+            ) {
+                Text("Browse plans", color = HomePrimary, fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -462,4 +545,81 @@ private fun SectionTitle(text: String) {
         color = HomeTitle,
         fontWeight = FontWeight.Bold
     )
+}
+
+private fun defaultShipmentSteps(): List<DashboardShipmentStepResponse> {
+    return listOf(
+        DashboardShipmentStepResponse("PACKED", "Packed", completed = false, current = true),
+        DashboardShipmentStepResponse("SHIPPED", "Shipped", completed = false, current = false),
+        DashboardShipmentStepResponse("DELIVERED", "Delivered", completed = false, current = false)
+    )
+}
+
+private fun shipmentStatusTitle(shipment: DashboardShipmentResponse?): String {
+    return when (shipment?.status?.uppercase(Locale.US)) {
+        "DELIVERED" -> "Delivered"
+        "SHIPPED" -> "In Transit"
+        "PENDING" -> "Packed"
+        else -> "No active shipment"
+    }
+}
+
+private fun shipmentStatusSubtitle(shipment: DashboardShipmentResponse?): String {
+    if (shipment == null) {
+        return "Your upcoming shipment will appear here once it is created."
+    }
+
+    val displayDate = formatShortDate(
+        shipment.estimatedDeliveryDate ?: shipment.shipmentDate
+    ) ?: "TBD"
+
+    return when (shipment.status.uppercase(Locale.US)) {
+        "DELIVERED" -> "Delivered on $displayDate"
+        "SHIPPED" -> "Arriving $displayDate"
+        else -> "Packed on ${formatShortDate(shipment.shipmentDate) ?: displayDate}"
+    }
+}
+
+private fun subscriptionStatusColor(status: String): Color {
+    return when (status.uppercase(Locale.US)) {
+        "PAID" -> HomePrimary
+        "FAILED" -> HomeError
+        else -> HomePending
+    }
+}
+
+private fun formatSubscriptionPrice(subscription: DashboardSubscriptionResponse): String {
+    return buildString {
+        append(CurrencyUtils.formatPrice(subscription.price))
+        append(frequencySuffix(subscription.frequencyInDays))
+    }
+}
+
+private fun frequencySuffix(frequencyInDays: Int): String {
+    return when {
+        frequencyInDays in 28..31 -> "/mo"
+        frequencyInDays == 7 -> "/wk"
+        frequencyInDays == 14 -> "/2wk"
+        frequencyInDays in 89..92 -> "/3mo"
+        frequencyInDays in 364..366 -> "/yr"
+        else -> ""
+    }
+}
+
+private fun formatLongDate(value: String?): String? = formatDashboardDate(value, "MMMM dd, yyyy")
+
+private fun formatShortDate(value: String?): String? = formatDashboardDate(value, "MMM dd, yyyy")
+
+private fun formatDashboardDate(value: String?, outputPattern: String): String? {
+    if (value.isNullOrBlank()) {
+        return null
+    }
+
+    val normalizedValue = value.take(10)
+    val parser = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
+    val formatter = SimpleDateFormat(outputPattern, Locale.US)
+    val parsedDate = runCatching { parser.parse(normalizedValue) }.getOrNull() ?: return value
+    return formatter.format(parsedDate)
 }

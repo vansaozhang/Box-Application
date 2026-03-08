@@ -30,8 +30,11 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,9 +51,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aeu.boxapplication.ui.components.AppGlobalLoadingEffect
+import com.aeu.boxapplication.ui.components.AppNotificationPosition
 import com.aeu.boxapplication.ui.components.AppPrimaryButton
-import com.aeu.boxapplication.ui.components.AppStatusBanner
 import com.aeu.boxapplication.ui.components.AppStatusTone
+import com.aeu.boxapplication.ui.components.LocalAppNotificationHostState
+import org.json.JSONArray
+import org.json.JSONObject
 import java.time.YearMonth
 
 data class PaymentCardInput(
@@ -69,11 +75,16 @@ fun PaymentDetailsScreen(
     selectedPlanName: String = "Pro",
     selectedPlanPrice: String = "$19",
     selectedPlanPeriod: String = "/mo",
+    initialCardholderName: String = "",
     isSubmitting: Boolean = false,
-    errorMessage: String? = null
+    errorMessage: String? = null,
+    onDismissError: () -> Unit = {}
 ) {
+    val notificationHostState = LocalAppNotificationHostState.current
     val (cardNumber, setCardNumber) = remember { mutableStateOf("") }
-    val (cardholderName, setCardholderName) = remember { mutableStateOf("") }
+    val (cardholderName, setCardholderName) = rememberSaveable(initialCardholderName) {
+        mutableStateOf(initialCardholderName)
+    }
     val (expiryDate, setExpiryDate) = remember { mutableStateOf(TextFieldValue("")) }
     val (cvv, setCvv) = remember { mutableStateOf("") }
     val cardNumberDigits = cardNumber.filter { it.isDigit() }
@@ -88,10 +99,6 @@ fun PaymentDetailsScreen(
     val showExpiryError = expiryError != null
     val showCvvError = cvv.isNotEmpty() && !isCvvValid
     val isFormValid = isCardNumberValid && isCardholderValid && isExpiryValid && isCvvValid
-    val paymentMessage = errorMessage
-        ?.takeIf { it.isNotBlank() }
-        ?.let(::toPaymentErrorContent)
-    val contentBottomPadding = if (paymentMessage == null) 96.dp else 188.dp
     val whiteInputColors = OutlinedTextFieldDefaults.colors(
         focusedContainerColor = Color.White,
         unfocusedContainerColor = Color.White,
@@ -99,6 +106,26 @@ fun PaymentDetailsScreen(
     )
 
     AppGlobalLoadingEffect(isVisible = isSubmitting)
+
+    LaunchedEffect(errorMessage) {
+        val rawError = errorMessage?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
+        val paymentMessage = toPaymentErrorContent(rawError)
+        notificationHostState.show(
+            title = paymentMessage.title,
+            message = paymentMessage.message,
+            tone = AppStatusTone.Error,
+            label = "Payment issue",
+            position = AppNotificationPosition.Top,
+            onDismiss = onDismissError
+        )
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            notificationHostState.dismiss()
+            onDismissError()
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -110,7 +137,7 @@ fun PaymentDetailsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 12.dp)
-                .padding(bottom = contentBottomPadding),
+                .padding(bottom = 96.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(
@@ -180,7 +207,7 @@ fun PaymentDetailsScreen(
                 },
                 placeholder = {
                     Text(
-                        text = "0000 0000 0000 0000",
+                        text = "4242 4242 4242 4242",
                         fontSize = 12.sp,
                         color = Color(0xFF7B8794)
                     )
@@ -408,16 +435,6 @@ fun PaymentDetailsScreen(
                 .background(Color.White)
                 .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 28.dp)
         ) {
-            if (paymentMessage != null) {
-                AppStatusBanner(
-                    title = paymentMessage.title,
-                    message = paymentMessage.message,
-                    tone = AppStatusTone.Error,
-                    label = "Payment issue"
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-
             AppPrimaryButton(
                 text = if (isSubmitting) "Processing..." else "Pay Now",
                 onClick = {
@@ -560,14 +577,18 @@ private data class PaymentErrorContent(
 )
 
 private fun toPaymentErrorContent(rawMessage: String): PaymentErrorContent {
-    val detail = rawMessage
-        .substringAfter(':', rawMessage)
+    val detail = extractReadablePaymentMessage(rawMessage)
         .trim()
         .trimEnd('.')
 
     val normalized = detail.lowercase()
 
     return when {
+        "already have an active subscription" in normalized ||
+            "already has an active subscription" in normalized -> PaymentErrorContent(
+            title = "Subscription already active",
+            message = "This account already has an active subscription. Manage it from Home instead of starting a new one."
+        )
         "card number is incorrect" in normalized -> PaymentErrorContent(
             title = "Card number is invalid",
             message = "Check the card number and try again."
@@ -601,6 +622,30 @@ private fun toPaymentErrorContent(rawMessage: String): PaymentErrorContent {
             message = detail.ensureSentence()
         )
     }
+}
+
+private fun extractReadablePaymentMessage(rawMessage: String): String {
+    val trimmed = rawMessage.trim()
+    if (!trimmed.startsWith("{")) {
+        return trimmed.substringAfter(':', trimmed)
+    }
+
+    return runCatching {
+        val json = JSONObject(trimmed)
+        val messageValue = json.opt("message")
+        when (messageValue) {
+            is JSONArray -> {
+                buildList {
+                    for (index in 0 until messageValue.length()) {
+                        add(messageValue.optString(index))
+                    }
+                }.firstOrNull { it.isNotBlank() }
+            }
+
+            else -> json.optString("message")
+        }
+    }.getOrNull()?.takeIf { it.isNotBlank() && it != "null" }
+        ?: trimmed.substringAfter(':', trimmed)
 }
 
 private fun String.ensureSentence(): String {

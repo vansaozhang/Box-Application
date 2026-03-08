@@ -10,6 +10,8 @@ import com.aeu.boxapplication.data.remote.dto.request.SubscribeRequest
 import com.aeu.boxapplication.data.remote.dto.response.StripeCheckoutIntentResponse
 import com.aeu.boxapplication.data.remote.dto.response.SubscriptionApiResponse
 import com.aeu.boxapplication.data.remote.dto.response.SubscriptionPlanApiResponse
+import com.aeu.boxapplication.data.remote.dto.response.SubscriptionPlanStorefrontResponse
+import com.aeu.boxapplication.data.remote.dto.response.SubscriberDashboardResponse
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
@@ -35,6 +37,11 @@ interface AuthApiService {
         @Query("billingCycle") billingCycle: String? = null
     ): Response<List<SubscriptionPlanApiResponse>>
 
+    @GET("subscription-plans/storefront")
+    suspend fun getSubscriptionPlanStorefront(
+        @Header("Authorization") authHeader: String
+    ): Response<SubscriptionPlanStorefrontResponse>
+
     @POST("subscription-plans/seed-defaults")
     suspend fun seedDefaultPlans(
         @Header("Authorization") authHeader: String
@@ -44,6 +51,11 @@ interface AuthApiService {
     suspend fun getMySubscription(
         @Header("Authorization") authHeader: String
     ): Response<ResponseBody>
+
+    @GET("subscriptions/dashboard")
+    suspend fun getSubscriberDashboard(
+        @Header("Authorization") authHeader: String
+    ): Response<SubscriberDashboardResponse>
 
     @POST("subscriptions/subscribe")
     suspend fun subscribeToPlan(
