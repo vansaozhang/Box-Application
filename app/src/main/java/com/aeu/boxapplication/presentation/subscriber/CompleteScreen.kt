@@ -187,7 +187,7 @@ private fun OrderDetailsCard(isCompact: Boolean = false) {
                 )
             }
 
-            HorizontalDivider(
+            Divider(
                 modifier = Modifier.padding(vertical = metricDividerGap),
                 color = ConfirmStroke
             )
@@ -250,7 +250,7 @@ private fun DeliveryProgressCard(isCompact: Boolean = false) {
             }
             Spacer(modifier = Modifier.height(progressTopGap))
             LinearProgressIndicator(
-                progress = { 0.33f },
+                progress = 0.33f,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(progressHeight),

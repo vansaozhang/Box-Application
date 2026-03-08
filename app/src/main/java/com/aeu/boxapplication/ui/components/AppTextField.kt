@@ -108,7 +108,7 @@ fun AppTextField(
         keyboardOptions = keyboardOptions ?: KeyboardOptions(
             keyboardType = keyboardType,
             imeAction = imeAction,
-            autoCorrectEnabled = keyboardType != KeyboardType.Email && keyboardType != KeyboardType.Password
+            autoCorrect = keyboardType != KeyboardType.Email && keyboardType != KeyboardType.Password
         ),
         visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
         shape = shape,

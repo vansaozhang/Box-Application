@@ -4,7 +4,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -51,7 +51,7 @@ fun OrderConfirmScreen(navController: NavController) {
             navigationIcon = {
                 IconButton(onClick = { navController.popBackStack() }) {
                     Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
+                        Icons.Filled.ArrowBack,
                         contentDescription = "Back",
                         tint = ConfirmPrimary
                     )
@@ -288,7 +288,7 @@ fun PriceBreakdown(planType: String) {
                 Text("Shipping", color = ConfirmBody)
                 Text("FREE", color = ConfirmPrimary, fontWeight = FontWeight.Bold)
             }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp), color = ConfirmStroke)
+            Divider(modifier = Modifier.padding(vertical = 20.dp), color = ConfirmStroke)
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

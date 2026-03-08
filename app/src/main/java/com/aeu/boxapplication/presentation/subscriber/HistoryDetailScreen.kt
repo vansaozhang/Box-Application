@@ -7,7 +7,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -42,7 +42,7 @@ fun HistoryDetailScreen(
             title = { Text("Transaction Details", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
             navigationIcon = {
                 IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                 }
             },
             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
@@ -90,7 +90,7 @@ fun HistoryDetailScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                     }
 
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = BoxlyBackground)
+                    Divider(modifier = Modifier.padding(vertical = 12.dp), color = BoxlyBackground)
                     SummaryRow("Subtotal", order.subtotal)
                     SummaryRow("Shipping", "Free")
                     SummaryRow("Total Charged", order.total, isBold = true, fontSize = 18.sp)

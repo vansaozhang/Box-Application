@@ -39,14 +39,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aeu.boxapplication.R
+import com.aeu.boxapplication.ui.components.AppGlobalLoadingEffect
 import com.aeu.boxapplication.ui.components.AppPrimaryButton
 
 @Composable
 fun SubscriptionsEmptyScreen(
     onBack: () -> Unit = {},
     onExplorePlans: () -> Unit = {},
-    onRestorePurchases: () -> Unit = {}
+    onRestorePurchases: () -> Unit = {},
+    isLoading: Boolean = false
 ) {
+    AppGlobalLoadingEffect(isVisible = isLoading)
+
     Scaffold(
         containerColor = Color.White
     ) {

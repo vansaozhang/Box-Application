@@ -23,7 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -39,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aeu.boxapplication.ui.components.AppGlobalLoadingEffect
 import com.aeu.boxapplication.ui.components.AppPrimaryButton
 
 @Composable
@@ -52,6 +52,8 @@ fun ExplorePlansScreen(
     onToggleMonthly: (Boolean) -> Unit,
     onSelectPlan: (PlanUiModel) -> Unit
 ) {
+    AppGlobalLoadingEffect(isVisible = isLoading)
+
     Scaffold(
         containerColor = Color.White
     ) { paddingValues ->
@@ -116,11 +118,6 @@ fun ExplorePlansScreen(
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
-
-                if (isLoading) {
-                    CircularProgressIndicator(color = Color(0xFF1E88E5))
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
 
                 if (!errorMessage.isNullOrBlank()) {
                     Text(

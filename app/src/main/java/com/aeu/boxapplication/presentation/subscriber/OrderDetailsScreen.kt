@@ -171,7 +171,7 @@ private fun OrderItemsCard(items: List<OrderItemInfo>) {
                     Text(item.price, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
                 if (index < items.size - 1) {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
+                    Divider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
                 }
             }
         }
@@ -195,7 +195,7 @@ private fun OrderTotalsCard(subtotal: String, total: String) {
         Column(modifier = Modifier.padding(20.dp)) {
             TotalRow("Subtotal", subtotal)
             TotalRow("Shipping", "Free")
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
+            Divider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFF1F5F9))
             TotalRow("Total", total, isTotal = true)
         }
     }

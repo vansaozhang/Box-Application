@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aeu.boxapplication.ui.components.AppGlobalLoadingEffect
 import com.aeu.boxapplication.ui.components.AppPrimaryButton
 
 @Composable
@@ -55,6 +56,8 @@ fun ConfirmSubscriptionScreen(
     isSubmitting: Boolean = false,
     errorMessage: String? = null
 ) {
+    AppGlobalLoadingEffect(isVisible = isSubmitting)
+
     val methods = listOf(
         PaymentMethodUi(
             id = "stripe_card",

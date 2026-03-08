@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ExitToApp
-import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -137,7 +135,7 @@ fun ProfileScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFF1F1))
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.ExitToApp,
+                        imageVector = Icons.Outlined.ExitToApp,
                         contentDescription = null,
                         tint = Color(0xFFEF4444)
                     )
@@ -185,7 +183,7 @@ private fun LogoutConfirmationDialog(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.ExitToApp,
+                        imageVector = Icons.Outlined.ExitToApp,
                         contentDescription = null,
                         tint = ProfileDanger,
                         modifier = Modifier.size(24.dp)
@@ -293,7 +291,7 @@ private fun ProfileMenuItem(icon: ImageVector, title: String, onClick: () -> Uni
             Spacer(modifier = Modifier.width(16.dp))
             Text(text = title, modifier = Modifier.weight(1f), fontWeight = FontWeight.Medium, color = ProfileTitle)
             Icon(
-                Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                Icons.Outlined.KeyboardArrowRight,
                 contentDescription = null,
                 tint = ProfileBody.copy(alpha = 0.65f)
             )

@@ -7,7 +7,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -23,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
@@ -38,7 +41,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -47,24 +50,38 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.aeu.boxapplication.core.utils.SessionManager
 import com.aeu.boxapplication.data.remote.RetrofitClient
+import com.aeu.boxapplication.data.remote.getMySubscriptionSafely
 import com.aeu.boxapplication.domain.repository.AuthRepository
 import com.aeu.boxapplication.presentation.LoginViewModel
+import com.aeu.boxapplication.presentation.PostLoginDestination
 import com.aeu.boxapplication.presentation.auth.LoginScreen
 import com.aeu.boxapplication.presentation.auth.RegisterScreen
 import com.aeu.boxapplication.presentation.auth.RegisterViewModel
 import com.aeu.boxapplication.presentation.auth.RegisterViewModelFactory
 import com.aeu.boxapplication.presentation.navigation.Screen
 import com.aeu.boxapplication.presentation.onboarding.LoadingScreen
+import com.aeu.boxapplication.presentation.payment.PaymentCardInput
+import com.aeu.boxapplication.presentation.payment.PaymentConfirmationScreen
+import com.aeu.boxapplication.presentation.payment.PaymentDetailsScreen
 import com.aeu.boxapplication.presentation.profile.ShippingAddressScreen
 import com.aeu.boxapplication.presentation.subscription.ConfirmSubscriptionScreen
 import com.aeu.boxapplication.presentation.subscription.ExplorePlansScreen
 import com.aeu.boxapplication.presentation.subscription.SubscriptionsEmptyScreen
 import com.aeu.boxapplication.presentation.subscription.SubscriptionViewModel
+import com.aeu.boxapplication.ui.components.AppLoadingHost
 import com.aeu.boxapplication.presentation.subscriber.*
-import com.stripe.android.PaymentConfiguration
-import com.stripe.android.paymentsheet.PaymentSheet
-import com.stripe.android.paymentsheet.PaymentSheetResult
-import com.stripe.android.paymentsheet.rememberPaymentSheet
+import com.aeu.boxapplication.ui.components.LocalAppLoadingHostState
+import com.aeu.boxapplication.ui.components.AppNotificationHost
+import com.aeu.boxapplication.ui.components.LocalAppNotificationHostState
+import com.aeu.boxapplication.ui.components.rememberAppLoadingHostState
+import com.aeu.boxapplication.ui.components.rememberAppNotificationHostState
+import com.stripe.android.model.Address
+import com.stripe.android.model.ConfirmPaymentIntentParams
+import com.stripe.android.model.ConfirmSetupIntentParams
+import com.stripe.android.model.PaymentMethod
+import com.stripe.android.model.PaymentMethodCreateParams
+import com.stripe.android.payments.paymentlauncher.PaymentResult
+import com.stripe.android.payments.paymentlauncher.rememberPaymentLauncher
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -81,6 +98,8 @@ class MainActivity : ComponentActivity() {
             val currentRoute = navBackStackEntry?.destination?.route
             val context = LocalContext.current
             val sessionManager = remember { SessionManager.getInstance(context) }
+            val notificationHostState = rememberAppNotificationHostState()
+            val loadingHostState = rememberAppLoadingHostState()
 
             // Define which screens should show the Bottom Navigation Bar
             val showBottomBar = currentRoute?.startsWith(Screen.SubscriberHome.route) == true ||
@@ -88,53 +107,58 @@ class MainActivity : ComponentActivity() {
                     currentRoute == Screen.ShopProducts.route ||
                     currentRoute == Screen.Profile.route
 
-            Scaffold(
-                containerColor = Color.White,
-                bottomBar = {
-                    if (showBottomBar) {
-                        SubscriberBottomNav(
-                            selected = when {
-                                currentRoute?.startsWith(Screen.SubscriberHome.route) == true -> SubscriberBottomNavItem.Home
-                                currentRoute == Screen.OrderHistory.route -> SubscriberBottomNavItem.History
-                                currentRoute == Screen.ShopProducts.route -> SubscriberBottomNavItem.Package
-                                currentRoute == Screen.Profile.route -> SubscriberBottomNavItem.Profile
-                                else -> SubscriberBottomNavItem.Home
-                            },
-                            onHomeClick = {
-                                val homeUserName = sessionManager.getUserName().takeUnless { it.isNullOrBlank() } ?: "Guest"
-                                val encodedName = Uri.encode(homeUserName)
-                                navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            onHistoryClick = {
-                                navController.navigate(Screen.OrderHistory.route) {
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            onShopClick = {
-                                navController.navigate(Screen.ShopProducts.route) {
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            onProfileClick = {
-                                navController.navigate(Screen.Profile.route) {
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
+            CompositionLocalProvider(
+                LocalAppNotificationHostState provides notificationHostState,
+                LocalAppLoadingHostState provides loadingHostState
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Scaffold(
+                        containerColor = Color.White,
+                        bottomBar = {
+                            if (showBottomBar) {
+                                SubscriberBottomNav(
+                                    selected = when {
+                                        currentRoute?.startsWith(Screen.SubscriberHome.route) == true -> SubscriberBottomNavItem.Home
+                                        currentRoute == Screen.OrderHistory.route -> SubscriberBottomNavItem.History
+                                        currentRoute == Screen.ShopProducts.route -> SubscriberBottomNavItem.Package
+                                        currentRoute == Screen.Profile.route -> SubscriberBottomNavItem.Profile
+                                        else -> SubscriberBottomNavItem.Home
+                                    },
+                                    onHomeClick = {
+                                        val homeUserName = sessionManager.getUserName().takeUnless { it.isNullOrBlank() } ?: "Guest"
+                                        val encodedName = Uri.encode(homeUserName)
+                                        navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    },
+                                    onHistoryClick = {
+                                        navController.navigate(Screen.OrderHistory.route) {
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    },
+                                    onShopClick = {
+                                        navController.navigate(Screen.ShopProducts.route) {
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    },
+                                    onProfileClick = {
+                                        navController.navigate(Screen.Profile.route) {
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    }
+                                )
                             }
-                        )
-                    }
-                }
-            ) { innerPadding ->
-                NavHost(
-                    navController = navController,
-                    startDestination = Screen.Loading.route, // App starts with Loading
-                    modifier = Modifier.padding(innerPadding)
-                ) {
+                        }
+                    ) { innerPadding ->
+                        NavHost(
+                            navController = navController,
+                            startDestination = Screen.Loading.route, // App starts with Loading
+                            modifier = Modifier.padding(innerPadding)
+                        ) {
                     // 1. Splash/Loading Screen
                     composable(Screen.Loading.route) {
                         val loadingScope = rememberCoroutineScope()
@@ -144,6 +168,11 @@ class MainActivity : ComponentActivity() {
                                     val navigateToHome: (String) -> Unit = { userName ->
                                         val encodedName = Uri.encode(userName)
                                         navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
+                                            popUpTo(Screen.Loading.route) { inclusive = true }
+                                        }
+                                    }
+                                    val navigateToSubscriptionsEmpty: () -> Unit = {
+                                        navController.navigate(Screen.SubscriptionsEmpty.route) {
                                             popUpTo(Screen.Loading.route) { inclusive = true }
                                         }
                                     }
@@ -161,14 +190,38 @@ class MainActivity : ComponentActivity() {
                                                     .takeUnless { it.isNullOrBlank() }
                                                     ?: meBody.email.substringBefore("@")
 
-                                                sessionManager.saveUserDetail(
-                                                    name = resolvedName,
-                                                    email = meBody.email,
-                                                    token = savedToken
-                                                )
-                                                sessionManager.setHasAccount()
-                                                navigateToHome(resolvedName)
-                                                return@launch
+                                                val subscriptionResponse = RetrofitClient.authApiService
+                                                    .getMySubscriptionSafely("Bearer $savedToken")
+                                                if (
+                                                    subscriptionResponse.isSuccessful ||
+                                                    subscriptionResponse.code == 404
+                                                ) {
+                                                    sessionManager.saveUserDetail(
+                                                        name = resolvedName,
+                                                        email = meBody.email,
+                                                        token = savedToken
+                                                    )
+                                                    sessionManager.setHasAccount()
+
+                                                    val hasActiveSubscription = subscriptionResponse
+                                                        .hasActiveSubscription
+                                                    if (hasActiveSubscription) {
+                                                        navigateToHome(resolvedName)
+                                                    } else {
+                                                        navigateToSubscriptionsEmpty()
+                                                    }
+                                                    return@launch
+                                                }
+
+                                                if (
+                                                    subscriptionResponse.code == 401 ||
+                                                    subscriptionResponse.code == 403
+                                                ) {
+                                                    sessionManager.clearSession()
+                                                } else if (!savedName.isNullOrBlank()) {
+                                                    navigateToHome(savedName)
+                                                    return@launch
+                                                }
                                             }
 
                                             if (meResponse.code() == 401 || meResponse.code() == 403) {
@@ -201,32 +254,43 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    composable(Screen.Login.route) {
+                    composable(Screen.Login.route) { backStackEntry ->
                         // 1. Get the context
                         val context = androidx.compose.ui.platform.LocalContext.current
 
                         val sessionManager = com.aeu.boxapplication.core.utils.SessionManager.getInstance(context)
 
-                        val loginViewModel: LoginViewModel = viewModel(
-                            factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                                    // 3. Pass BOTH parameters to the constructor
-                                    return LoginViewModel(
-                                        authService = com.aeu.boxapplication.data.remote.RetrofitClient.authApiService,
-                                        sessionManager = sessionManager
-                                    ) as T
+                        val loginViewModel = remember(backStackEntry, sessionManager) {
+                            ViewModelProvider(
+                                backStackEntry,
+                                object : androidx.lifecycle.ViewModelProvider.Factory {
+                                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                                        return LoginViewModel(
+                                            authService = com.aeu.boxapplication.data.remote.RetrofitClient.authApiService,
+                                            sessionManager = sessionManager
+                                        ) as T
+                                    }
                                 }
-                            }
-                        )
+                            )[LoginViewModel::class.java]
+                        }
 
                         LoginScreen(
                             navController = navController,
                             viewModel = loginViewModel,
-                            onLoginSuccess = { userName ->
-                                // This is where the actual navigation happens
-                                val encodedName = Uri.encode(userName)
-                                navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
-                                    popUpTo(Screen.Login.route) { inclusive = true }
+                            onLoginSuccess = { userName, destination ->
+                                when (destination) {
+                                    PostLoginDestination.HOME -> {
+                                        val encodedName = Uri.encode(userName)
+                                        navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
+                                            popUpTo(Screen.Login.route) { inclusive = true }
+                                        }
+                                    }
+
+                                    PostLoginDestination.SUBSCRIPTIONS_EMPTY -> {
+                                        navController.navigate(Screen.SubscriptionsEmpty.route) {
+                                            popUpTo(Screen.Login.route) { inclusive = true }
+                                        }
+                                    }
                                 }
                             },
                             onBack = { navController.popBackStack() },
@@ -235,10 +299,13 @@ class MainActivity : ComponentActivity() {
                     }
 
                     // --- 2. Register Screen ---
-                    composable(Screen.Register.route) {
-                        val viewModel: RegisterViewModel = viewModel(
-                            factory = RegisterViewModelFactory(AuthRepository(RetrofitClient.authApiService))
-                        )
+                    composable(Screen.Register.route) { backStackEntry ->
+                        val viewModel = remember(backStackEntry) {
+                            ViewModelProvider(
+                                backStackEntry,
+                                RegisterViewModelFactory(AuthRepository(RetrofitClient.authApiService))
+                            )[RegisterViewModel::class.java]
+                        }
                         RegisterScreen(
                             navController = navController,
                             viewModel = viewModel,
@@ -256,17 +323,20 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    composable(Screen.SubscriptionsEmpty.route) {
-                        val subscriptionViewModel: SubscriptionViewModel = viewModel(
-                            factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                                    return SubscriptionViewModel(
-                                        authService = RetrofitClient.authApiService,
-                                        sessionManager = sessionManager
-                                    ) as T
+                    composable(Screen.SubscriptionsEmpty.route) { backStackEntry ->
+                        val subscriptionViewModel = remember(backStackEntry, sessionManager) {
+                            ViewModelProvider(
+                                backStackEntry,
+                                object : androidx.lifecycle.ViewModelProvider.Factory {
+                                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                                        return SubscriptionViewModel(
+                                            authService = RetrofitClient.authApiService,
+                                            sessionManager = sessionManager
+                                        ) as T
+                                    }
                                 }
-                            }
-                        )
+                            )[SubscriptionViewModel::class.java]
+                        }
 
                         SubscriptionsEmptyScreen(
                             onBack = { navController.popBackStack() },
@@ -284,21 +354,25 @@ class MainActivity : ComponentActivity() {
                                         navController.navigate(Screen.ExplorePlans.route)
                                     }
                                 )
-                            }
+                            },
+                            isLoading = subscriptionViewModel.isLoading
                         )
                     }
 
-                    composable(Screen.ExplorePlans.route) {
-                        val subscriptionViewModel: SubscriptionViewModel = viewModel(
-                            factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                                    return SubscriptionViewModel(
-                                        authService = RetrofitClient.authApiService,
-                                        sessionManager = sessionManager
-                                    ) as T
+                    composable(Screen.ExplorePlans.route) { backStackEntry ->
+                        val subscriptionViewModel = remember(backStackEntry, sessionManager) {
+                            ViewModelProvider(
+                                backStackEntry,
+                                object : androidx.lifecycle.ViewModelProvider.Factory {
+                                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                                        return SubscriptionViewModel(
+                                            authService = RetrofitClient.authApiService,
+                                            sessionManager = sessionManager
+                                        ) as T
+                                    }
                                 }
-                            }
-                        )
+                            )[SubscriptionViewModel::class.java]
+                        }
 
                         LaunchedEffect(Unit) {
                             if (subscriptionViewModel.plans.isEmpty()) {
@@ -339,57 +413,20 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    composable(Screen.ConfirmSubscription.route) {
-                        val subscriptionViewModel: SubscriptionViewModel = viewModel(
-                            factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                                    return SubscriptionViewModel(
-                                        authService = RetrofitClient.authApiService,
-                                        sessionManager = sessionManager
-                                    ) as T
-                                }
-                            }
-                        )
-                        val context = LocalContext.current
-                        var pendingPlanId by remember { mutableStateOf<String?>(null) }
-                        var pendingStripeSubscriptionId by remember { mutableStateOf<String?>(null) }
-
-                        val paymentSheet = rememberPaymentSheet(
-                            paymentResultCallback = { paymentResult ->
-                                when (paymentResult) {
-                                    is PaymentSheetResult.Completed -> {
-                                        val planIdToConfirm = pendingPlanId
-                                        val stripeSubscriptionId = pendingStripeSubscriptionId
-                                        if (planIdToConfirm.isNullOrBlank() || stripeSubscriptionId.isNullOrBlank()) {
-                                            subscriptionViewModel.setError("Missing Stripe subscription data. Please try again.")
-                                        } else {
-                                            subscriptionViewModel.confirmStripeSubscription(
-                                                planId = planIdToConfirm,
-                                                stripeSubscriptionId = stripeSubscriptionId
-                                            ) {
-                                                sessionManager.clearPendingPlan()
-                                                val homeUserName = sessionManager.getUserName().takeUnless { it.isNullOrBlank() } ?: "User"
-                                                val encodedName = Uri.encode(homeUserName)
-                                                navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
-                                                    popUpTo(Screen.ExplorePlans.route) { inclusive = true }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    is PaymentSheetResult.Canceled -> {
-                                        subscriptionViewModel.setError("Payment canceled.")
-                                    }
-
-                                    is PaymentSheetResult.Failed -> {
-                                        subscriptionViewModel.setError(
-                                            "Payment failed: ${paymentResult.error.localizedMessage ?: "Unknown Stripe error"}"
-                                        )
+                    composable(Screen.ConfirmSubscription.route) { backStackEntry ->
+                        val subscriptionViewModel = remember(backStackEntry, sessionManager) {
+                            ViewModelProvider(
+                                backStackEntry,
+                                object : androidx.lifecycle.ViewModelProvider.Factory {
+                                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                                        return SubscriptionViewModel(
+                                            authService = RetrofitClient.authApiService,
+                                            sessionManager = sessionManager
+                                        ) as T
                                     }
                                 }
-                            }
-                        )
-
+                            )[SubscriptionViewModel::class.java]
+                        }
                         val selectedPlanId = sessionManager.getPendingPlanId()
                         val selectedPlanName = sessionManager.getPendingPlanName() ?: "Pro"
                         val selectedPlanPrice = sessionManager.getPendingPlanPrice() ?: "$19"
@@ -402,23 +439,7 @@ class MainActivity : ComponentActivity() {
                                 if (selectedPlanId.isNullOrBlank()) {
                                     subscriptionViewModel.setError("Please select a plan before confirming.")
                                 } else {
-                                    subscriptionViewModel.createStripeCheckout(selectedPlanId) { checkout ->
-                                        pendingPlanId = selectedPlanId
-                                        pendingStripeSubscriptionId = checkout.stripeSubscriptionId
-
-                                        PaymentConfiguration.init(context, checkout.publishableKey)
-
-                                        paymentSheet.presentWithPaymentIntent(
-                                            paymentIntentClientSecret = checkout.paymentIntentClientSecret,
-                                            configuration = PaymentSheet.Configuration(
-                                                merchantDisplayName = "Box Subscription",
-                                                customer = PaymentSheet.CustomerConfiguration(
-                                                    id = checkout.customerId,
-                                                    ephemeralKeySecret = checkout.ephemeralKey
-                                                )
-                                            )
-                                        )
-                                    }
+                                    navController.navigate(Screen.PaymentDetails.route)
                                 }
                             },
                             selectedPlanName = selectedPlanName,
@@ -427,6 +448,189 @@ class MainActivity : ComponentActivity() {
                             selectedPlanFeatures = selectedPlanFeatures(selectedPlanName),
                             isSubmitting = subscriptionViewModel.isSubmitting,
                             errorMessage = subscriptionViewModel.errorMessage
+                        )
+                    }
+
+                    composable(Screen.PaymentDetails.route) { backStackEntry ->
+                        val subscriptionViewModel = remember(backStackEntry, sessionManager) {
+                            ViewModelProvider(
+                                backStackEntry,
+                                object : androidx.lifecycle.ViewModelProvider.Factory {
+                                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                                        return SubscriptionViewModel(
+                                            authService = RetrofitClient.authApiService,
+                                            sessionManager = sessionManager
+                                        ) as T
+                                    }
+                                }
+                            )[SubscriptionViewModel::class.java]
+                        }
+                        val selectedPlanId = sessionManager.getPendingPlanId()
+                        val selectedPlanName = sessionManager.getPendingPlanName() ?: "Pro"
+                        val selectedPlanPrice = sessionManager.getPendingPlanPrice() ?: "$19"
+                        val selectedPlanPeriod = sessionManager.getPendingPlanPeriod() ?: "/mo"
+                        var stripePublishableKey by remember { mutableStateOf("") }
+                        var pendingPlanId by remember { mutableStateOf<String?>(null) }
+                        var pendingStripeSubscriptionId by remember { mutableStateOf<String?>(null) }
+                        var pendingStripeConfirmation by remember {
+                            mutableStateOf<PendingStripeConfirmation?>(null)
+                        }
+
+                        val navigateToPaymentConfirmation: () -> Unit = {
+                            navController.navigate(Screen.PaymentConfirmation.route) {
+                                popUpTo(Screen.PaymentDetails.route) { inclusive = true }
+                            }
+                        }
+
+                        val navigateToSubscriberHome: () -> Unit = {
+                            sessionManager.clearPendingPlan()
+                            val homeUserName = sessionManager.getUserName().takeUnless { it.isNullOrBlank() } ?: "User"
+                            val encodedName = Uri.encode(homeUserName)
+                            navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
+                                popUpTo(Screen.ExplorePlans.route) { inclusive = true }
+                            }
+                        }
+
+                        val paymentLauncher = rememberPaymentLauncher(
+                            publishableKey = stripePublishableKey,
+                            stripeAccountId = null,
+                            callback = { paymentResult ->
+                                when (paymentResult) {
+                                    PaymentResult.Completed -> {
+                                        val planIdToConfirm = pendingPlanId
+                                        val stripeSubscriptionId = pendingStripeSubscriptionId
+                                        if (planIdToConfirm.isNullOrBlank() || stripeSubscriptionId.isNullOrBlank()) {
+                                            subscriptionViewModel.setError("Missing Stripe subscription data. Please try again.")
+                                        } else {
+                                            subscriptionViewModel.confirmStripeSubscription(
+                                                planId = planIdToConfirm,
+                                                stripeSubscriptionId = stripeSubscriptionId,
+                                                onSuccess = navigateToPaymentConfirmation
+                                            )
+                                        }
+                                    }
+
+                                    PaymentResult.Canceled -> {
+                                        subscriptionViewModel.setError("Payment canceled.")
+                                    }
+
+                                    is PaymentResult.Failed -> {
+                                        subscriptionViewModel.setError(
+                                            "Payment failed: ${paymentResult.throwable.localizedMessage ?: "Unknown Stripe error"}"
+                                        )
+                                    }
+                                }
+                            }
+                        )
+
+                        LaunchedEffect(pendingStripeConfirmation, stripePublishableKey) {
+                            val confirmation = pendingStripeConfirmation ?: return@LaunchedEffect
+                            if (stripePublishableKey.isBlank()) return@LaunchedEffect
+
+                            pendingStripeConfirmation = null
+                            try {
+                                when (confirmation) {
+                                    is PendingStripeConfirmation.PaymentIntent -> {
+                                        paymentLauncher.confirm(confirmation.params)
+                                    }
+
+                                    is PendingStripeConfirmation.SetupIntent -> {
+                                        paymentLauncher.confirm(confirmation.params)
+                                    }
+                                }
+                            } catch (error: Exception) {
+                                subscriptionViewModel.setError(
+                                    "Payment failed: ${error.localizedMessage ?: "Unknown Stripe error"}"
+                                )
+                            }
+                        }
+
+                        PaymentDetailsScreen(
+                            onBack = { navController.popBackStack() },
+                            onPayNow = { cardInput ->
+                                if (selectedPlanId.isNullOrBlank()) {
+                                    subscriptionViewModel.setError("Please select a plan before paying.")
+                                } else {
+                                    subscriptionViewModel.createStripeCheckout(selectedPlanId) { checkout ->
+                                        pendingPlanId = selectedPlanId
+                                        pendingStripeSubscriptionId = checkout.stripeSubscriptionId
+
+                                        val canConfirmWithoutSheet = !checkout.requiresPaymentSheet &&
+                                            (checkout.stripeSubscriptionStatus == "active" ||
+                                                checkout.stripeSubscriptionStatus == "trialing")
+
+                                        when {
+                                            !checkout.paymentIntentClientSecret.isNullOrBlank() -> {
+                                                stripePublishableKey = checkout.publishableKey
+                                                pendingStripeConfirmation = PendingStripeConfirmation.PaymentIntent(
+                                                    ConfirmPaymentIntentParams.createWithPaymentMethodCreateParams(
+                                                        cardInput.toStripePaymentMethodCreateParams(
+                                                            email = sessionManager.getUserEmail()
+                                                        ),
+                                                        checkout.paymentIntentClientSecret
+                                                    )
+                                                )
+                                            }
+
+                                            !checkout.setupIntentClientSecret.isNullOrBlank() -> {
+                                                stripePublishableKey = checkout.publishableKey
+                                                pendingStripeConfirmation = PendingStripeConfirmation.SetupIntent(
+                                                    ConfirmSetupIntentParams.create(
+                                                        cardInput.toStripePaymentMethodCreateParams(
+                                                            email = sessionManager.getUserEmail()
+                                                        ),
+                                                        checkout.setupIntentClientSecret
+                                                    )
+                                                )
+                                            }
+
+                                            canConfirmWithoutSheet -> {
+                                                subscriptionViewModel.confirmStripeSubscription(
+                                                    planId = selectedPlanId,
+                                                    stripeSubscriptionId = checkout.stripeSubscriptionId,
+                                                    onSuccess = navigateToPaymentConfirmation
+                                                )
+                                            }
+
+                                            !checkout.requiresPaymentSheet -> {
+                                                subscriptionViewModel.setError(
+                                                    "Stripe checkout is not ready yet (status: ${checkout.stripeSubscriptionStatus ?: "unknown"}). Please try again in a moment."
+                                                )
+                                            }
+
+                                            else -> {
+                                                subscriptionViewModel.setError(
+                                                    "Stripe checkout did not return a client secret."
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            selectedPlanName = selectedPlanName,
+                            selectedPlanPrice = selectedPlanPrice,
+                            selectedPlanPeriod = selectedPlanPeriod,
+                            isSubmitting = subscriptionViewModel.isSubmitting,
+                            errorMessage = subscriptionViewModel.errorMessage
+                        )
+                    }
+
+                    composable(Screen.PaymentConfirmation.route) {
+                        PaymentConfirmationScreen(
+                            onViewDashboard = {
+                                sessionManager.clearPendingPlan()
+                                val homeUserName = sessionManager.getUserName().takeUnless { it.isNullOrBlank() } ?: "User"
+                                val encodedName = Uri.encode(homeUserName)
+                                navController.navigate("${Screen.SubscriberHome.route}/$encodedName") {
+                                    popUpTo(Screen.ExplorePlans.route) { inclusive = true }
+                                }
+                            },
+                            onGoToHistory = {
+                                sessionManager.clearPendingPlan()
+                                navController.navigate(Screen.OrderHistory.route) {
+                                    popUpTo(Screen.ExplorePlans.route) { inclusive = true }
+                                }
+                            }
                         )
                     }
 
@@ -506,6 +710,15 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.CheckoutPayment.route) { CheckoutPayment(navController) }
                     composable(Screen.CompletePayment.route) { CompletePayment(navController) }
 
+                        }
+                    }
+
+                    AppNotificationHost(
+                        hostState = notificationHostState
+                    )
+                    AppLoadingHost(
+                        hostState = loadingHostState
+                    )
                 }
             }
         }
@@ -537,6 +750,33 @@ private fun selectedPlanFeatures(planName: String): List<String> {
 
         else -> listOf("Standard subscription access")
     }
+}
+
+private sealed class PendingStripeConfirmation {
+    data class PaymentIntent(
+        val params: ConfirmPaymentIntentParams
+    ) : PendingStripeConfirmation()
+
+    data class SetupIntent(
+        val params: ConfirmSetupIntentParams
+    ) : PendingStripeConfirmation()
+}
+
+private fun PaymentCardInput.toStripePaymentMethodCreateParams(
+    email: String?
+): PaymentMethodCreateParams {
+    val card = PaymentMethodCreateParams.Card(
+        number = cardNumber,
+        expiryMonth = expiryMonth,
+        expiryYear = expiryYear,
+        cvc = cvv
+    )
+    val billingDetails = PaymentMethod.BillingDetails(
+        address = Address(country = "US"),
+        email = email,
+        name = cardholderName
+    )
+    return PaymentMethodCreateParams.create(card, billingDetails)
 }
 
 enum class SubscriberBottomNavItem(

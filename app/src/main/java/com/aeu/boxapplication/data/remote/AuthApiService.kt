@@ -10,6 +10,7 @@ import com.aeu.boxapplication.data.remote.dto.request.SubscribeRequest
 import com.aeu.boxapplication.data.remote.dto.response.StripeCheckoutIntentResponse
 import com.aeu.boxapplication.data.remote.dto.response.SubscriptionApiResponse
 import com.aeu.boxapplication.data.remote.dto.response.SubscriptionPlanApiResponse
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -42,7 +43,7 @@ interface AuthApiService {
     @GET("subscriptions/me")
     suspend fun getMySubscription(
         @Header("Authorization") authHeader: String
-    ): Response<SubscriptionApiResponse?>
+    ): Response<ResponseBody>
 
     @POST("subscriptions/subscribe")
     suspend fun subscribeToPlan(

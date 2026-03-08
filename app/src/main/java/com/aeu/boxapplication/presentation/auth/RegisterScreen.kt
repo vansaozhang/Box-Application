@@ -20,6 +20,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.aeu.boxapplication.core.utils.ValidationUtils
 import com.aeu.boxapplication.presentation.navigation.Screen
+import com.aeu.boxapplication.ui.components.AppGlobalLoadingEffect
 import com.aeu.boxapplication.ui.components.AppPrimaryButton
 import com.aeu.boxapplication.ui.components.AppTextField
 
@@ -41,6 +42,8 @@ fun RegisterScreen(
     val isEmailValid = ValidationUtils.isValidEmail(email)
     val isPasswordValid = ValidationUtils.isValidPassword(password)
     val isFormValid = isUsernameValid && isEmailValid && isPasswordValid
+
+    AppGlobalLoadingEffect(isVisible = state.isLoading)
 
     // FIX: Pass the username string back when navigation happens
     LaunchedEffect(state.isSuccess) {
@@ -141,11 +144,6 @@ fun RegisterScreen(
                     enabled = !state.isLoading,
                     modifier = Modifier.fillMaxWidth()
                 )
-
-                if (state.isLoading) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    CircularProgressIndicator(color = Color(0xFF1E88E5))
-                }
 
                 Spacer(modifier = Modifier.height(32.dp))
 

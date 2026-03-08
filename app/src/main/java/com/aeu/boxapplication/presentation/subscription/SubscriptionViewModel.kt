@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aeu.boxapplication.core.utils.SessionManager
 import com.aeu.boxapplication.data.remote.AuthApiService
+import com.aeu.boxapplication.data.remote.getMySubscriptionSafely
 import com.aeu.boxapplication.data.remote.dto.request.ConfirmStripeSubscriptionRequest
 import com.aeu.boxapplication.data.remote.dto.request.CreateStripeCheckoutIntentRequest
 import com.aeu.boxapplication.data.remote.dto.request.SubscribeRequest
@@ -127,17 +128,16 @@ class SubscriptionViewModel(
             isLoading = true
             errorMessage = null
             try {
-                val response = authService.getMySubscription("Bearer $token")
-                if (response.isSuccessful) {
-                    val subscription = response.body()
-                    if (subscription != null && subscription.status.equals("ACTIVE", ignoreCase = true)) {
+                val response = authService.getMySubscriptionSafely("Bearer $token")
+                if (response.isSuccessful || response.code == 404) {
+                    if (response.hasActiveSubscription) {
                         onHasSubscription()
                     } else {
                         onNoSubscription()
                         errorMessage = "No active subscription found."
                     }
                 } else {
-                    errorMessage = "Failed to restore purchases"
+                    errorMessage = response.parseError ?: "Failed to restore purchases"
                 }
             } catch (e: Exception) {
                 errorMessage = "Network error: ${e.localizedMessage}"

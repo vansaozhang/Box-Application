@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.ShoppingCart
@@ -63,7 +63,7 @@ fun SubscriptionDetailsScreen(navController: NavController) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("Subscribe Now", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color.White)
+                        Icon(Icons.Filled.ArrowForward, contentDescription = null, tint = Color.White)
                     }
                 }
             }

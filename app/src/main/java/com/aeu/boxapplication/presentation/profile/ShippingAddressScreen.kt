@@ -7,7 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -74,7 +74,7 @@ fun ShippingAddressScreen(navController: NavController) {
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            imageVector = Icons.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = AddressTitle
                         )
@@ -217,7 +217,7 @@ fun AddressCard(
             )
             Text(text = phoneNumber, color = AddressBody, fontSize = 13.sp)
 
-            HorizontalDivider(
+            Divider(
                 modifier = Modifier.padding(vertical = 12.dp),
                 color = AddressStroke
             )

@@ -5,7 +5,6 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,14 +47,30 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aeu.boxapplication.ui.components.AppGlobalLoadingEffect
 import com.aeu.boxapplication.ui.components.AppPrimaryButton
+import com.aeu.boxapplication.ui.components.AppStatusBanner
+import com.aeu.boxapplication.ui.components.AppStatusTone
 import java.time.YearMonth
+
+data class PaymentCardInput(
+    val cardNumber: String,
+    val cardholderName: String,
+    val expiryMonth: Int,
+    val expiryYear: Int,
+    val cvv: String
+)
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PaymentDetailsScreen(
     onBack: () -> Unit = {},
-    onPayNow: () -> Unit = {}
+    onPayNow: (PaymentCardInput) -> Unit = {},
+    selectedPlanName: String = "Pro",
+    selectedPlanPrice: String = "$19",
+    selectedPlanPeriod: String = "/mo",
+    isSubmitting: Boolean = false,
+    errorMessage: String? = null
 ) {
     val (cardNumber, setCardNumber) = remember { mutableStateOf("") }
     val (cardholderName, setCardholderName) = remember { mutableStateOf("") }
@@ -73,11 +88,17 @@ fun PaymentDetailsScreen(
     val showExpiryError = expiryError != null
     val showCvvError = cvv.isNotEmpty() && !isCvvValid
     val isFormValid = isCardNumberValid && isCardholderValid && isExpiryValid && isCvvValid
+    val paymentMessage = errorMessage
+        ?.takeIf { it.isNotBlank() }
+        ?.let(::toPaymentErrorContent)
+    val contentBottomPadding = if (paymentMessage == null) 96.dp else 188.dp
     val whiteInputColors = OutlinedTextFieldDefaults.colors(
         focusedContainerColor = Color.White,
         unfocusedContainerColor = Color.White,
         disabledContainerColor = Color.White
     )
+
+    AppGlobalLoadingEffect(isVisible = isSubmitting)
 
     Box(
         modifier = Modifier
@@ -89,7 +110,7 @@ fun PaymentDetailsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 12.dp)
-                .padding(bottom = 88.dp),
+                .padding(bottom = contentBottomPadding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(
@@ -153,7 +174,10 @@ fun PaymentDetailsScreen(
             FormLabel(text = "Card Number")
             OutlinedTextField(
                 value = cardNumber,
-                onValueChange = { setCardNumber(it) },
+                onValueChange = { input ->
+                    val digitsOnly = input.filter { it.isDigit() }.take(16)
+                    setCardNumber(digitsOnly.chunked(4).joinToString(" "))
+                },
                 placeholder = {
                     Text(
                         text = "0000 0000 0000 0000",
@@ -308,7 +332,9 @@ fun PaymentDetailsScreen(
                     FormLabel(text = "CVV")
                     OutlinedTextField(
                         value = cvv,
-                        onValueChange = { setCvv(it) },
+                        onValueChange = { input ->
+                            setCvv(input.filter { it.isDigit() }.take(4))
+                        },
                         placeholder = {
                             Text(
                                 text = "123",
@@ -357,7 +383,10 @@ fun PaymentDetailsScreen(
             )
             Spacer(modifier = Modifier.height(10.dp))
 
-            TransactionSummaryCard()
+            TransactionSummaryCard(
+                planLabel = "$selectedPlanName Plan (${if (selectedPlanPeriod == "/yr") "Yearly" else "Monthly"})",
+                totalPrice = formatPriceLabel(selectedPlanPrice)
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -372,17 +401,39 @@ fun PaymentDetailsScreen(
             )
         }
 
-        Box(
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .background(Color.White)
                 .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 28.dp)
         ) {
+            if (paymentMessage != null) {
+                AppStatusBanner(
+                    title = paymentMessage.title,
+                    message = paymentMessage.message,
+                    tone = AppStatusTone.Error,
+                    label = "Payment issue"
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
             AppPrimaryButton(
-                text = "Pay Now",
-                onClick = onPayNow,
-                enabled = isFormValid
+                text = if (isSubmitting) "Processing..." else "Pay Now",
+                onClick = {
+                    val expiryParts = parseExpiryParts(expiryDate.text) ?: return@AppPrimaryButton
+                    onPayNow(
+                        PaymentCardInput(
+                            cardNumber = cardNumberDigits,
+                            cardholderName = cardholderName.trim(),
+                            expiryMonth = expiryParts.first,
+                            expiryYear = expiryParts.second,
+                            cvv = cvvDigits
+                        )
+                    )
+                },
+                enabled = isFormValid && !isSubmitting,
+                isLoading = isSubmitting
             )
         }
     }
@@ -401,7 +452,10 @@ private fun FormLabel(text: String) {
 }
 
 @Composable
-private fun TransactionSummaryCard() {
+private fun TransactionSummaryCard(
+    planLabel: String,
+    totalPrice: String
+) {
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = Color(0xFFF8FAFC),
@@ -410,7 +464,7 @@ private fun TransactionSummaryCard() {
             .border(1.2.dp, Color(0xFFE3E8EF), RoundedCornerShape(14.dp))
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            SummaryRow(label = "Pro Plan (Monthly)", value = "$19.00")
+            SummaryRow(label = planLabel, value = totalPrice)
             Spacer(modifier = Modifier.height(8.dp))
             SummaryRow(label = "Tax (0%)", value = "$0.00")
             Spacer(modifier = Modifier.height(10.dp))
@@ -426,7 +480,7 @@ private fun TransactionSummaryCard() {
                     color = Color(0xFF2F3A4A)
                 )
                 Text(
-                    text = "$19.00",
+                    text = totalPrice,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF1E88E5)
@@ -487,4 +541,73 @@ private fun formatExpiryInput(input: String): String {
     } else {
         "${digits.substring(0, 2)}/${digits.substring(2)}"
     }
+}
+
+private fun parseExpiryParts(value: String): Pair<Int, Int>? {
+    if (!value.matches(Regex("\\d{2}/\\d{2}"))) return null
+    val month = value.substring(0, 2).toIntOrNull() ?: return null
+    val year = value.substring(3, 5).toIntOrNull() ?: return null
+    return month to (2000 + year)
+}
+
+private fun formatPriceLabel(value: String): String {
+    return if (value.contains('.')) value else "$value.00"
+}
+
+private data class PaymentErrorContent(
+    val title: String,
+    val message: String?
+)
+
+private fun toPaymentErrorContent(rawMessage: String): PaymentErrorContent {
+    val detail = rawMessage
+        .substringAfter(':', rawMessage)
+        .trim()
+        .trimEnd('.')
+
+    val normalized = detail.lowercase()
+
+    return when {
+        "card number is incorrect" in normalized -> PaymentErrorContent(
+            title = "Card number is invalid",
+            message = "Check the card number and try again."
+        )
+        "security code is incorrect" in normalized || "cvv" in normalized -> PaymentErrorContent(
+            title = "Security code is invalid",
+            message = "Review the CVV and try again."
+        )
+        "expired" in normalized -> PaymentErrorContent(
+            title = "Card has expired",
+            message = "Use a different card or update the expiry date."
+        )
+        "insufficient funds" in normalized -> PaymentErrorContent(
+            title = "Not enough funds",
+            message = "Try another card or contact your bank."
+        )
+        "declined" in normalized -> PaymentErrorContent(
+            title = "Payment was declined",
+            message = "Try another card or contact your bank for more details."
+        )
+        "processing error" in normalized || "try again" in normalized -> PaymentErrorContent(
+            title = "Payment couldn't be completed",
+            message = "Please check your details and try again in a moment."
+        )
+        detail.isBlank() -> PaymentErrorContent(
+            title = "Payment couldn't be completed",
+            message = "Please review your card details and try again."
+        )
+        else -> PaymentErrorContent(
+            title = "Payment couldn't be completed",
+            message = detail.ensureSentence()
+        )
+    }
+}
+
+private fun String.ensureSentence(): String {
+    val trimmed = trim()
+    if (trimmed.isEmpty()) return trimmed
+    val normalized = trimmed.replaceFirstChar {
+        if (it.isLowerCase()) it.titlecase() else it.toString()
+    }
+    return if (normalized.endsWith('.')) normalized else "$normalized."
 }
