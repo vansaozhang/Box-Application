@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.aeu.boxapplication.core.utils.CurrencyUtils
 import com.aeu.boxapplication.core.utils.SessionManager
 import com.aeu.boxapplication.data.remote.AuthApiService
+import com.aeu.boxapplication.data.remote.dto.response.SubscriptionPlanFrequencyOptionResponse
 import com.aeu.boxapplication.data.remote.dto.response.SubscriptionPlanStorefrontItemResponse
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -34,7 +35,17 @@ data class ShopPlanUiModel(
     val rating: Double,
     val ratingLabel: String,
     val isFeatured: Boolean,
-    val features: List<String>
+    val features: List<String>,
+    val frequencyOptions: List<ShopPlanFrequencyOptionUiModel>
+)
+
+data class ShopPlanFrequencyOptionUiModel(
+    val id: String,
+    val label: String,
+    val frequencyInDays: Int,
+    val price: Double,
+    val priceLabel: String,
+    val periodLabel: String
 )
 
 data class ShopProductsUiState(
@@ -237,7 +248,19 @@ class ShopProductsViewModel(
             rating = rating,
             ratingLabel = String.format(Locale.US, "%.1f", rating),
             isFeatured = isFeatured,
-            features = features.orEmpty()
+            features = features.orEmpty(),
+            frequencyOptions = frequencyOptions.orEmpty().map { it.toUiModel() }
+        )
+    }
+
+    private fun SubscriptionPlanFrequencyOptionResponse.toUiModel(): ShopPlanFrequencyOptionUiModel {
+        return ShopPlanFrequencyOptionUiModel(
+            id = id,
+            label = label,
+            frequencyInDays = frequencyInDays,
+            price = price,
+            priceLabel = CurrencyUtils.formatPrice(price),
+            periodLabel = periodLabel
         )
     }
 

@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -53,6 +54,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.aeu.boxapplication.core.utils.PendingPlanOption
 import com.aeu.boxapplication.core.utils.PendingPlanSelection
 import com.aeu.boxapplication.core.utils.SessionManager
 import com.aeu.boxapplication.data.remote.RetrofitClient
@@ -73,8 +75,8 @@ import com.aeu.boxapplication.presentation.profile.AddShippingAddressScreen
 import com.aeu.boxapplication.presentation.profile.hasLocationPermission
 import com.aeu.boxapplication.presentation.profile.resolveCurrentAddress
 import com.aeu.boxapplication.presentation.profile.ShippingAddressScreen
+import com.aeu.boxapplication.presentation.subscription.BillingFrequencyOptionUi
 import com.aeu.boxapplication.presentation.subscription.ConfirmSubscriptionScreen
-import com.aeu.boxapplication.presentation.subscription.ExplorePlansScreen
 import com.aeu.boxapplication.presentation.subscription.SubscriptionsEmptyScreen
 import com.aeu.boxapplication.presentation.subscription.SubscriptionViewModel
 import com.aeu.boxapplication.ui.components.AppGlobalLoadingEffect
@@ -520,7 +522,7 @@ class MainActivity : ComponentActivity() {
 
                         SubscriptionsEmptyScreen(
                             onBack = { navController.popBackStack() },
-                            onExplorePlans = { navController.navigate(Screen.ExplorePlans.route) },
+                            onExplorePlans = { navController.navigate(Screen.ShopProducts.route) },
                             onRestorePurchases = {
                                 subscriptionViewModel.restorePurchases(
                                     onHasSubscription = {
@@ -530,7 +532,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     onNoSubscription = {
-                                        navController.navigate(Screen.ExplorePlans.route)
+                                        navController.navigate(Screen.ShopProducts.route)
                                     }
                                 )
                             },
@@ -538,56 +540,26 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    composable(Screen.ExplorePlans.route) { backStackEntry ->
-                        val subscriptionViewModel = remember(backStackEntry, sessionManager) {
-                            ViewModelProvider(
-                                backStackEntry,
-                                object : androidx.lifecycle.ViewModelProvider.Factory {
-                                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                                        return SubscriptionViewModel(
-                                            authService = RetrofitClient.authApiService,
-                                            sessionManager = sessionManager
-                                        ) as T
-                                    }
-                                }
-                            )[SubscriptionViewModel::class.java]
-                        }
-
-                        LaunchedEffect(Unit) {
-                            if (subscriptionViewModel.plans.isEmpty()) {
-                                subscriptionViewModel.loadPlans()
-                            }
-                        }
-
-                        ExplorePlansScreen(
-                            isLoading = subscriptionViewModel.isLoading,
-                            isMonthly = subscriptionViewModel.selectedCycle.apiValue == "monthly",
-                            plans = subscriptionViewModel.plans,
-                            errorMessage = subscriptionViewModel.errorMessage,
-                            onBack = { navController.popBackStack() },
-                            onRestorePurchases = {
-                                subscriptionViewModel.restorePurchases(
-                                    onHasSubscription = {
-                                        navController.navigate(Screen.SubscriberHome.route) {
-                                            popUpTo(Screen.ExplorePlans.route) { inclusive = true }
-                                            launchSingleTop = true
-                                        }
-                                    },
-                                    onNoSubscription = {}
-                                )
-                            },
-                            onToggleMonthly = { isMonthly ->
-                                subscriptionViewModel.setBillingCycle(isMonthly = isMonthly)
-                            },
+                    composable(Screen.ExplorePlans.route) {
+                        ShopProductsScreen(
+                            viewModel = sharedShopProductsViewModel,
                             onSelectPlan = { selectedPlan ->
+                                val defaultOption = defaultFrequencyOption(selectedPlan)
                                 sessionManager.savePendingPlan(
-                                    planId = selectedPlan.id,
-                                    planName = selectedPlan.name,
-                                    planPrice = selectedPlan.priceLabel,
-                                    planPeriod = selectedPlan.periodLabel,
-                                    planFeatures = selectedPlan.features
-                                        .filter { it.included }
-                                        .map { it.text }
+                                    planId = defaultOption.id,
+                                    planName = selectedPlan.title,
+                                    planPrice = defaultOption.price,
+                                    planPeriod = defaultOption.period,
+                                    planFeatures = selectedPlan.features,
+                                    planOptions = selectedPlan.frequencyOptions.map { option ->
+                                        PendingPlanOption(
+                                            id = option.id,
+                                            label = option.label,
+                                            price = option.priceLabel,
+                                            period = option.periodLabel,
+                                            frequencyInDays = option.frequencyInDays
+                                        )
+                                    }
                                 )
                                 navController.navigate(Screen.ConfirmSubscription.route)
                             }
@@ -609,10 +581,16 @@ class MainActivity : ComponentActivity() {
                             )[SubscriptionViewModel::class.java]
                         }
                         val pendingPlan = sessionManager.getPendingPlanSelection()
-                        val selectedPlanId = pendingPlan?.id
-                        val selectedPlanName = pendingPlan?.name ?: "Pro"
-                        val selectedPlanPrice = pendingPlan?.price ?: "$19"
-                        val selectedPlanPeriod = pendingPlan?.period ?: "/mo"
+                        val frequencyOptions = pendingPlan?.options.orEmpty()
+                        var selectedBillingOptionId by rememberSaveable(pendingPlan?.id) {
+                            mutableStateOf(pendingPlan?.id)
+                        }
+                        val selectedBillingOption = frequencyOptions.firstOrNull { it.id == selectedBillingOptionId }
+                            ?: frequencyOptions.firstOrNull()
+                        val selectedPlanId = selectedBillingOption?.id ?: pendingPlan?.id
+                        val selectedPlanName = pendingPlan?.name ?: "Subscription"
+                        val selectedPlanPrice = selectedBillingOption?.price ?: pendingPlan?.price ?: "$19"
+                        val selectedPlanPeriod = selectedBillingOption?.period ?: pendingPlan?.period ?: "/mo"
 
                         ConfirmSubscriptionScreen(
                             onBack = { navController.popBackStack() },
@@ -621,6 +599,14 @@ class MainActivity : ComponentActivity() {
                                 if (selectedPlanId.isNullOrBlank()) {
                                     subscriptionViewModel.setError("Please select a plan before confirming.")
                                 } else {
+                                    sessionManager.savePendingPlan(
+                                        planId = selectedPlanId,
+                                        planName = selectedPlanName,
+                                        planPrice = selectedPlanPrice,
+                                        planPeriod = selectedPlanPeriod,
+                                        planFeatures = pendingPlan?.features.orEmpty(),
+                                        planOptions = frequencyOptions
+                                    )
                                     navController.navigate(Screen.PaymentDetails.route)
                                 }
                             },
@@ -631,6 +617,16 @@ class MainActivity : ComponentActivity() {
                                 pendingPlan = pendingPlan,
                                 fallbackPlanName = selectedPlanName
                             ),
+                            billingOptions = frequencyOptions.map { option ->
+                                BillingFrequencyOptionUi(
+                                    id = option.id,
+                                    label = option.label,
+                                    price = option.price,
+                                    period = option.period
+                                )
+                            },
+                            selectedBillingOptionId = selectedBillingOption?.id,
+                            onSelectBillingOption = { selectedBillingOptionId = it },
                             isSubmitting = subscriptionViewModel.isSubmitting,
                             errorMessage = subscriptionViewModel.errorMessage
                         )
@@ -652,7 +648,7 @@ class MainActivity : ComponentActivity() {
                         }
                         val pendingPlan = sessionManager.getPendingPlanSelection()
                         val selectedPlanId = pendingPlan?.id
-                        val selectedPlanName = pendingPlan?.name ?: "Pro"
+                        val selectedPlanName = pendingPlan?.name ?: "Subscription"
                         val selectedPlanPrice = pendingPlan?.price ?: "$19"
                         val selectedPlanPeriod = pendingPlan?.period ?: "/mo"
                         var stripePublishableKey by remember { mutableStateOf("") }
@@ -678,7 +674,7 @@ class MainActivity : ComponentActivity() {
                         val navigateToSubscriberHome: () -> Unit = {
                             sessionManager.clearPendingPlan()
                             navController.navigate(Screen.SubscriberHome.route) {
-                                popUpTo(Screen.ExplorePlans.route) { inclusive = true }
+                                popUpTo(Screen.ShopProducts.route) { inclusive = true }
                                 launchSingleTop = true
                             }
                         }
@@ -816,7 +812,7 @@ class MainActivity : ComponentActivity() {
                             sharedSubscriberHomeViewModel.loadDashboard(forceRefresh = true)
                             sharedProfileViewModel.loadProfile(forceRefresh = true)
                             navController.navigate(Screen.SubscriberHome.route) {
-                                popUpTo(Screen.ExplorePlans.route) { inclusive = true }
+                                popUpTo(Screen.ShopProducts.route) { inclusive = true }
                                 launchSingleTop = true
                             }
                         }
@@ -831,7 +827,7 @@ class MainActivity : ComponentActivity() {
                                 sessionManager.clearPendingPlan()
                                 sharedHistoryViewModel.loadHistory(forceRefresh = true)
                                 navController.navigate(Screen.OrderHistory.route) {
-                                    popUpTo(Screen.ExplorePlans.route) { inclusive = true }
+                                    popUpTo(Screen.ShopProducts.route) { inclusive = true }
                                 }
                             }
                         )
@@ -873,12 +869,22 @@ class MainActivity : ComponentActivity() {
                         ShopProductsScreen(
                             viewModel = sharedShopProductsViewModel,
                             onSelectPlan = { selectedPlan ->
+                                val defaultOption = defaultFrequencyOption(selectedPlan)
                                 sessionManager.savePendingPlan(
-                                    planId = selectedPlan.id,
+                                    planId = defaultOption.id,
                                     planName = selectedPlan.title,
-                                    planPrice = selectedPlan.priceLabel,
-                                    planPeriod = selectedPlan.periodLabel,
-                                    planFeatures = selectedPlan.features
+                                    planPrice = defaultOption.price,
+                                    planPeriod = defaultOption.period,
+                                    planFeatures = selectedPlan.features,
+                                    planOptions = selectedPlan.frequencyOptions.map { option ->
+                                        PendingPlanOption(
+                                            id = option.id,
+                                            label = option.label,
+                                            price = option.priceLabel,
+                                            period = option.periodLabel,
+                                            frequencyInDays = option.frequencyInDays
+                                        )
+                                    }
                                 )
                                 navController.navigate(Screen.ConfirmSubscription.route)
                             }
@@ -891,7 +897,6 @@ class MainActivity : ComponentActivity() {
                                 ?.activeSubscriptions
                                 ?.size
                                 ?: 0,
-                            shipmentCount = sharedHistoryViewModel.uiState.history.size,
                             onShippingAddressClick = { navController.navigate("shipping_address") },
                             onSubscriptionDetailsClick = { navController.navigate(Screen.SubscribDetail.route) },
                             onLogoutClick = {
@@ -996,6 +1001,26 @@ private fun NavHostController.navigateToBottomTab(route: String) {
     }
 }
 
+private fun defaultFrequencyOption(plan: ShopPlanUiModel): PendingPlanOption {
+    val selectedOption = plan.frequencyOptions.firstOrNull { it.periodLabel == "/mo" }
+        ?: plan.frequencyOptions.firstOrNull()
+        ?: return PendingPlanOption(
+            id = plan.id,
+            label = "Monthly",
+            price = plan.priceLabel,
+            period = plan.periodLabel,
+            frequencyInDays = 30
+        )
+
+    return PendingPlanOption(
+        id = selectedOption.id,
+        label = selectedOption.label,
+        price = selectedOption.priceLabel,
+        period = selectedOption.periodLabel,
+        frequencyInDays = selectedOption.frequencyInDays
+    )
+}
+
 private fun selectedPlanFeatures(planName: String): List<String> {
     return when (planName.lowercase()) {
         "the wellness box" -> listOf(
@@ -1026,25 +1051,6 @@ private fun selectedPlanFeatures(planName: String): List<String> {
             "Beauty and skincare essentials",
             "Glow-focused monthly routine",
             "Exclusive editor picks"
-        )
-
-        "starter" -> listOf(
-            "5 recurring deliveries",
-            "Basic analytics",
-            "Free shipping"
-        )
-
-        "pro" -> listOf(
-            "Unlimited recurring deliveries",
-            "Advanced analytics",
-            "Free shipping on every shipment",
-            "Priority support"
-        )
-
-        "business" -> listOf(
-            "Everything in Pro",
-            "Multiple user seats",
-            "Dedicated account manager"
         )
 
         else -> listOf("Standard subscription access")

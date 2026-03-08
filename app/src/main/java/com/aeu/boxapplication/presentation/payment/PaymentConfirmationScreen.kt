@@ -147,7 +147,10 @@ fun PaymentConfirmationScreen(
 
                 SectionTitle(text = "FIRST SHIPMENT")
                 Spacer(modifier = Modifier.height(10.dp))
-                FirstShipmentCard(shippingAddress = shippingAddress)
+                FirstShipmentCard(
+                    selectedPlanName = selectedPlanName,
+                    shippingAddress = shippingAddress
+                )
             }
 
             Column(
@@ -273,7 +276,10 @@ private fun SubscriptionDetailsCard(
 }
 
 @Composable
-private fun FirstShipmentCard(shippingAddress: String?) {
+private fun FirstShipmentCard(
+    selectedPlanName: String,
+    shippingAddress: String?
+) {
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = Color.White,
@@ -299,7 +305,7 @@ private fun FirstShipmentCard(shippingAddress: String?) {
                 Spacer(modifier = Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Starter Kit Box",
+                        text = selectedPlanName,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF2F3A4A)

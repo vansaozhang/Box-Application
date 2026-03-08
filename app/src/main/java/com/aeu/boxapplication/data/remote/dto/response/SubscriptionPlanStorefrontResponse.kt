@@ -35,6 +35,9 @@ data class SubscriptionPlanStorefrontItemResponse(
     @SerializedName("period_label")
     val periodLabel: String,
 
+    @SerializedName("frequency_options")
+    val frequencyOptions: List<SubscriptionPlanFrequencyOptionResponse>? = null,
+
     @SerializedName("features")
     val features: List<String>?,
 
@@ -49,4 +52,21 @@ data class SubscriptionPlanStorefrontItemResponse(
 
     @SerializedName("is_featured")
     val isFeatured: Boolean
+)
+
+data class SubscriptionPlanFrequencyOptionResponse(
+    @SerializedName("id")
+    val id: String,
+
+    @SerializedName("label")
+    val label: String,
+
+    @SerializedName("frequency_in_days")
+    val frequencyInDays: Int,
+
+    @SerializedName("price")
+    val price: Double,
+
+    @SerializedName("period_label")
+    val periodLabel: String
 )

@@ -104,7 +104,7 @@ fun SubscriptionDetailsScreen(
                 Button(
                     onClick = {
                         if (subscription == null) {
-                            navController.navigate(Screen.ExplorePlans.route)
+                            navController.navigate(Screen.ShopProducts.route)
                         } else {
                             navController.navigate(Screen.ShipAddress.route)
                         }
@@ -144,7 +144,7 @@ fun SubscriptionDetailsScreen(
 
             if (subscription == null) {
                 EmptySubscriptionState(
-                    onExplore = { navController.navigate(Screen.ExplorePlans.route) }
+                    onExplore = { navController.navigate(Screen.ShopProducts.route) }
                 )
                 return@Column
             }

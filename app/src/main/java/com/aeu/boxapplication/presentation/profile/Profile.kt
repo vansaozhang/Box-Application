@@ -21,7 +21,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ExitToApp
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -56,7 +55,6 @@ private val ProfileDangerTint = Color(0xFFFFF1F3)
 fun ProfileScreen(
     viewModel: SubscriberProfileViewModel,
     activeSubscriptionCount: Int,
-    shipmentCount: Int,
     onShippingAddressClick: () -> Unit,
     onSubscriptionDetailsClick: () -> Unit,
     onLogoutClick: () -> Unit
@@ -115,8 +113,6 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(14.dp))
                 Text(text = displayName, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = ProfileTitle)
                 Text(text = primaryContact, color = ProfileBody, fontSize = 14.sp)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(text = viewModel.memberSinceLabel(), color = ProfileBody, fontSize = 12.sp)
             }
 
             uiState.errorMessage?.let { message ->
@@ -129,46 +125,7 @@ fun ProfileScreen(
                 )
             }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StatCard("Active", activeSubscriptionCount.toString(), modifier = Modifier.weight(1f))
-                StatCard("Addresses", uiState.addresses.size.toString(), modifier = Modifier.weight(1f))
-                StatCard("Shipments", shipmentCount.toString(), modifier = Modifier.weight(1f))
-            }
-
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp)) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color(0xFFF8FAFC),
-                    border = BorderStroke(1.dp, ProfileStroke)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Account Overview", fontWeight = FontWeight.Bold, color = ProfileTitle, fontSize = 16.sp)
-                        Spacer(modifier = Modifier.height(10.dp))
-                        ProfileValueRow(label = "Phone", value = displayPhone ?: "No phone number on file")
-                        displayEmail?.let { email ->
-                            ProfileValueRow(label = "Email", value = email)
-                        }
-                        ProfileValueRow(label = "Role", value = profile?.role ?: "Subscriber")
-                        ProfileValueRow(label = "Status", value = profile?.status ?: "Active")
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Text(
-                    text = "Manage Account",
-                    fontWeight = FontWeight.SemiBold,
-                    color = ProfileBody,
-                    fontSize = 13.sp
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-
                 ProfileMenuItem(
                     icon = Icons.Outlined.LocationOn,
                     title = "Shipping Addresses",
@@ -180,12 +137,6 @@ fun ProfileScreen(
                     title = "Subscription Details",
                     subtitle = if (activeSubscriptionCount > 0) "Manage your active plan" else "Explore plans to get started",
                     onClick = onSubscriptionDetailsClick
-                )
-                ProfileMenuItem(
-                    icon = Icons.Outlined.Person,
-                    title = "Account Identity",
-                    subtitle = primaryContact,
-                    onClick = {}
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -310,24 +261,6 @@ private fun LogoutConfirmationDialog(
 }
 
 @Composable
-private fun StatCard(label: String, value: String, modifier: Modifier) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(14.dp),
-        color = Color.White,
-        border = BorderStroke(1.dp, ProfileStroke)
-    ) {
-        Column(
-            modifier = Modifier.padding(vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = ProfileTitle)
-            Text(label, fontSize = 12.sp, color = ProfileBody)
-        }
-    }
-}
-
-@Composable
 private fun ProfileMenuItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
@@ -366,18 +299,5 @@ private fun ProfileMenuItem(
             }
             Text("View", color = ProfilePrimary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
         }
-    }
-}
-
-@Composable
-private fun ProfileValueRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(label, color = ProfileBody, fontSize = 13.sp)
-        Text(value, color = ProfileTitle, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
     }
 }

@@ -128,7 +128,7 @@ fun SubscriberHomeScreen(
                     if (activeSubscription != null) {
                         navController.navigate(Screen.SubscribDetail.route)
                     } else {
-                        navController.navigate(Screen.ExplorePlans.route)
+                        navController.navigate(Screen.ShopProducts.route)
                     }
                 }
             )
@@ -153,7 +153,7 @@ fun SubscriberHomeScreen(
                         if (activeSubscription != null) {
                             navController.navigate(Screen.SubscribDetail.route)
                         } else {
-                            navController.navigate(Screen.ExplorePlans.route)
+                            navController.navigate(Screen.ShopProducts.route)
                         }
                     }
                 ) {
@@ -168,7 +168,7 @@ fun SubscriberHomeScreen(
 
             if (activeSubscription == null) {
                 EmptySubscriptionsCard(
-                    onExplore = { navController.navigate(Screen.ExplorePlans.route) }
+                    onExplore = { navController.navigate(Screen.ShopProducts.route) }
                 )
             } else {
                 SubscriptionListItem(subscription = activeSubscription)

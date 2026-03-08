@@ -11,7 +11,16 @@ data class PendingPlanSelection(
     val name: String,
     val price: String,
     val period: String,
-    val features: List<String>
+    val features: List<String>,
+    val options: List<PendingPlanOption> = emptyList()
+)
+
+data class PendingPlanOption(
+    val id: String,
+    val label: String,
+    val price: String,
+    val period: String,
+    val frequencyInDays: Int
 )
 
 data class LocalShippingAddress(
@@ -78,7 +87,8 @@ class SessionManager private constructor(context: Context) {
         planName: String,
         planPrice: String,
         planPeriod: String,
-        planFeatures: List<String> = emptyList()
+        planFeatures: List<String> = emptyList(),
+        planOptions: List<PendingPlanOption> = emptyList()
     ) {
         prefs.edit()
             .putString("pending_plan_id", planId)
@@ -86,6 +96,19 @@ class SessionManager private constructor(context: Context) {
             .putString("pending_plan_price", planPrice)
             .putString("pending_plan_period", planPeriod)
             .putString("pending_plan_features", JSONArray(planFeatures).toString())
+            .putString("pending_plan_options", JSONArray().apply {
+                planOptions.forEach { option ->
+                    put(
+                        JSONObject().apply {
+                            put("id", option.id)
+                            put("label", option.label)
+                            put("price", option.price)
+                            put("period", option.period)
+                            put("frequency_in_days", option.frequencyInDays)
+                        }
+                    )
+                }
+            }.toString())
             .apply()
     }
 
@@ -109,14 +132,43 @@ class SessionManager private constructor(context: Context) {
         }.getOrDefault(emptyList())
     }
 
+    fun getPendingPlanOptions(): List<PendingPlanOption> {
+        val raw = prefs.getString("pending_plan_options", null).orEmpty()
+        if (raw.isBlank()) {
+            return emptyList()
+        }
+
+        return runCatching {
+            val jsonArray = JSONArray(raw)
+            buildList {
+                for (index in 0 until jsonArray.length()) {
+                    val item = jsonArray.optJSONObject(index) ?: continue
+                    val id = item.optString("id")
+                    if (id.isBlank()) continue
+
+                    add(
+                        PendingPlanOption(
+                            id = id,
+                            label = item.optString("label").ifBlank { "Monthly" },
+                            price = item.optString("price").ifBlank { "$0.00" },
+                            period = item.optString("period").ifBlank { "/mo" },
+                            frequencyInDays = item.optInt("frequency_in_days", 30)
+                        )
+                    )
+                }
+            }
+        }.getOrDefault(emptyList())
+    }
+
     fun getPendingPlanSelection(): PendingPlanSelection? {
         val id = getPendingPlanId() ?: return null
         return PendingPlanSelection(
             id = id,
-            name = getPendingPlanName() ?: "Pro",
+            name = getPendingPlanName() ?: "Subscription",
             price = getPendingPlanPrice() ?: "$19",
             period = getPendingPlanPeriod() ?: "/mo",
-            features = getPendingPlanFeatures()
+            features = getPendingPlanFeatures(),
+            options = getPendingPlanOptions()
         )
     }
 
@@ -127,6 +179,7 @@ class SessionManager private constructor(context: Context) {
             .remove("pending_plan_price")
             .remove("pending_plan_period")
             .remove("pending_plan_features")
+            .remove("pending_plan_options")
             .apply()
     }
 
@@ -141,6 +194,7 @@ class SessionManager private constructor(context: Context) {
             .remove("pending_plan_price")
             .remove("pending_plan_period")
             .remove("pending_plan_features")
+            .remove("pending_plan_options")
             .apply()
     }
 

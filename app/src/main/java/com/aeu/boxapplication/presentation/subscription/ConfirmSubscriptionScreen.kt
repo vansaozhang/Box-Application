@@ -40,23 +40,38 @@ import androidx.compose.ui.unit.sp
 import com.aeu.boxapplication.ui.components.AppGlobalLoadingEffect
 import com.aeu.boxapplication.ui.components.AppPrimaryButton
 
+data class BillingFrequencyOptionUi(
+    val id: String,
+    val label: String,
+    val price: String,
+    val period: String
+)
+
 @Composable
 fun ConfirmSubscriptionScreen(
     onBack: () -> Unit = {},
     onEditPlan: () -> Unit = {},
     onConfirmPay: () -> Unit = {},
-    selectedPlanName: String = "Pro",
+    selectedPlanName: String = "Subscription",
     selectedPlanPrice: String = "$19",
     selectedPlanPeriod: String = "/mo",
     selectedPlanFeatures: List<String> = listOf(
-        "Unlimited recurring deliveries",
-        "Advanced analytics",
-        "Free shipping on every shipment"
+        "Curated box delivery",
+        "Flexible billing cycle",
+        "Free doorstep delivery"
     ),
+    billingOptions: List<BillingFrequencyOptionUi> = emptyList(),
+    selectedBillingOptionId: String? = null,
+    onSelectBillingOption: (String) -> Unit = {},
     isSubmitting: Boolean = false,
     errorMessage: String? = null
 ) {
     AppGlobalLoadingEffect(isVisible = isSubmitting)
+    val billingCycleLabel = billingOptions
+        .firstOrNull { it.id == selectedBillingOptionId }
+        ?.label
+        ?.lowercase()
+        ?: selectedPlanPeriod.toBillingCycleLabel()
 
     val methods = listOf(
         PaymentMethodUi(
@@ -136,6 +151,19 @@ fun ConfirmSubscriptionScreen(
                     features = selectedPlanFeatures
                 )
 
+                if (billingOptions.size > 1) {
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    SectionTitle(text = "DELIVERY FREQUENCY")
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    BillingFrequencySelector(
+                        options = billingOptions,
+                        selectedOptionId = selectedBillingOptionId,
+                        onSelect = onSelectBillingOption
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(18.dp))
 
                 SectionTitle(text = "PAYMENT METHOD")
@@ -160,7 +188,7 @@ fun ConfirmSubscriptionScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Your subscription will renew automatically based on your selected ${if (selectedPlanPeriod == "/yr") "yearly" else "monthly"} cycle.\nYou can cancel anytime in your settings.",
+                    text = "Your subscription will renew automatically based on your selected $billingCycleLabel cycle.\nYou can cancel anytime in your settings.",
                     fontSize = 11.sp,
                     color = Color(0xFF8C99A6),
                     textAlign = TextAlign.Center,
@@ -190,6 +218,57 @@ fun ConfirmSubscriptionScreen(
                     onClick = onConfirmPay,
                     enabled = !isSubmitting
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BillingFrequencySelector(
+    options: List<BillingFrequencyOptionUi>,
+    selectedOptionId: String?,
+    onSelect: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        options.forEach { option ->
+            val selected = option.id == selectedOptionId
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = if (selected) Color(0xFFEAF3FF) else Color.White,
+                modifier = Modifier
+                    .weight(1f)
+                    .border(
+                        width = 1.2.dp,
+                        color = if (selected) Color(0xFF1E88E5) else Color(0xFFE3E8EF),
+                        shape = RoundedCornerShape(14.dp)
+                    )
+                    .clickable(
+                        onClick = { onSelect(option.id) },
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    )
+            ) {
+                Column(
+                    modifier = Modifier.padding(vertical = 12.dp, horizontal = 10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = option.label,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2F3A4A)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = option.price,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1E88E5)
+                    )
+                }
             }
         }
     }
@@ -446,5 +525,15 @@ private fun SummaryRow(label: String, value: String) {
             fontSize = 12.sp,
             color = Color(0xFF2F3A4A)
         )
+    }
+}
+
+private fun String.toBillingCycleLabel(): String {
+    return when (this) {
+        "/yr" -> "yearly"
+        "/wk" -> "weekly"
+        "/2wk" -> "every 2 weeks"
+        "/3mo" -> "every 3 months"
+        else -> "monthly"
     }
 }

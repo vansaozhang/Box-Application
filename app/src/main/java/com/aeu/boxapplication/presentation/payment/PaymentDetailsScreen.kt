@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aeu.boxapplication.core.utils.ValidationUtils
 import com.aeu.boxapplication.ui.components.AppGlobalLoadingEffect
 import com.aeu.boxapplication.ui.components.AppNotificationPosition
 import com.aeu.boxapplication.ui.components.AppPrimaryButton
@@ -72,7 +73,7 @@ data class PaymentCardInput(
 fun PaymentDetailsScreen(
     onBack: () -> Unit = {},
     onPayNow: (PaymentCardInput) -> Unit = {},
-    selectedPlanName: String = "Pro",
+    selectedPlanName: String = "Subscription",
     selectedPlanPrice: String = "$19",
     selectedPlanPeriod: String = "/mo",
     initialCardholderName: String = "",
@@ -81,19 +82,23 @@ fun PaymentDetailsScreen(
     onDismissError: () -> Unit = {}
 ) {
     val notificationHostState = LocalAppNotificationHostState.current
-    val (cardNumber, setCardNumber) = remember { mutableStateOf("") }
+    val (cardNumberField, setCardNumberField) = rememberSaveable(stateSaver = TextFieldValue.Saver) {
+        mutableStateOf(TextFieldValue(""))
+    }
     val (cardholderName, setCardholderName) = rememberSaveable(initialCardholderName) {
         mutableStateOf(initialCardholderName)
     }
     val (expiryDate, setExpiryDate) = remember { mutableStateOf(TextFieldValue("")) }
     val (cvv, setCvv) = remember { mutableStateOf("") }
+    val cardNumber = cardNumberField.text
     val cardNumberDigits = cardNumber.filter { it.isDigit() }
     val cvvDigits = cvv.filter { it.isDigit() }
-    val isCardNumberValid = cardNumberDigits.length == 16
+    val isCardNumberValid =
+        cardNumberDigits.length == 16 && ValidationUtils.isValidCreditCard(cardNumberDigits)
     val isCardholderValid = cardholderName.trim().length >= 2
     val isExpiryValid = isValidExpiry(expiryDate.text)
     val isCvvValid = cvvDigits.length in 3..4
-    val showCardNumberError = cardNumber.isNotEmpty() && !isCardNumberValid
+    val showCardNumberError = cardNumberDigits.length == 16 && !isCardNumberValid
     val showCardholderError = cardholderName.isNotEmpty() && !isCardholderValid
     val expiryError = expiryErrorMessage(expiryDate.text)
     val showExpiryError = expiryError != null
@@ -200,10 +205,15 @@ fun PaymentDetailsScreen(
 
             FormLabel(text = "Card Number")
             OutlinedTextField(
-                value = cardNumber,
+                value = cardNumberField,
                 onValueChange = { input ->
-                    val digitsOnly = input.filter { it.isDigit() }.take(16)
-                    setCardNumber(digitsOnly.chunked(4).joinToString(" "))
+                    val formatted = formatCardNumberInput(input.text)
+                    setCardNumberField(
+                        input.copy(
+                            text = formatted,
+                            selection = TextRange(formatted.length)
+                        )
+                    )
                 },
                 placeholder = {
                     Text(
@@ -251,7 +261,7 @@ fun PaymentDetailsScreen(
                 supportingText = {
                     if (showCardNumberError) {
                         Text(
-                            text = "Enter a valid 16-digit card number",
+                            text = "Card number looks invalid",
                             fontSize = 11.sp,
                             color = Color(0xFFE11D2A)
                         )
@@ -411,7 +421,7 @@ fun PaymentDetailsScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             TransactionSummaryCard(
-                planLabel = "$selectedPlanName Plan (${if (selectedPlanPeriod == "/yr") "Yearly" else "Monthly"})",
+                planLabel = "$selectedPlanName Plan (${selectedPlanPeriod.toBillingCycleLabel()})",
                 totalPrice = formatPriceLabel(selectedPlanPrice)
             )
 
@@ -560,6 +570,11 @@ private fun formatExpiryInput(input: String): String {
     }
 }
 
+private fun formatCardNumberInput(input: String): String {
+    val digits = input.filter { it.isDigit() }.take(16)
+    return digits.chunked(4).joinToString(" ")
+}
+
 private fun parseExpiryParts(value: String): Pair<Int, Int>? {
     if (!value.matches(Regex("\\d{2}/\\d{2}"))) return null
     val month = value.substring(0, 2).toIntOrNull() ?: return null
@@ -569,6 +584,16 @@ private fun parseExpiryParts(value: String): Pair<Int, Int>? {
 
 private fun formatPriceLabel(value: String): String {
     return if (value.contains('.')) value else "$value.00"
+}
+
+private fun String.toBillingCycleLabel(): String {
+    return when (this) {
+        "/yr" -> "Yearly"
+        "/3mo" -> "Every 3 months"
+        "/2wk" -> "Every 2 weeks"
+        "/wk" -> "Weekly"
+        else -> "Monthly"
+    }
 }
 
 private data class PaymentErrorContent(
@@ -608,6 +633,10 @@ private fun toPaymentErrorContent(rawMessage: String): PaymentErrorContent {
         "declined" in normalized -> PaymentErrorContent(
             title = "Payment was declined",
             message = "Try another card or contact your bank for more details."
+        )
+        "stripe price mapping is missing" in normalized -> PaymentErrorContent(
+            title = "Plan billing isn't ready",
+            message = "This box and billing frequency are not configured in Stripe yet. Choose another billing option or ask the admin to finish Stripe setup."
         )
         "processing error" in normalized || "try again" in normalized -> PaymentErrorContent(
             title = "Payment couldn't be completed",
