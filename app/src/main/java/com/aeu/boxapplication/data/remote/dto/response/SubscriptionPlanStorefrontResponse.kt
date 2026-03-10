@@ -32,6 +32,9 @@ data class SubscriptionPlanStorefrontItemResponse(
     @SerializedName("price")
     val price: Double,
 
+    @SerializedName("image_url")
+    val imageUrl: String?,
+
     @SerializedName("period_label")
     val periodLabel: String,
 

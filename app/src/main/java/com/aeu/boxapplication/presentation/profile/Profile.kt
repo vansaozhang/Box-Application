@@ -1,8 +1,12 @@
 package com.aeu.boxapplication.presentation.subscriber
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,12 +22,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ExitToApp
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -36,12 +42,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import coil.compose.AsyncImage
 import com.aeu.boxapplication.ui.components.AppGlobalLoadingEffect
 import com.aeu.boxapplication.ui.components.AppStatusBanner
 import com.aeu.boxapplication.ui.components.AppStatusTone
@@ -63,10 +73,12 @@ fun ProfileScreen(
 ) {
     val uiState = viewModel.uiState
     val profile = uiState.profile
+    val context = LocalContext.current
     val displayName = profile?.name?.takeIf { !it.isNullOrBlank() }
         ?: "Subscriber"
     val displayEmail = profile?.email?.takeIf { it.isNotBlank() }
     val displayPhone = profile?.phoneNumber?.takeIf { it.isNotBlank() }
+    val profileImageUrl = profile?.profileImageUrl?.takeIf { it.isNotBlank() }
     val primaryContact = displayPhone ?: displayEmail ?: "No contact information on file"
     val initials = displayName
         .split(" ")
@@ -75,6 +87,13 @@ fun ProfileScreen(
         .joinToString("") { it.take(1).uppercase() }
         .ifBlank { "BX" }
     var showLogoutDialog by remember { mutableStateOf(false) }
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { selectedImage ->
+        if (selectedImage != null) {
+            viewModel.uploadProfileImage(context.contentResolver, selectedImage)
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.loadProfile()
@@ -131,20 +150,78 @@ fun ProfileScreen(
                 Box(
                     modifier = Modifier
                         .size(100.dp)
+                        .clip(CircleShape)
                         .background(ProfilePrimary.copy(alpha = 0.12f), CircleShape)
-                        .border(2.dp, ProfilePrimary, CircleShape),
+                        .border(2.dp, ProfilePrimary, CircleShape)
+                        .clickable {
+                            photoPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = initials,
+                    if (profileImageUrl != null) {
+                        AsyncImage(
+                            model = profileImageUrl,
+                            contentDescription = "$displayName profile image",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Text(
+                            text = initials,
+                            color = ProfilePrimary,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 28.sp
+                        )
+                    }
+
+                    if (uiState.isUploadingProfileImage) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.White.copy(alpha = 0.72f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = ProfilePrimary,
+                                strokeWidth = 2.5.dp,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
+
+                    Surface(
                         color = ProfilePrimary,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 28.sp
-                    )
+                        shape = CircleShape,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Edit,
+                            contentDescription = "Change profile image",
+                            tint = Color.White,
+                            modifier = Modifier.padding(7.dp)
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(14.dp))
                 Text(text = displayName, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = ProfileTitle)
                 Text(text = primaryContact, color = ProfileBody, fontSize = 14.sp)
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = if (uiState.isUploadingProfileImage) "Uploading photo..." else "Tap photo to update",
+                    color = ProfilePrimary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = viewModel.memberSinceLabel(),
+                    color = ProfileBody,
+                    fontSize = 12.sp
+                )
             }
 
             uiState.errorMessage?.let { message ->

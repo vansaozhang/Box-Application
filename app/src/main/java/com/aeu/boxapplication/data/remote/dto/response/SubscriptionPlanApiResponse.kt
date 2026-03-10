@@ -13,5 +13,8 @@ data class SubscriptionPlanApiResponse(
     val frequencyInDays: Int,
 
     @SerializedName("price")
-    val price: Double
+    val price: Double,
+
+    @SerializedName("image_url")
+    val imageUrl: String? = null
 )

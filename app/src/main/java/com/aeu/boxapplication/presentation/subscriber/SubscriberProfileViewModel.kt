@@ -1,5 +1,8 @@
 package com.aeu.boxapplication.presentation.subscriber
 
+import android.content.ContentResolver
+import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -10,7 +13,12 @@ import com.aeu.boxapplication.data.remote.AuthApiService
 import com.aeu.boxapplication.data.remote.dto.request.CreateMyAddressRequest
 import com.aeu.boxapplication.data.remote.dto.response.AuthMeResponse
 import com.aeu.boxapplication.data.remote.dto.response.SubscriberAddressResponse
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.IOException
 import java.net.SocketTimeoutException
@@ -30,6 +38,7 @@ data class SubscriberProfileUiState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val isSavingAddress: Boolean = false,
+    val isUploadingProfileImage: Boolean = false,
     val profile: AuthMeResponse? = null,
     val addresses: List<SubscriberAddressUiModel> = emptyList(),
     val errorMessage: String? = null
@@ -47,7 +56,7 @@ class SubscriberProfileViewModel(
     private var remoteAddresses: List<SubscriberAddressResponse> = emptyList()
 
     fun loadProfile(forceRefresh: Boolean = false) {
-        if (uiState.isLoading || uiState.isRefreshing || uiState.isSavingAddress) {
+        if (uiState.isLoading || uiState.isRefreshing || uiState.isSavingAddress || uiState.isUploadingProfileImage) {
             return
         }
 
@@ -143,6 +152,66 @@ class SubscriberProfileViewModel(
         uiState = uiState.copy(errorMessage = null)
     }
 
+    fun uploadProfileImage(contentResolver: ContentResolver, imageUri: Uri) {
+        if (uiState.isUploadingProfileImage) {
+            return
+        }
+
+        val token = sessionManager.getAuthToken()
+        if (token.isNullOrBlank()) {
+            uiState = uiState.copy(errorMessage = "Please login again to update your photo.")
+            return
+        }
+
+        viewModelScope.launch {
+            uiState = uiState.copy(isUploadingProfileImage = true, errorMessage = null)
+
+            try {
+                val filePart = withContext(Dispatchers.IO) {
+                    createImagePart(contentResolver, imageUri)
+                }
+                val response = authService.uploadProfileImage("Bearer $token", filePart)
+
+                if (response.isSuccessful) {
+                    val profile = response.body()
+                    if (profile != null) {
+                        uiState = uiState.copy(
+                            isUploadingProfileImage = false,
+                            profile = profile,
+                            errorMessage = null
+                        )
+                        sessionManager.saveUserDetail(
+                            name = profile.name?.takeIf { it.isNotBlank() }
+                                ?: sessionManager.getUserName()
+                                ?: profile.phoneNumber
+                                ?: profile.email
+                                ?: "Subscriber",
+                            email = profile.email,
+                            phone = profile.phoneNumber,
+                            token = token
+                        )
+                    } else {
+                        uiState = uiState.copy(
+                            isUploadingProfileImage = false,
+                            errorMessage = "Profile image uploaded, but the refreshed profile is unavailable."
+                        )
+                    }
+                } else {
+                    uiState = uiState.copy(
+                        isUploadingProfileImage = false,
+                        errorMessage = extractServerMessage(response.errorBody()?.string())
+                            ?: "Failed to upload your profile image."
+                    )
+                }
+            } catch (error: Exception) {
+                uiState = uiState.copy(
+                    isUploadingProfileImage = false,
+                    errorMessage = mapExceptionToMessage(error)
+                )
+            }
+        }
+    }
+
     fun addShippingAddress(
         address: String,
         phone: String? = null,
@@ -230,6 +299,7 @@ class SubscriberProfileViewModel(
 
     private fun mapExceptionToMessage(error: Exception): String {
         return when (error) {
+            is IllegalArgumentException -> error.message ?: "Please choose a valid image."
             is SocketTimeoutException -> "Request timed out. Please try again."
             is IOException -> "No internet connection. Please reconnect and retry."
             else -> "Something unexpected happened while processing your profile."
@@ -282,5 +352,53 @@ class SubscriberProfileViewModel(
             append("|")
             append(address.phone.orEmpty().filter { it.isDigit() })
         }
+    }
+
+    private fun createImagePart(
+        contentResolver: ContentResolver,
+        imageUri: Uri,
+    ): MultipartBody.Part {
+        val bytes = contentResolver.openInputStream(imageUri)?.use { it.readBytes() }
+            ?: throw IllegalArgumentException("Unable to read the selected image.")
+
+        if (bytes.isEmpty()) {
+            throw IllegalArgumentException("The selected image is empty.")
+        }
+
+        if (bytes.size > 5 * 1024 * 1024) {
+            throw IllegalArgumentException("Profile image must be 5 MB or smaller.")
+        }
+
+        val mimeType = contentResolver.getType(imageUri)?.takeIf { it.startsWith("image/") }
+            ?: "image/jpeg"
+        val extension = mimeType.substringAfter('/', "jpg")
+        val fileName = resolveImageFileName(contentResolver, imageUri, extension)
+        val requestBody = bytes.toRequestBody(mimeType.toMediaTypeOrNull())
+
+        return MultipartBody.Part.createFormData("file", fileName, requestBody)
+    }
+
+    private fun resolveImageFileName(
+        contentResolver: ContentResolver,
+        imageUri: Uri,
+        fallbackExtension: String,
+    ): String {
+        contentResolver.query(
+            imageUri,
+            arrayOf(OpenableColumns.DISPLAY_NAME),
+            null,
+            null,
+            null,
+        )?.use { cursor ->
+            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (nameIndex >= 0 && cursor.moveToFirst()) {
+                val fileName = cursor.getString(nameIndex)
+                if (!fileName.isNullOrBlank()) {
+                    return fileName
+                }
+            }
+        }
+
+        return "profile-${System.currentTimeMillis()}.$fallbackExtension"
     }
 }

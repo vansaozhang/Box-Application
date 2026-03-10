@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
@@ -45,11 +44,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.aeu.boxapplication.ui.components.AppGlobalLoadingEffect
 import com.aeu.boxapplication.ui.components.AppStatusBanner
 import com.aeu.boxapplication.ui.components.AppStatusTone
@@ -324,15 +325,30 @@ private fun FeaturedBoxCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                ShopPrimary.copy(alpha = 0.95f),
-                                ShopTitle
+            ) {
+                if (!plan.imageUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = plan.imageUrl,
+                        contentDescription = "${plan.title} image",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    ShopPrimary.copy(alpha = 0.25f),
+                                    ShopPrimary.copy(alpha = 0.78f),
+                                    ShopTitle
+                                )
                             )
                         )
-                    )
-            ) {
+                ) {}
+
                 Surface(
                     color = ShopTint,
                     shape = RoundedCornerShape(12.dp),
@@ -447,6 +463,29 @@ private fun SubscriptionItem(
                     .clip(RoundedCornerShape(12.dp))
                     .background(Color(0xFFF1F5F9))
             ) {
+                if (!plan.imageUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = plan.imageUrl,
+                        contentDescription = "${plan.title} image",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFFEAF3FF)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = planMonogram(plan.title),
+                            color = ShopPrimary,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = if (isCompact) 18.sp else 20.sp
+                        )
+                    }
+                }
+
                 plan.badge?.let { badge ->
                     Surface(
                         color = ShopPrimary.copy(alpha = 0.18f),
@@ -608,4 +647,13 @@ private fun EmptyCatalogCard(onReload: () -> Unit) {
             }
         }
     }
+}
+
+private fun planMonogram(title: String): String {
+    return title
+        .split(" ")
+        .filter { it.isNotBlank() }
+        .take(2)
+        .joinToString("") { it.take(1).uppercase() }
+        .ifBlank { "BX" }
 }

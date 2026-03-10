@@ -27,5 +27,8 @@ data class UserData(
     val role: String?,
 
     @SerializedName("status")
-    val status: String?
+    val status: String?,
+
+    @SerializedName("profile_image_url")
+    val profileImageUrl: String?
 )

@@ -16,12 +16,15 @@ import com.aeu.boxapplication.data.remote.dto.response.SubscriptionPlanStorefron
 import com.aeu.boxapplication.data.remote.dto.response.SubscriberDashboardResponse
 import com.aeu.boxapplication.data.remote.dto.response.SubscriberShipmentHistoryDetailResponse
 import com.aeu.boxapplication.data.remote.dto.response.SubscriberShipmentHistoryItemResponse
+import okhttp3.MultipartBody
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.Part
 import retrofit2.http.Query
 
 interface AuthApiService {
@@ -34,6 +37,13 @@ interface AuthApiService {
 
     @GET("auth/me")
     suspend fun getMe(@Header("Authorization") authHeader: String): Response<AuthMeResponse>
+
+    @Multipart
+    @POST("auth/me/profile-image")
+    suspend fun uploadProfileImage(
+        @Header("Authorization") authHeader: String,
+        @Part file: MultipartBody.Part
+    ): Response<AuthMeResponse>
 
     @GET("subscription-plans")
     suspend fun getSubscriptionPlans(

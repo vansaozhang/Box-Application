@@ -21,6 +21,9 @@ data class AuthMeResponse(
     @SerializedName("status")
     val status: String?,
 
+    @SerializedName("profile_image_url")
+    val profileImageUrl: String?,
+
     @SerializedName("created_at")
     val createdAt: String?
 )
