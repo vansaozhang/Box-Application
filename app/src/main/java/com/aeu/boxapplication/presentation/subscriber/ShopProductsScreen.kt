@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,18 +19,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -60,7 +59,7 @@ private val ShopTitle = Color(0xFF2F3A4A)
 private val ShopBody = Color(0xFF7B8794)
 private val ShopStroke = Color(0xFFE3E8EF)
 private val ShopTint = Color(0xFFEAF3FF)
-private val ShopBackground = Color(0xFFFFFFFF)
+private val ShopBackground = Color(0xFFF3F5F9)
 val BoxlyTeal = Color(0xFF1CE5D1)
 val BoxlyBackground = Color(0xFFF8FAFB)
 val BoxlyDarkText = Color(0xFF1A1C1E)
@@ -83,9 +82,7 @@ fun ShopProductsScreen(
     Scaffold(
         containerColor = ShopBackground,
         topBar = {
-            TopHeader(
-                onRefresh = { viewModel.loadStorefront(forceRefresh = true) }
-            )
+            TopHeader()
         }
     ) { paddingValues ->
         BoxWithConstraints(
@@ -100,7 +97,13 @@ fun ShopProductsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(
+                        state = rememberScrollState(),
+                        flingBehavior = ScrollableDefaults.flingBehavior()
+                    )
+                    .padding(
+                        bottom = if (isCompactHeight) 20.dp else 28.dp
+                    )
             ) {
                 if (uiState.isRefreshing) {
                     LinearProgressIndicator(
@@ -111,93 +114,90 @@ fun ShopProductsScreen(
                 }
 
                 SearchBarSection(
-                    query = uiState.searchQuery,
-                    onQueryChange = viewModel::updateSearchQuery,
-                    horizontalPadding = horizontalPadding
-                )
+                        query = uiState.searchQuery,
+                        onQueryChange = viewModel::updateSearchQuery,
+                        horizontalPadding = horizontalPadding
+                    )
 
                 CategoryChipsSection(
-                    categories = uiState.categories,
-                    selectedCategory = uiState.selectedCategory,
-                    onCategorySelected = viewModel::selectCategory,
-                    isCompact = isCompactHeight,
-                    horizontalPadding = horizontalPadding
-                )
+                        categories = uiState.categories,
+                        selectedCategory = uiState.selectedCategory,
+                        onCategorySelected = viewModel::selectCategory,
+                        isCompact = isCompactHeight,
+                        horizontalPadding = horizontalPadding
+                    )
 
                 uiState.errorMessage?.let { message ->
                     AppStatusBanner(
-                        title = "Plan catalog unavailable",
-                        message = message,
-                        tone = AppStatusTone.Error,
-                        onDismiss = viewModel::dismissError,
-                        modifier = Modifier.padding(horizontal = horizontalPadding, vertical = 8.dp)
-                    )
+                            title = "Plan catalog unavailable",
+                            message = message,
+                            tone = AppStatusTone.Error,
+                            onDismiss = viewModel::dismissError,
+                            modifier = Modifier.padding(horizontal = horizontalPadding, vertical = 8.dp)
+                        )
                 }
 
                 FeaturedBoxCard(
-                    plan = uiState.featuredPlan,
-                    isCompact = isCompactHeight,
-                    horizontalPadding = horizontalPadding,
-                    onSelectPlan = onSelectPlan
-                )
+                        plan = uiState.featuredPlan,
+                        isCompact = isCompactHeight,
+                        horizontalPadding = horizontalPadding,
+                        onSelectPlan = onSelectPlan
+                    )
 
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            horizontal = horizontalPadding,
-                            vertical = if (isCompactHeight) 12.dp else 16.dp
-                        ),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Discover All Boxes",
-                        fontSize = if (isCompactHeight) 20.sp else 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = ShopTitle
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable { viewModel.toggleSort() }
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                horizontal = horizontalPadding,
+                                vertical = if (isCompactHeight) 12.dp else 16.dp
+                            ),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = uiState.sort.label,
-                            color = ShopPrimary,
-                            fontSize = 14.sp
+                            text = "Discover All Boxes",
+                            fontSize = if (isCompactHeight) 20.sp else 22.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ShopTitle
                         )
-                    }
-                }
-
-                Column(modifier = Modifier.padding(horizontal = horizontalPadding)) {
-                    if (uiState.featuredPlan == null && uiState.plans.isEmpty() && !uiState.isLoading) {
-                        EmptyCatalogCard(
-                            onReload = { viewModel.loadStorefront(forceRefresh = true) }
-                        )
-                    } else {
-                        uiState.plans.forEach { plan ->
-                            SubscriptionItem(
-                                plan = plan,
-                                onSelectPlan = onSelectPlan,
-                                isCompact = isCompactHeight
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clickable { viewModel.toggleSort() }
+                        ) {
+                            Text(
+                                text = uiState.sort.label,
+                                color = ShopPrimary,
+                                fontSize = 14.sp
                             )
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(if (isCompactHeight) 20.dp else 28.dp))
+                if (uiState.featuredPlan == null && uiState.plans.isEmpty() && !uiState.isLoading) {
+                    EmptyCatalogCard(
+                        modifier = Modifier.padding(horizontal = horizontalPadding),
+                        onReload = { viewModel.loadStorefront(forceRefresh = true) }
+                    )
+                } else {
+                    uiState.plans.forEach { plan ->
+                        SubscriptionItem(
+                            plan = plan,
+                            onSelectPlan = onSelectPlan,
+                            isCompact = isCompactHeight,
+                            modifier = Modifier.padding(horizontal = horizontalPadding)
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun TopHeader(onRefresh: () -> Unit) {
+private fun TopHeader() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -220,14 +220,6 @@ private fun TopHeader(onRefresh: () -> Unit) {
                 fontSize = 24.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = ShopTitle
-            )
-        }
-
-        IconButton(onClick = onRefresh) {
-            Icon(
-                Icons.Default.Refresh,
-                contentDescription = "Refresh plans",
-                tint = ShopTitle
             )
         }
     }
@@ -393,13 +385,6 @@ private fun FeaturedBoxCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (plan.frequencyOptions.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    FrequencyOptionsPreview(
-                        options = plan.frequencyOptions,
-                        isCompact = isCompact
-                    )
-                }
                 Spacer(modifier = Modifier.height(if (isCompact) 10.dp else 14.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -443,10 +428,12 @@ private fun FeaturedBoxCard(
 private fun SubscriptionItem(
     plan: ShopPlanUiModel,
     onSelectPlan: (ShopPlanUiModel) -> Unit,
-    isCompact: Boolean
+    isCompact: Boolean,
+    modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = Modifier
+        onClick = { onSelectPlan(plan) },
+        modifier = modifier
             .fillMaxWidth()
             .padding(vertical = if (isCompact) 6.dp else 8.dp),
         shape = RoundedCornerShape(20.dp),
@@ -543,13 +530,6 @@ private fun SubscriptionItem(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (plan.frequencyOptions.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    FrequencyOptionsPreview(
-                        options = plan.frequencyOptions,
-                        isCompact = true
-                    )
-                }
                 Spacer(modifier = Modifier.height(if (isCompact) 6.dp else 8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -563,24 +543,6 @@ private fun SubscriptionItem(
                         fontSize = 10.sp,
                         color = ShopBody
                     )
-                    Spacer(modifier = Modifier.weight(1f))
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = ShopTint,
-                        border = BorderStroke(1.dp, ShopStroke),
-                        modifier = Modifier.clickable { onSelectPlan(plan) }
-                    ) {
-                        Text(
-                            text = "Choose Delivery",
-                            modifier = Modifier.padding(
-                                horizontal = if (isCompact) 10.dp else 12.dp,
-                                vertical = if (isCompact) 5.dp else 6.dp
-                            ),
-                            fontSize = if (isCompact) 10.sp else 11.sp,
-                            color = ShopPrimary,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
                 }
             }
         }
@@ -588,40 +550,12 @@ private fun SubscriptionItem(
 }
 
 @Composable
-private fun FrequencyOptionsPreview(
-    options: List<ShopPlanFrequencyOptionUiModel>,
-    isCompact: Boolean
+private fun EmptyCatalogCard(
+    onReload: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val labels = options.map { it.label }.distinct()
-    Row(
-        modifier = Modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        labels.forEach { label ->
-            Surface(
-                color = ShopTint,
-                shape = RoundedCornerShape(999.dp),
-                border = BorderStroke(1.dp, ShopStroke)
-            ) {
-                Text(
-                    text = label,
-                    modifier = Modifier.padding(
-                        horizontal = if (isCompact) 8.dp else 10.dp,
-                        vertical = 4.dp
-                    ),
-                    fontSize = if (isCompact) 10.sp else 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = ShopPrimary
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun EmptyCatalogCard(onReload: () -> Unit) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         color = Color.White,
         shape = RoundedCornerShape(20.dp),
         border = BorderStroke(1.dp, ShopStroke)

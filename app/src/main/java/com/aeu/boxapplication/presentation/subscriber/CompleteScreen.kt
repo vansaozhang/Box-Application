@@ -2,11 +2,12 @@ package com.aeu.boxapplication.presentation.subscriber
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -64,88 +65,99 @@ fun CompletePayment(navController: NavController) {
 
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = horizontalPadding, vertical = verticalPadding),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Spacer(modifier = Modifier.size(40.dp))
-                    Text(
-                        text = "ORDER CONFIRMED",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = ConfirmBody
+                    .fillMaxWidth()
+                    .verticalScroll(
+                        state = rememberScrollState(),
+                        flingBehavior = ScrollableDefaults.flingBehavior()
                     )
-                    IconButton(onClick = goToHome) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close",
-                            tint = ConfirmPrimary
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(topGap))
-
-                Box(
-                    modifier = Modifier
-                        .size(iconOuterSize)
-                        .background(ConfirmTint, CircleShape),
-                    contentAlignment = Alignment.Center
+                    .padding(horizontal = horizontalPadding)
+                    .padding(
+                        top = verticalPadding,
+                        bottom = verticalPadding
+                    )
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(iconInnerSize)
-                            .background(ConfirmPrimary, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(iconGlyphSize)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Spacer(modifier = Modifier.size(40.dp))
+                            Text(
+                                text = "ORDER CONFIRMED",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = ConfirmBody
+                            )
+                            IconButton(onClick = goToHome) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Close",
+                                    tint = ConfirmPrimary
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(topGap))
+
+                        Box(
+                            modifier = Modifier
+                                .size(iconOuterSize)
+                                .background(ConfirmTint, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(iconInnerSize)
+                                    .background(ConfirmPrimary, CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(iconGlyphSize)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(titleTopGap))
+
+                        Text(
+                            text = "You're in!",
+                            fontSize = titleFontSize,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = ConfirmTitle
                         )
+                        Spacer(modifier = Modifier.height(bodyTopGap))
+                        Text(
+                            text = "Welcome to the Boxly Family. Your subscription is officially active and your first box is being prepared.",
+                            textAlign = TextAlign.Center,
+                            color = ConfirmBody,
+                            fontSize = if (isCompactHeight) 13.sp else 14.sp,
+                            lineHeight = if (isCompactHeight) 18.sp else 20.sp,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(firstCardTopGap))
+
+                        OrderDetailsCard(isCompact = isCompactHeight)
+
+                        Spacer(modifier = Modifier.height(cardGap))
+
+                        DeliveryProgressCard(isCompact = isCompactHeight)
+
+                        Spacer(modifier = Modifier.height(buttonTopGap))
+
+                        AppPrimaryButton(
+                            text = "Go to Home",
+                            onClick = goToHome
+                        )
+                        Spacer(modifier = Modifier.height(bottomGap))
                     }
-                }
-
-                Spacer(modifier = Modifier.height(titleTopGap))
-
-                Text(
-                    text = "You're in!",
-                    fontSize = titleFontSize,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = ConfirmTitle
-                )
-                Spacer(modifier = Modifier.height(bodyTopGap))
-                Text(
-                    text = "Welcome to the Boxly Family. Your subscription is officially active and your first box is being prepared.",
-                    textAlign = TextAlign.Center,
-                    color = ConfirmBody,
-                    fontSize = if (isCompactHeight) 13.sp else 14.sp,
-                    lineHeight = if (isCompactHeight) 18.sp else 20.sp,
-                    modifier = Modifier.padding(horizontal = 8.dp)
-                )
-
-                Spacer(modifier = Modifier.height(firstCardTopGap))
-
-                OrderDetailsCard(isCompact = isCompactHeight)
-
-                Spacer(modifier = Modifier.height(cardGap))
-
-                DeliveryProgressCard(isCompact = isCompactHeight)
-
-                Spacer(modifier = Modifier.height(buttonTopGap))
-
-                AppPrimaryButton(
-                    text = "Go to Home",
-                    onClick = goToHome
-                )
-                Spacer(modifier = Modifier.height(bottomGap))
             }
         }
     }

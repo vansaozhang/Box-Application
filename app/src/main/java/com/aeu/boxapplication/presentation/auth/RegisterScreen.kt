@@ -2,6 +2,7 @@ package com.aeu.boxapplication.presentation.auth
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -64,102 +65,105 @@ fun RegisterScreen(
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .fillMaxWidth()
+                    .verticalScroll(
+                        state = rememberScrollState(),
+                        flingBehavior = ScrollableDefaults.flingBehavior()
+                    )
                     .padding(horizontal = 28.dp, vertical = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(60.dp))
+                        Spacer(modifier = Modifier.height(60.dp))
 
-                Text(
-                    text = buildAnnotatedString {
-                        append("Create ")
-                        withStyle(style = SpanStyle(color = Color(0xFF1E88E5), fontWeight = FontWeight.Bold)) {
-                            append("Account")
+                        Text(
+                            text = buildAnnotatedString {
+                                append("Create ")
+                                withStyle(style = SpanStyle(color = Color(0xFF1E88E5), fontWeight = FontWeight.Bold)) {
+                                    append("Account")
+                                }
+                            },
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF2F3A4A)
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        AppTextField(
+                            value = username,
+                            onValueChange = setUsername,
+                            label = "Username",
+                            leadingIcon = Icons.Outlined.Person,
+                            isError = showErrors && !isUsernameValid,
+                            errorMessage = if (showErrors && !isUsernameValid) "Username is required" else null
+                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        AppTextField(
+                            value = phoneNumber,
+                            onValueChange = { setPhoneNumber(ValidationUtils.normalizeCambodianPhoneInput(it)) },
+                            label = "Phone Number",
+                            leadingIcon = Icons.Outlined.Call,
+                            prefixText = "${ValidationUtils.CAMBODIA_PHONE_PREFIX} ",
+                            placeholder = "12 345 678",
+                            keyboardType = KeyboardType.Phone,
+                            isError = showErrors && !isPhoneValid,
+                            errorMessage = if (showErrors && !isPhoneValid) "Enter a valid Cambodia phone number" else null
+                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        AppTextField(
+                            value = password,
+                            onValueChange = setPassword,
+                            label = "Password",
+                            leadingIcon = Icons.Outlined.Lock,
+                            isPassword = true,
+                            isError = showErrors && !isPasswordValid,
+                            errorMessage = if (showErrors && !isPasswordValid) "Password too weak" else null
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        if (state.error != null) {
+                            Text(
+                                text = state.error,
+                                color = MaterialTheme.colorScheme.error,
+                                fontSize = 13.sp,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
                         }
-                    },
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF2F3A4A)
-                )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                        AppPrimaryButton(
+                            text = if (state.isLoading) "Registering..." else "Register",
+                            onClick = {
+                                if (isFormValid) {
+                                    viewModel.register(username, phoneNumber, password)
+                                } else {
+                                    setShowErrors(true)
+                                }
+                            },
+                            enabled = !state.isLoading,
+                            modifier = Modifier.fillMaxWidth()
+                        )
 
-                AppTextField(
-                    value = username,
-                    onValueChange = setUsername,
-                    label = "Username",
-                    leadingIcon = Icons.Outlined.Person,
-                    isError = showErrors && !isUsernameValid,
-                    errorMessage = if (showErrors && !isUsernameValid) "Username is required" else null
-                )
+                        Spacer(modifier = Modifier.height(32.dp))
 
-                Spacer(modifier = Modifier.height(14.dp))
-
-                AppTextField(
-                    value = phoneNumber,
-                    onValueChange = { setPhoneNumber(ValidationUtils.normalizeCambodianPhoneInput(it)) },
-                    label = "Phone Number",
-                    leadingIcon = Icons.Outlined.Call,
-                    prefixText = "${ValidationUtils.CAMBODIA_PHONE_PREFIX} ",
-                    placeholder = "12 345 678",
-                    keyboardType = KeyboardType.Phone,
-                    isError = showErrors && !isPhoneValid,
-                    errorMessage = if (showErrors && !isPhoneValid) "Enter a valid Cambodia phone number" else null
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                AppTextField(
-                    value = password,
-                    onValueChange = setPassword,
-                    label = "Password",
-                    leadingIcon = Icons.Outlined.Lock,
-                    isPassword = true,
-                    isError = showErrors && !isPasswordValid,
-                    errorMessage = if (showErrors && !isPasswordValid) "Password too weak" else null
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                if (state.error != null) {
-                    Text(
-                        text = state.error,
-                        color = MaterialTheme.colorScheme.error,
-                        fontSize = 13.sp,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                }
-
-                AppPrimaryButton(
-                    text = if (state.isLoading) "Registering..." else "Register",
-                    onClick = {
-                        if (isFormValid) {
-                            viewModel.register(username, phoneNumber, password)
-                        } else {
-                            setShowErrors(true)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Already have an account? ", fontSize = 13.sp, color = Color(0xFF7B8794))
+                            Text(
+                                text = "Login",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFFFB300),
+                                modifier = Modifier.clickable {
+                                    navController.navigate(Screen.Login.route) {
+                                        popUpTo(Screen.Register.route) { inclusive = true }
+                                    }
+                                }
+                            )
                         }
-                    },
-                    enabled = !state.isLoading,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Already have an account? ", fontSize = 13.sp, color = Color(0xFF7B8794))
-                    Text(
-                        text = "Login",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFFB300),
-                        modifier = Modifier.clickable {
-                            navController.navigate(Screen.Login.route) {
-                                popUpTo(Screen.Register.route) { inclusive = true }
-                            }
-                        }
-                    )
-                }
             }
         }
     }

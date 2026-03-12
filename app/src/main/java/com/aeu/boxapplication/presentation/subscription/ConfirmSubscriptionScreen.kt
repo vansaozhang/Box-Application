@@ -3,6 +3,7 @@ package com.aeu.boxapplication.presentation.subscription
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,9 +17,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Check
@@ -95,115 +96,126 @@ fun ConfirmSubscriptionScreen(
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 12.dp)
-                    .padding(bottom = 88.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .fillMaxWidth()
+                    .verticalScroll(
+                        state = rememberScrollState(),
+                        flingBehavior = ScrollableDefaults.flingBehavior()
+                    )
+                    .padding(
+                        start = 20.dp,
+                        end = 20.dp,
+                        top = 16.dp,
+                        bottom = 88.dp
+                    )
             ) {
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Start
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.Outlined.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color(0xFF1E88E5)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Start
+                        ) {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    imageVector = Icons.Outlined.ArrowBack,
+                                    contentDescription = "Back",
+                                    tint = Color(0xFF1E88E5)
+                                )
+                            }
+                            Text(
+                                text = "Confirm Subscription",
+                                modifier = Modifier
+                                    .padding(end = 48.dp)
+                                    .fillMaxWidth(),
+                                textAlign = TextAlign.Center,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF2F3A4A)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = "Review Details",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF2F3A4A)
                         )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Review your selection before confirming.",
+                            fontSize = 13.sp,
+                            color = Color(0xFF7B8794),
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        SelectedPlanCard(
+                            onEdit = onEditPlan,
+                            planName = selectedPlanName,
+                            planPrice = selectedPlanPrice,
+                            planPeriod = selectedPlanPeriod,
+                            features = selectedPlanFeatures
+                        )
+
+                        if (billingOptions.size > 1) {
+                            Spacer(modifier = Modifier.height(18.dp))
+
+                            SectionTitle(text = "DELIVERY FREQUENCY")
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            BillingFrequencySelector(
+                                options = billingOptions,
+                                selectedOptionId = selectedBillingOptionId,
+                                onSelect = onSelectBillingOption
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        SectionTitle(text = "PAYMENT METHOD")
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        methods.forEach { method ->
+                            PaymentMethodRow(
+                                method = method,
+                                selected = true,
+                                onSelect = {}
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        SectionTitle(text = "BILLING SUMMARY")
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        OrderSummaryCard(totalPrice = selectedPlanPrice)
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = "Your subscription will renew automatically based on your selected $billingCycleLabel cycle.\nYou can cancel anytime in your settings.",
+                            fontSize = 11.sp,
+                            color = Color(0xFF8C99A6),
+                            textAlign = TextAlign.Center,
+                            lineHeight = 16.sp
+                        )
+
+                        if (!errorMessage.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = errorMessage,
+                                fontSize = 12.sp,
+                                color = Color(0xFFDC2626),
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
-                    Text(
-                        text = "Confirm Subscription",
-                        modifier = Modifier
-                            .padding(end = 48.dp)
-                            .fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF2F3A4A)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Review Details",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF2F3A4A)
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "Review your selection before confirming.",
-                    fontSize = 13.sp,
-                    color = Color(0xFF7B8794),
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                SelectedPlanCard(
-                    onEdit = onEditPlan,
-                    planName = selectedPlanName,
-                    planPrice = selectedPlanPrice,
-                    planPeriod = selectedPlanPeriod,
-                    features = selectedPlanFeatures
-                )
-
-                if (billingOptions.size > 1) {
-                    Spacer(modifier = Modifier.height(18.dp))
-
-                    SectionTitle(text = "DELIVERY FREQUENCY")
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    BillingFrequencySelector(
-                        options = billingOptions,
-                        selectedOptionId = selectedBillingOptionId,
-                        onSelect = onSelectBillingOption
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                SectionTitle(text = "PAYMENT METHOD")
-                Spacer(modifier = Modifier.height(10.dp))
-
-                methods.forEach { method ->
-                    PaymentMethodRow(
-                        method = method,
-                        selected = true,
-                        onSelect = {}
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                SectionTitle(text = "BILLING SUMMARY")
-                Spacer(modifier = Modifier.height(10.dp))
-
-                OrderSummaryCard(totalPrice = selectedPlanPrice)
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "Your subscription will renew automatically based on your selected $billingCycleLabel cycle.\nYou can cancel anytime in your settings.",
-                    fontSize = 11.sp,
-                    color = Color(0xFF8C99A6),
-                    textAlign = TextAlign.Center,
-                    lineHeight = 16.sp
-                )
-
-                if (!errorMessage.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        text = errorMessage,
-                        fontSize = 12.sp,
-                        color = Color(0xFFDC2626),
-                        textAlign = TextAlign.Center
-                    )
-                }
             }
 
             Box(

@@ -2,7 +2,7 @@ package com.aeu.boxapplication.presentation.subscriber
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,15 +13,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.ArrowForward
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -71,26 +70,30 @@ fun OrderHistoryScreen(
         ) {
             OrderHistoryHeader(
                 userName = userName,
-                onRefresh = { viewModel.loadHistory(forceRefresh = true) },
                 onNotificationsClick = onNotificationsClick
             )
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    start = 20.dp,
-                    end = 20.dp,
-                    top = 8.dp,
-                    bottom = 100.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            Box(
+                modifier = Modifier.fillMaxSize()
             ) {
-                item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(
+                            state = rememberScrollState(),
+                            flingBehavior = ScrollableDefaults.flingBehavior()
+                        )
+                        .padding(
+                            start = 20.dp,
+                            end = 20.dp,
+                            top = 12.dp,
+                            bottom = 100.dp
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     OrderHistoryTitle()
-                }
 
-                uiState.errorMessage?.let { message ->
-                    item {
+                    uiState.errorMessage?.let { message ->
                         AppStatusBanner(
                             title = "Shipment history unavailable",
                             message = message,
@@ -98,18 +101,16 @@ fun OrderHistoryScreen(
                             onDismiss = viewModel::dismissError
                         )
                     }
-                }
 
-                if (uiState.history.isEmpty() && !uiState.isLoading && uiState.errorMessage == null) {
-                    item {
-                        EmptyHistoryCard(onRefresh = { viewModel.loadHistory(forceRefresh = true) })
-                    }
-                } else {
-                    items(uiState.history, key = { it.id }) { order ->
-                        OrderHistoryCard(
-                            order = order,
-                            onClick = { onOrderClick(order.id) }
-                        )
+                    if (uiState.history.isEmpty() && !uiState.isLoading && uiState.errorMessage == null) {
+                        EmptyHistoryCard()
+                    } else {
+                        uiState.history.forEach { order ->
+                            OrderHistoryCard(
+                                order = order,
+                                onClick = { onOrderClick(order.id) }
+                            )
+                        }
                     }
                 }
             }
@@ -120,7 +121,6 @@ fun OrderHistoryScreen(
 @Composable
 private fun OrderHistoryHeader(
     userName: String,
-    onRefresh: () -> Unit,
     onNotificationsClick: () -> Unit
 ) {
     Row(
@@ -153,9 +153,6 @@ private fun OrderHistoryHeader(
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onRefresh) {
-                Icon(Icons.Outlined.Refresh, contentDescription = "Refresh history", tint = HistoryTitle)
-            }
             IconButton(onClick = onNotificationsClick) {
                 Icon(Icons.Outlined.Notifications, contentDescription = "Notifications", tint = HistoryTitle)
             }
@@ -288,7 +285,7 @@ private fun StatusChip(label: String, status: String) {
 }
 
 @Composable
-private fun EmptyHistoryCard(onRefresh: () -> Unit) {
+private fun EmptyHistoryCard() {
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = Color.White,
@@ -323,14 +320,6 @@ private fun EmptyHistoryCard(onRefresh: () -> Unit) {
                 text = "Once your subscription starts shipping, it will appear here.",
                 fontSize = 13.sp,
                 color = HistoryBody
-            )
-            Spacer(modifier = Modifier.height(14.dp))
-            Text(
-                text = "Refresh",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = HistoryPrimary,
-                modifier = Modifier.clickable(onClick = onRefresh)
             )
         }
     }

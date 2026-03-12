@@ -2,6 +2,7 @@ package com.aeu.boxapplication.presentation.profile
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,15 +14,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -95,28 +95,24 @@ fun ShippingAddressScreen(
                             tint = AddressPrimary
                         )
                     }
-                    IconButton(onClick = { viewModel.loadProfile(forceRefresh = true) }) {
-                        Icon(
-                            imageVector = Icons.Outlined.Refresh,
-                            contentDescription = "Refresh",
-                            tint = AddressPrimary
-                        )
-                    }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
             )
         }
     ) { paddingValues ->
-        LazyColumn(
+        Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .verticalScroll(
+                    state = rememberScrollState(),
+                    flingBehavior = ScrollableDefaults.flingBehavior()
+                )
                 .padding(paddingValues)
-                .background(Color.White),
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 24.dp),
+                .background(Color.White)
+                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         text = "Saved Addresses",
                         fontSize = 13.sp,
@@ -128,40 +124,33 @@ fun ShippingAddressScreen(
                         fontSize = 12.sp,
                         color = AddressBody
                     )
-                }
             }
 
             if (uiState.isSavingAddress) {
-                item {
-                    AppStatusBanner(
+                AppStatusBanner(
                         title = "Saving address",
                         message = "Your address is being synced to your account.",
                         tone = AppStatusTone.Info
                     )
-                }
             }
 
             uiState.errorMessage?.let { message ->
-                item {
-                    AppStatusBanner(
+                AppStatusBanner(
                         title = "Addresses unavailable",
                         message = message,
                         tone = AppStatusTone.Error,
                         onDismiss = viewModel::dismissError
                     )
-                }
             }
 
             if (uiState.addresses.isEmpty() && !uiState.isLoading && uiState.errorMessage == null) {
-                item {
-                    EmptyAddressCard(
+                EmptyAddressCard(
                         onAddAddressClick = {
                             navController.navigate(Screen.AddShipAddress.route)
                         }
                     )
-                }
             } else {
-                items(uiState.addresses, key = { it.id }) { address ->
+                uiState.addresses.forEach { address ->
                     AddressCard(
                         label = address.label,
                         address = address.address,

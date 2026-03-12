@@ -1,6 +1,7 @@
 package com.aeu.boxapplication.presentation.subscriber
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -61,12 +62,20 @@ fun OrderConfirmScreen(navController: NavController) {
         )
 
         // --- Main Content Area ---
-        Column(
+        Box(
             modifier = Modifier
                 .weight(1f) // Takes up remaining space between top and bottom bar
-                .verticalScroll(rememberScrollState())
-                .padding(20.dp)
+                .fillMaxWidth()
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(
+                        state = rememberScrollState(),
+                        flingBehavior = ScrollableDefaults.flingBehavior()
+                    )
+                    .padding(20.dp)
+            ) {
             SectionHeader("ORDER SUMMARY")
             OrderSummaryCard()
 
@@ -137,6 +146,7 @@ fun OrderConfirmScreen(navController: NavController) {
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 lineHeight = 16.sp
             )
+        }
         }
     }
 }

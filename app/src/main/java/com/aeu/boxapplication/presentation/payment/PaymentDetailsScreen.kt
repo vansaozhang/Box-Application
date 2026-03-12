@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -139,8 +140,11 @@ fun PaymentDetailsScreen(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .fillMaxWidth()
+                .verticalScroll(
+                    state = rememberScrollState(),
+                    flingBehavior = ScrollableDefaults.flingBehavior()
+                )
                 .padding(horizontal = 20.dp, vertical = 12.dp)
                 .padding(bottom = 96.dp),
             horizontalAlignment = Alignment.CenterHorizontally

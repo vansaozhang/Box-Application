@@ -2,6 +2,7 @@ package com.aeu.boxapplication.presentation.subscriber
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,9 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ArrowForward
@@ -48,31 +49,39 @@ fun ReOrderScreen(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 14.dp)
-                .padding(bottom = 88.dp)
+                .fillMaxWidth()
+                .verticalScroll(
+                    state = rememberScrollState(),
+                    flingBehavior = ScrollableDefaults.flingBehavior()
+                )
+                .padding(horizontal = 20.dp)
+                .padding(
+                    top = 14.dp,
+                    bottom = 88.dp
+                )
         ) {
-            ReOrderTopBar(onBack = onBack)
-            Spacer(modifier = Modifier.height(12.dp))
-            ReOrderItemCard()
-            Spacer(modifier = Modifier.height(16.dp))
-            SectionHeader(text = "SHIPPING ADDRESS")
-            Spacer(modifier = Modifier.height(8.dp))
-            AddressCard()
-            Spacer(modifier = Modifier.height(16.dp))
-            SectionHeader(text = "PAYMENT METHOD")
-            Spacer(modifier = Modifier.height(8.dp))
-            PaymentMethodCard()
-            Spacer(modifier = Modifier.height(16.dp))
-            TotalsCard()
-            Spacer(modifier = Modifier.height(14.dp))
-            Text(
-                text = "By placing this order, you agree to our Terms of Service.",
-                fontSize = 11.sp,
-                color = Color(0xFF9AA1AE),
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Column {
+                    ReOrderTopBar(onBack = onBack)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    ReOrderItemCard()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    SectionHeader(text = "SHIPPING ADDRESS")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    AddressCard()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    SectionHeader(text = "PAYMENT METHOD")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    PaymentMethodCard()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TotalsCard()
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text(
+                        text = "By placing this order, you agree to our Terms of Service.",
+                        fontSize = 11.sp,
+                        color = Color(0xFF9AA1AE),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
         }
 
         Box(

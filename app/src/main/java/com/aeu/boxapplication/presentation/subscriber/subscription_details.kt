@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,7 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -125,13 +125,20 @@ fun SubscriptionDetailsScreen(
             }
         }
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 12.dp)
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(
+                        state = rememberScrollState(),
+                        flingBehavior = ScrollableDefaults.flingBehavior()
+                    )
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
+            ) {
             dashboardState.errorMessage?.let { message ->
                 AppStatusBanner(
                     title = "Subscription overview unavailable",
@@ -228,6 +235,7 @@ fun SubscriptionDetailsScreen(
             }
         }
     }
+    }
 }
 
 @Composable
@@ -295,7 +303,7 @@ private fun EmptySubscriptionState(onExplore: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 androidx.compose.material3.Icon(
-                    imageVector = Icons.Outlined.Refresh,
+                    imageVector = Icons.Outlined.LocalShipping,
                     contentDescription = null,
                     tint = DetailsPrimary
                 )

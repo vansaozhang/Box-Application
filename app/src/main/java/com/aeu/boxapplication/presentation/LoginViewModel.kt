@@ -18,7 +18,7 @@ import java.net.SocketTimeoutException
 
 enum class PostLoginDestination {
     HOME,
-    SUBSCRIPTIONS_EMPTY
+    SHOP
 }
 
 data class LoginUiMessage(
@@ -75,37 +75,41 @@ class LoginViewModel(private val authService: AuthApiService,private val session
                                     ?: meBody.email?.substringBefore("@")?.takeIf { it.isNotBlank() }
                                     ?: "Subscriber"
 
-                                val subscriptionResponse = authService.getMySubscriptionSafely("Bearer $accessToken")
-                                if (
-                                    subscriptionResponse.isSuccessful ||
-                                    subscriptionResponse.code == 404
-                                ) {
-                                    val hasActiveSubscription = subscriptionResponse.hasActiveSubscription
+                                sessionManager.saveUserDetail(
+                                    name = userName,
+                                    email = meBody.email,
+                                    phone = meBody.phoneNumber,
+                                    token = accessToken
+                                )
+                                sessionManager.setHasAccount()
 
-                                    sessionManager.saveUserDetail(
-                                        name = userName,
-                                        email = meBody.email,
-                                        phone = meBody.phoneNumber,
-                                        token = accessToken
-                                    )
-                                    sessionManager.setHasAccount()
-                                    onSuccess(
-                                        userName,
-                                        if (hasActiveSubscription) {
-                                            PostLoginDestination.HOME
-                                        } else {
-                                            PostLoginDestination.SUBSCRIPTIONS_EMPTY
-                                        }
-                                    )
-                                } else {
+                                val subscriptionResponse = runCatching {
+                                    authService.getMySubscriptionSafely("Bearer $accessToken")
+                                }.getOrElse { error ->
+                                    println("API_SUBSCRIPTION_ERROR: ${error.message}")
+                                    null
+                                }
+
+                                if (subscriptionResponse != null &&
+                                    !subscriptionResponse.isSuccessful &&
+                                    subscriptionResponse.code != 404
+                                ) {
                                     val subscriptionError = subscriptionResponse.parseError
                                         ?: subscriptionResponse.errorBody
-                                    showUiMessage(
-                                        title = "Couldn't finish sign in",
-                                        message = "Your account was verified, but we couldn't confirm the subscription status. Please try again."
-                                    )
                                     println("API_SUBSCRIPTION_ERROR: $subscriptionError")
                                 }
+
+                                onSuccess(
+                                    userName,
+                                    when {
+                                        subscriptionResponse == null -> PostLoginDestination.HOME
+                                        subscriptionResponse.isSuccessful &&
+                                            subscriptionResponse.hasActiveSubscription -> PostLoginDestination.HOME
+                                        subscriptionResponse.isSuccessful ||
+                                            subscriptionResponse.code == 404 -> PostLoginDestination.SHOP
+                                        else -> PostLoginDestination.HOME
+                                    }
+                                )
                             } else {
                                 showUiMessage(
                                     title = "Couldn't finish sign in",

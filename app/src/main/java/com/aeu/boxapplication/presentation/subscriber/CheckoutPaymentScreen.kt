@@ -3,6 +3,7 @@ package com.aeu.boxapplication.presentation.subscriber
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,9 +17,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Info
@@ -67,162 +68,173 @@ fun CheckoutPayment(navController: NavController) {
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 12.dp)
-                    .padding(bottom = 92.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Start
-                ) {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.Outlined.ArrowBack,
-                            contentDescription = "Back",
-                            tint = CheckoutPrimary
-                        )
-                    }
-                    Text(
-                        text = "Review & Pay",
-                        modifier = Modifier
-                            .padding(end = 48.dp)
-                            .fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = CheckoutTitle
+                    .fillMaxWidth()
+                    .verticalScroll(
+                        state = rememberScrollState(),
+                        flingBehavior = ScrollableDefaults.flingBehavior()
                     )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                CheckoutSectionTitle("ORDER SUMMARY")
-                OrderSummaryItem()
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                CheckoutSectionTitle("PAYMENT METHOD")
-                PaymentMethodCard(
-                    title = "Visa ending in 4242",
-                    subtitle = "Expires 03/25",
-                    badgeText = "VISA",
-                    badgeColor = Color(0xFF1F2A44),
-                    selected = selectedPayment == "visa",
-                    isDefault = true,
-                    onSelect = { setSelectedPayment("visa") }
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                PaymentMethodCard(
-                    title = "Mastercard ending in 8801",
-                    subtitle = "Expires 02/25",
-                    badgeText = "MC",
-                    badgeColor = Color(0xFFE11D2A),
-                    selected = selectedPayment == "mastercard",
-                    isDefault = false,
-                    onSelect = { setSelectedPayment("mastercard") }
-                )
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                CheckoutSectionTitle("BILLING ADDRESS")
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = Color.White,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(1.2.dp, CheckoutStroke, RoundedCornerShape(14.dp))
+                    .padding(
+                        start = 20.dp,
+                        end = 20.dp,
+                        top = 12.dp,
+                        bottom = 92.dp
+                    )
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "Same as shipping address",
-                            fontSize = 14.sp,
-                            color = CheckoutTitle
-                        )
-                        Switch(
-                            checked = isSameAsShipping,
-                            onCheckedChange = setIsSameAsShipping,
-                            colors = SwitchDefaults.colors(
-                                checkedTrackColor = CheckoutPrimary,
-                                checkedThumbColor = Color.White,
-                                uncheckedTrackColor = Color(0xFFD8E0EA),
-                                uncheckedThumbColor = Color.White,
-                                uncheckedBorderColor = Color.Transparent,
-                                checkedBorderColor = Color.Transparent
-                            )
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = Color.White,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(1.2.dp, CheckoutStroke, RoundedCornerShape(14.dp))
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Text(
-                            text = "$39.00 / month",
-                            color = CheckoutPrimary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 24.sp
-                        )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Divider(color = CheckoutStroke)
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        PriceRow("Subtotal", "$39.00")
-                        PriceRow("Shipping", "FREE", highlight = true)
-                        PriceRow("Estimated Tax", "$3.12")
-
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Divider(color = CheckoutStroke)
-                        Spacer(modifier = Modifier.height(10.dp))
-
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.Bottom
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Start
                         ) {
-                            Column {
-                                Text(
-                                    text = "Total Due Today",
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 17.sp,
-                                    color = CheckoutTitle
-                                )
-                                Text(
-                                    text = "RECURRING CHARGE STARTS NEXT MONTH",
-                                    fontSize = 10.sp,
-                                    color = CheckoutBody
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(
+                                    imageVector = Icons.Outlined.ArrowBack,
+                                    contentDescription = "Back",
+                                    tint = CheckoutPrimary
                                 )
                             }
                             Text(
-                                text = "$42.12",
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 34.sp,
+                                text = "Review & Pay",
+                                modifier = Modifier
+                                    .padding(end = 48.dp)
+                                    .fillMaxWidth(),
+                                textAlign = TextAlign.Center,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
                                 color = CheckoutTitle
                             )
                         }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        CheckoutSectionTitle("ORDER SUMMARY")
+                        OrderSummaryItem()
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        CheckoutSectionTitle("PAYMENT METHOD")
+                        PaymentMethodCard(
+                            title = "Visa ending in 4242",
+                            subtitle = "Expires 03/25",
+                            badgeText = "VISA",
+                            badgeColor = Color(0xFF1F2A44),
+                            selected = selectedPayment == "visa",
+                            isDefault = true,
+                            onSelect = { setSelectedPayment("visa") }
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        PaymentMethodCard(
+                            title = "Mastercard ending in 8801",
+                            subtitle = "Expires 02/25",
+                            badgeText = "MC",
+                            badgeColor = Color(0xFFE11D2A),
+                            selected = selectedPayment == "mastercard",
+                            isDefault = false,
+                            onSelect = { setSelectedPayment("mastercard") }
+                        )
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        CheckoutSectionTitle("BILLING ADDRESS")
+                        Surface(
+                            shape = RoundedCornerShape(14.dp),
+                            color = Color.White,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(1.2.dp, CheckoutStroke, RoundedCornerShape(14.dp))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Same as shipping address",
+                                    fontSize = 14.sp,
+                                    color = CheckoutTitle
+                                )
+                                Switch(
+                                    checked = isSameAsShipping,
+                                    onCheckedChange = setIsSameAsShipping,
+                                    colors = SwitchDefaults.colors(
+                                        checkedTrackColor = CheckoutPrimary,
+                                        checkedThumbColor = Color.White,
+                                        uncheckedTrackColor = Color(0xFFD8E0EA),
+                                        uncheckedThumbColor = Color.White,
+                                        uncheckedBorderColor = Color.Transparent,
+                                        checkedBorderColor = Color.Transparent
+                                    )
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        Surface(
+                            shape = RoundedCornerShape(14.dp),
+                            color = Color.White,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(1.2.dp, CheckoutStroke, RoundedCornerShape(14.dp))
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp)) {
+                                Text(
+                                    text = "$39.00 / month",
+                                    color = CheckoutPrimary,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 24.sp
+                                )
+
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Divider(color = CheckoutStroke)
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                PriceRow("Subtotal", "$39.00")
+                                PriceRow("Shipping", "FREE", highlight = true)
+                                PriceRow("Estimated Tax", "$3.12")
+
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Divider(color = CheckoutStroke)
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.Bottom
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = "Total Due Today",
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontSize = 17.sp,
+                                            color = CheckoutTitle
+                                        )
+                                        Text(
+                                            text = "RECURRING CHARGE STARTS NEXT MONTH",
+                                            fontSize = 10.sp,
+                                            color = CheckoutBody
+                                        )
+                                    }
+                                    Text(
+                                        text = "$42.12",
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 34.sp,
+                                        color = CheckoutTitle
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        LegalInfoBox()
+                        Spacer(modifier = Modifier.height(12.dp))
                     }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                LegalInfoBox()
-                Spacer(modifier = Modifier.height(12.dp))
             }
 
             Box(

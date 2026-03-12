@@ -1,6 +1,7 @@
 package com.aeu.boxapplication.presentation.subscriber
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -46,8 +47,11 @@ fun OrderDetailsScreen(
         } else {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .fillMaxWidth()
+                    .verticalScroll(
+                        state = rememberScrollState(),
+                        flingBehavior = ScrollableDefaults.flingBehavior()
+                    )
                     .padding(horizontal = 20.dp)
             ) {
                 // 2. HEADER

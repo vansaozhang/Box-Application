@@ -3,6 +3,7 @@ package com.aeu.boxapplication.presentation.subscription
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,9 +17,9 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Check
@@ -65,73 +66,85 @@ fun ExplorePlansScreen(
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.Outlined.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color(0xFF1E88E5)
-                        )
-                    }
-                    Text(
-                        text = "Explore Plans",
-                        modifier = Modifier
-                            .padding(end = 48.dp)
-                            .fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF2F3A4A)
+                    .fillMaxWidth()
+                    .verticalScroll(
+                        state = rememberScrollState(),
+                        flingBehavior = ScrollableDefaults.flingBehavior()
                     )
-                }
+                    .padding(
+                        start = 20.dp,
+                        end = 20.dp,
+                        top = 16.dp,
+                        bottom = 8.dp
+                    )
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    imageVector = Icons.Outlined.ArrowBack,
+                                    contentDescription = "Back",
+                                    tint = Color(0xFF1E88E5)
+                                )
+                            }
+                            Text(
+                                text = "Explore Plans",
+                                modifier = Modifier
+                                    .padding(end = 48.dp)
+                                    .fillMaxWidth(),
+                                textAlign = TextAlign.Center,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF2F3A4A)
+                            )
+                        }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = "Unlock Premium Features",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF2F3A4A)
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "Choose a plan that works best for your shopping habits.",
-                    fontSize = 13.sp,
-                    color = Color(0xFF7B8794),
-                    textAlign = TextAlign.Center
-                )
+                        Text(
+                            text = "Unlock Premium Features",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF2F3A4A)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Choose a plan that works best for your shopping habits.",
+                            fontSize = 13.sp,
+                            color = Color(0xFF7B8794),
+                            textAlign = TextAlign.Center
+                        )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                BillingToggle(
-                    isMonthly = isMonthly,
-                    onMonthlyClick = { onToggleMonthly(true) },
-                    onYearlyClick = { onToggleMonthly(false) }
-                )
+                        BillingToggle(
+                            isMonthly = isMonthly,
+                            onMonthlyClick = { onToggleMonthly(true) },
+                            onYearlyClick = { onToggleMonthly(false) }
+                        )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
 
                 if (!errorMessage.isNullOrBlank()) {
                     Text(
-                        text = errorMessage,
-                        fontSize = 12.sp,
-                        color = Color(0xFFDC2626),
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 12.dp)
-                    )
+                            text = errorMessage,
+                            fontSize = 12.sp,
+                            color = Color(0xFFDC2626),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp)
+                        )
                 }
 
-                plans.forEachIndexed { index, plan ->
+                plans.forEach { plan ->
                     PlanCard(
                         title = plan.name,
                         subtitle = plan.subtitle,
@@ -144,9 +157,7 @@ fun ExplorePlansScreen(
                         badge = if (plan.name.equals("Pro", ignoreCase = true)) "MOST POPULAR" else null
                     )
 
-                    if (index != plans.lastIndex) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
 
                 if (!isLoading && plans.isEmpty()) {
@@ -157,32 +168,37 @@ fun ExplorePlansScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Spacer(modifier = Modifier.height(18.dp))
 
-                Text(
-                    text = "Restore Purchases",
-                    fontSize = 13.sp,
-                    color = Color(0xFF1E88E5),
-                    modifier = Modifier
-                        .padding(top = 4.dp)
-                        .clickable(
-                            onClick = onRestorePurchases,
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() }
+                        Text(
+                            text = "Restore Purchases",
+                            fontSize = 13.sp,
+                            color = Color(0xFF1E88E5),
+                            modifier = Modifier
+                                .padding(top = 4.dp)
+                                .clickable(
+                                    onClick = onRestorePurchases,
+                                    indication = null,
+                                    interactionSource = remember { MutableInteractionSource() }
+                                )
                         )
-                )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = "Recurring billing, cancel anytime. By\nsubscribing you agree to our Terms of Service.",
-                    fontSize = 11.sp,
-                    color = Color(0xFF9AA6B2),
-                    textAlign = TextAlign.Center,
-                    lineHeight = 16.sp
-                )
+                        Text(
+                            text = "Recurring billing, cancel anytime. By\nsubscribing you agree to our Terms of Service.",
+                            fontSize = 11.sp,
+                            color = Color(0xFF9AA6B2),
+                            textAlign = TextAlign.Center,
+                            lineHeight = 16.sp
+                        )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
             }
         }
     }

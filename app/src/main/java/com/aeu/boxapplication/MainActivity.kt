@@ -19,8 +19,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -347,9 +347,10 @@ class MainActivity : ComponentActivity() {
                                             launchSingleTop = true
                                         }
                                     }
-                                    val navigateToSubscriptionsEmpty: () -> Unit = {
-                                        navController.navigate(Screen.SubscriptionsEmpty.route) {
+                                    val navigateToBrowseBoxes: () -> Unit = {
+                                        navController.navigate(Screen.ShopProducts.route) {
                                             popUpTo(Screen.Loading.route) { inclusive = true }
+                                            launchSingleTop = true
                                         }
                                     }
 
@@ -370,39 +371,36 @@ class MainActivity : ComponentActivity() {
                                                         email = meBody.email
                                                     )
 
-                                                val subscriptionResponse = RetrofitClient.authApiService
-                                                    .getMySubscriptionSafely("Bearer $savedToken")
-                                                if (
+                                                sessionManager.saveUserDetail(
+                                                    name = resolvedName,
+                                                    email = meBody.email,
+                                                    phone = meBody.phoneNumber,
+                                                    token = savedToken
+                                                )
+                                                sessionManager.setHasAccount()
+
+                                                val subscriptionResponse = runCatching {
+                                                    RetrofitClient.authApiService
+                                                        .getMySubscriptionSafely("Bearer $savedToken")
+                                                }.getOrElse { error ->
+                                                    println("API_SUBSCRIPTION_ERROR: ${error.message}")
+                                                    null
+                                                }
+
+                                                when {
+                                                    subscriptionResponse == null -> navigateToHome()
+                                                    subscriptionResponse.isSuccessful &&
+                                                        subscriptionResponse.hasActiveSubscription -> navigateToHome()
                                                     subscriptionResponse.isSuccessful ||
-                                                    subscriptionResponse.code == 404
-                                                ) {
-                                                    sessionManager.saveUserDetail(
-                                                        name = resolvedName,
-                                                        email = meBody.email,
-                                                        phone = meBody.phoneNumber,
-                                                        token = savedToken
-                                                    )
-                                                    sessionManager.setHasAccount()
-
-                                                    val hasActiveSubscription = subscriptionResponse
-                                                        .hasActiveSubscription
-                                                    if (hasActiveSubscription) {
+                                                        subscriptionResponse.code == 404 -> navigateToBrowseBoxes()
+                                                    else -> {
+                                                        val subscriptionError = subscriptionResponse.parseError
+                                                            ?: subscriptionResponse.errorBody
+                                                        println("API_SUBSCRIPTION_ERROR: $subscriptionError")
                                                         navigateToHome()
-                                                    } else {
-                                                        navigateToSubscriptionsEmpty()
                                                     }
-                                                    return@launch
                                                 }
-
-                                                if (
-                                                    subscriptionResponse.code == 401 ||
-                                                    subscriptionResponse.code == 403
-                                                ) {
-                                                    sessionManager.clearSession()
-                                                } else if (!savedName.isNullOrBlank()) {
-                                                    navigateToHome()
-                                                    return@launch
-                                                }
+                                                return@launch
                                             }
 
                                             if (meResponse.code() == 401 || meResponse.code() == 403) {
@@ -467,9 +465,10 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
 
-                                    PostLoginDestination.SUBSCRIPTIONS_EMPTY -> {
-                                        navController.navigate(Screen.SubscriptionsEmpty.route) {
+                                    PostLoginDestination.SHOP -> {
+                                        navController.navigate(Screen.ShopProducts.route) {
                                             popUpTo(Screen.Login.route) { inclusive = true }
+                                            launchSingleTop = true
                                         }
                                     }
                                 }
@@ -498,8 +497,9 @@ class MainActivity : ComponentActivity() {
                                     token = token
                                 )
                                 sessionManager.setHasAccount()
-                                navController.navigate(Screen.SubscriptionsEmpty.route) {
+                                navController.navigate(Screen.ShopProducts.route) {
                                     popUpTo(Screen.Register.route) { inclusive = true }
+                                    launchSingleTop = true
                                 }
                             }
                         )
@@ -1098,7 +1098,7 @@ enum class SubscriberBottomNavItem(
     val route: String
 ) {
     Home("Home", Icons.Default.Home, "subscriber_home"),
-    History("History", Icons.Default.Refresh, "order_history"),
+    History("History", Icons.Default.History, "order_history"),
     Package("Plans", Icons.Default.Send, "shop_products"),
     Profile("Profile", Icons.Default.Person, "profile_screen")
 }
