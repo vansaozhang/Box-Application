@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "729785903618",
+    "project_id": "boxapp-22465",
+    "storage_bucket": "boxapp-22465.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:729785903618:android:4432e4a28f7f7fef42151b",
+        "android_client_info": {
+          "package_name": "app.aeu.box"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB3T5oobtENuryIxSIX-a8zpHAqwjyNB1E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -49,7 +50,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.aeu.boxapplication.presentation.navigation.Screen
 import com.aeu.boxapplication.ui.components.AppGlobalLoadingEffect
 import com.aeu.boxapplication.ui.components.AppStatusBanner
 import com.aeu.boxapplication.ui.components.AppStatusTone
@@ -66,6 +69,7 @@ val BoxlyDarkText = Color(0xFF1A1C1E)
 
 @Composable
 fun ShopProductsScreen(
+    navController: NavController,
     viewModel: ShopProductsViewModel,
     onSelectPlan: (ShopPlanUiModel) -> Unit
 ) {
@@ -75,12 +79,23 @@ fun ShopProductsScreen(
         viewModel.loadStorefront()
     }
 
+    // Navigate to login if session expired
+    LaunchedEffect(uiState.isAuthenticationError) {
+        if (uiState.isAuthenticationError) {
+            navController.navigate(Screen.Login.route) {
+                popUpTo(0) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
     AppGlobalLoadingEffect(
         isVisible = uiState.isLoading && uiState.featuredPlan == null && uiState.plans.isEmpty()
     )
 
     Scaffold(
         containerColor = ShopBackground,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopHeader()
         }

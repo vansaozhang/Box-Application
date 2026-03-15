@@ -255,6 +255,18 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            // Auto-register FCM token for already-logged-in users
+            LaunchedEffect(authToken) {
+                if (authToken.isNullOrBlank()) {
+                    return@LaunchedEffect
+                }
+                
+                if (hasNotificationPermission(context)) {
+                    // Force refresh to clear any old "sent" flags from previous URL
+                    com.aeu.boxapplication.core.notifications.FcmTokenRegistrar.refreshAndRegisterToken(context)
+                }
+            }
+
             DisposableEffect(lifecycleOwner, authToken) {
                 val observer = LifecycleEventObserver { _, event ->
                     if (event == Lifecycle.Event.ON_START && !authToken.isNullOrBlank()) {
@@ -499,6 +511,11 @@ class MainActivity : ComponentActivity() {
                             navController = navController,
                             viewModel = loginViewModel,
                             onLoginSuccess = { _, destination ->
+                                // Register FCM token on every login if permission is granted
+                                if (hasNotificationPermission(context)) {
+                                    com.aeu.boxapplication.core.notifications.FcmTokenRegistrar.registerTokenWithBackend(context)
+                                }
+                                
                                 when (destination) {
                                     PostLoginDestination.HOME -> {
                                         navController.navigate(Screen.SubscriberHome.route) {
@@ -539,6 +556,12 @@ class MainActivity : ComponentActivity() {
                                     token = token
                                 )
                                 sessionManager.setHasAccount()
+                                
+                                // Register FCM token after registration if permission is granted
+                                if (hasNotificationPermission(context)) {
+                                    com.aeu.boxapplication.core.notifications.FcmTokenRegistrar.registerTokenWithBackend(context)
+                                }
+                                
                                 navController.navigate(Screen.ShopProducts.route) {
                                     popUpTo(Screen.Register.route) { inclusive = true }
                                     launchSingleTop = true

@@ -141,4 +141,8 @@ interface ApiService {
         @Query("start_date") startDate: String,
         @Query("end_date") endDate: String
     ): Response<ReportResponse>
+    
+    // Notifications
+    @PUT("notifications/fcm-token")
+    suspend fun updateFcmToken(@Body fcmToken: Map<String, String>): Response<Map<String, Boolean>>
 }

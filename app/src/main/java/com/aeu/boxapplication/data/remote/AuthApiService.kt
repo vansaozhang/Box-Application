@@ -25,6 +25,7 @@ import retrofit2.http.Header
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
+import retrofit2.http.PUT
 import retrofit2.http.Query
 
 interface AuthApiService {
@@ -110,4 +111,10 @@ interface AuthApiService {
         @Header("Authorization") authHeader: String,
         @Body request: ConfirmStripeSubscriptionRequest
     ): Response<SubscriptionApiResponse>
+
+    @PUT("notifications/fcm-token")
+    suspend fun updateFcmToken(
+        @Header("Authorization") authHeader: String,
+        @Body fcmToken: Map<String, String>
+    ): Response<Map<String, Boolean>>
 }

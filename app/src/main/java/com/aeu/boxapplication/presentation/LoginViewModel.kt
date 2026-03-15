@@ -1,10 +1,12 @@
 package com.aeu.boxapplication.presentation
 
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aeu.boxapplication.core.notifications.FcmTokenRegistrar
 import com.aeu.boxapplication.core.utils.ValidationUtils
 import com.aeu.boxapplication.core.utils.SessionManager
 import com.aeu.boxapplication.data.remote.AuthApiService
@@ -26,7 +28,11 @@ data class LoginUiMessage(
     val message: String
 )
 
-class LoginViewModel(private val authService: AuthApiService,private val sessionManager: SessionManager) : ViewModel() {
+class LoginViewModel(
+    private val authService: AuthApiService,
+    private val sessionManager: SessionManager,
+    private val context: Context? = null
+) : ViewModel() {
     var isLoading by mutableStateOf(false)
     var uiMessage by mutableStateOf<LoginUiMessage?>(null)
         private set
@@ -81,6 +87,11 @@ class LoginViewModel(private val authService: AuthApiService,private val session
                                     phone = meBody.phoneNumber,
                                     token = accessToken
                                 )
+
+                                // Register FCM token with backend after successful login.
+                                context?.let { ctx ->
+                                    FcmTokenRegistrar.registerTokenWithBackend(ctx)
+                                }
                                 sessionManager.setHasAccount()
 
                                 val subscriptionResponse = runCatching {

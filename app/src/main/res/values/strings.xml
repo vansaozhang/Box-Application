@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">SBM App</string>
+    <string name="default_notification_channel_id">order_notifications</string>
 </resources>

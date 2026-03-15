@@ -7,7 +7,7 @@ set -euo pipefail
 echo "🧹 Starting clean installation process..."
 
 ADB="${ADB:-$HOME/Library/Android/sdk/platform-tools/adb}"
-APP_ID="com.aeu.boxapplication"
+APP_ID="app.aeu.box"
 APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
 
 # Get the active device
@@ -71,6 +71,6 @@ fi
 
 # Step 4: Launch the app
 echo "🚀 Launching app..."
-"$ADB" -s "$DEVICE" shell am start -n "$APP_ID/.MainActivity"
+"$ADB" -s "$DEVICE" shell am start -n "app.aeu.box/com.aeu.boxapplication.MainActivity"
 
 echo "✅ Done! Your changes should now be visible on the device."

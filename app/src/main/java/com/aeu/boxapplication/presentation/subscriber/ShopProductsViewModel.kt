@@ -53,6 +53,7 @@ data class ShopProductsUiState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
+    val isAuthenticationError: Boolean = false,
     val searchQuery: String = "",
     val selectedCategory: String = "All",
     val sort: ShopCatalogSort = ShopCatalogSort.Rating,
@@ -129,12 +130,23 @@ class ShopProductsViewModel(
                         )
                     }
                 } else {
-                    uiState = uiState.copy(
-                        isLoading = false,
-                        isRefreshing = false,
-                        errorMessage = extractServerMessage(response.errorBody()?.string())
-                            ?: "Failed to load package catalog."
-                    )
+                    // Check if it's an authentication error (expired token)
+                    if (response.code() == 401 || response.code() == 403) {
+                        sessionManager.clearSession()
+                        uiState = uiState.copy(
+                            isLoading = false,
+                            isRefreshing = false,
+                            isAuthenticationError = true,
+                            errorMessage = "Your session has expired. Please login again."
+                        )
+                    } else {
+                        uiState = uiState.copy(
+                            isLoading = false,
+                            isRefreshing = false,
+                            errorMessage = extractServerMessage(response.errorBody()?.string())
+                                ?: "Failed to load package catalog."
+                        )
+                    }
                 }
             } catch (error: Exception) {
                 uiState = uiState.copy(

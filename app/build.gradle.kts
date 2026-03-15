@@ -7,12 +7,16 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "com.aeu.boxapplication"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.aeu.boxapplication"
+        applicationId = "app.aeu.box"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

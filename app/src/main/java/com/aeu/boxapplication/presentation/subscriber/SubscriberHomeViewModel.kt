@@ -16,7 +16,8 @@ import java.net.SocketTimeoutException
 data class SubscriberHomeUiState(
     val isLoading: Boolean = false,
     val dashboard: SubscriberDashboardResponse? = null,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val isAuthenticationError: Boolean = false
 )
 
 class SubscriberHomeViewModel(
@@ -60,11 +61,21 @@ class SubscriberHomeViewModel(
                         )
                     }
                 } else {
-                    uiState = uiState.copy(
-                        isLoading = false,
-                        errorMessage = extractServerMessage(response.errorBody()?.string())
-                            ?: "Failed to load dashboard."
-                    )
+                    // Check if it's an authentication error (expired token)
+                    if (response.code() == 401 || response.code() == 403) {
+                        sessionManager.clearSession()
+                        uiState = uiState.copy(
+                            isLoading = false,
+                            isAuthenticationError = true,
+                            errorMessage = "Your session has expired. Please login again."
+                        )
+                    } else {
+                        uiState = uiState.copy(
+                            isLoading = false,
+                            errorMessage = extractServerMessage(response.errorBody()?.string())
+                                ?: "Failed to load dashboard."
+                        )
+                    }
                 }
             } catch (error: Exception) {
                 uiState = uiState.copy(

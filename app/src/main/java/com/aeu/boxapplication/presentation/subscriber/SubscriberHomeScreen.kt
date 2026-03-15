@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -89,10 +90,21 @@ fun SubscriberHomeScreen(
         viewModel.loadDashboard()
     }
 
+    // Navigate to login if session expired
+    LaunchedEffect(uiState.isAuthenticationError) {
+        if (uiState.isAuthenticationError) {
+            navController.navigate(Screen.Login.route) {
+                popUpTo(0) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
     AppGlobalLoadingEffect(isVisible = uiState.isLoading && dashboard == null)
 
     Scaffold(
         containerColor = HomeBackground,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             DashboardHeader(userName = userName)
         }
