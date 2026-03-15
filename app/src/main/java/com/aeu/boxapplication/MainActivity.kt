@@ -1,5 +1,8 @@
 package com.aeu.boxapplication
 import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -15,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
@@ -46,6 +50,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModelProvider
@@ -96,6 +101,25 @@ import com.stripe.android.payments.paymentlauncher.PaymentResult
 import com.stripe.android.payments.paymentlauncher.rememberPaymentLauncher
 import kotlinx.coroutines.launch
 
+private inline fun <reified VM : androidx.lifecycle.ViewModel> typedViewModelFactory(
+    crossinline initializer: () -> VM
+): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+        require(modelClass.isAssignableFrom(VM::class.java)) {
+            "Unknown ViewModel class: ${modelClass.name}"
+        }
+        return modelClass.cast(initializer())
+    }
+}
+
+private fun hasNotificationPermission(context: Context): Boolean {
+    return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+        ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+}
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -114,55 +138,50 @@ class MainActivity : ComponentActivity() {
             val notificationHostState = rememberAppNotificationHostState()
             val loadingHostState = rememberAppLoadingHostState()
             val authToken = sessionManager.getAuthToken()
+            var hasRequestedNotificationPermission by rememberSaveable(authToken) {
+                mutableStateOf(false)
+            }
             val sharedSubscriberHomeViewModel = remember(sessionManager) {
                 ViewModelProvider(
                     this@MainActivity,
-                    object : androidx.lifecycle.ViewModelProvider.Factory {
-                        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                            return SubscriberHomeViewModel(
-                                authService = RetrofitClient.authApiService,
-                                sessionManager = sessionManager
-                            ) as T
-                        }
+                    typedViewModelFactory<SubscriberHomeViewModel> {
+                        SubscriberHomeViewModel(
+                            authService = RetrofitClient.authApiService,
+                            sessionManager = sessionManager
+                        )
                     }
                 )[SubscriberHomeViewModel::class.java]
             }
             val sharedShopProductsViewModel = remember(sessionManager) {
                 ViewModelProvider(
                     this@MainActivity,
-                    object : androidx.lifecycle.ViewModelProvider.Factory {
-                        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                            return ShopProductsViewModel(
-                                authService = RetrofitClient.authApiService,
-                                sessionManager = sessionManager
-                            ) as T
-                        }
+                    typedViewModelFactory<ShopProductsViewModel> {
+                        ShopProductsViewModel(
+                            authService = RetrofitClient.authApiService,
+                            sessionManager = sessionManager
+                        )
                     }
                 )[ShopProductsViewModel::class.java]
             }
             val sharedHistoryViewModel = remember(sessionManager) {
                 ViewModelProvider(
                     this@MainActivity,
-                    object : androidx.lifecycle.ViewModelProvider.Factory {
-                        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                            return SubscriberHistoryViewModel(
-                                authService = RetrofitClient.authApiService,
-                                sessionManager = sessionManager
-                            ) as T
-                        }
+                    typedViewModelFactory<SubscriberHistoryViewModel> {
+                        SubscriberHistoryViewModel(
+                            authService = RetrofitClient.authApiService,
+                            sessionManager = sessionManager
+                        )
                     }
                 )[SubscriberHistoryViewModel::class.java]
             }
             val sharedProfileViewModel = remember(sessionManager) {
                 ViewModelProvider(
                     this@MainActivity,
-                    object : androidx.lifecycle.ViewModelProvider.Factory {
-                        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                            return SubscriberProfileViewModel(
-                                authService = RetrofitClient.authApiService,
-                                sessionManager = sessionManager
-                            ) as T
-                        }
+                    typedViewModelFactory<SubscriberProfileViewModel> {
+                        SubscriberProfileViewModel(
+                            authService = RetrofitClient.authApiService,
+                            sessionManager = sessionManager
+                        )
                     }
                 )[SubscriberProfileViewModel::class.java]
             }
@@ -206,12 +225,35 @@ class MainActivity : ComponentActivity() {
                     createDefaultAddressFromCurrentLocation()
                 }
             }
+            val notificationPermissionLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestPermission()
+            ) { granted ->
+                hasRequestedNotificationPermission = granted || hasRequestedNotificationPermission
+                if (granted) {
+                    // Register FCM token after permission is granted
+                    com.aeu.boxapplication.core.notifications.FcmTokenRegistrar.registerTokenWithBackend(context)
+                }
+            }
             val shouldPreloadSubscriberTabs = !authToken.isNullOrBlank() &&
                     currentRoute != Screen.Loading.route &&
                     currentRoute != Screen.Login.route &&
                     currentRoute != Screen.Register.route
             val shouldOfferAutoAddressPrompt = !authToken.isNullOrBlank() &&
                     currentRoute?.startsWith(Screen.SubscriberHome.route) == true
+
+            LaunchedEffect(authToken, hasRequestedNotificationPermission) {
+                if (authToken.isNullOrBlank() ||
+                    hasRequestedNotificationPermission ||
+                    hasNotificationPermission(context)
+                ) {
+                    return@LaunchedEffect
+                }
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    hasRequestedNotificationPermission = true
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
 
             DisposableEffect(lifecycleOwner, authToken) {
                 val observer = LifecycleEventObserver { _, event ->
@@ -304,6 +346,7 @@ class MainActivity : ComponentActivity() {
                     AppGlobalLoadingEffect(isVisible = isAutoCreatingDefaultAddress)
                     Scaffold(
                         containerColor = Color.White,
+                        contentWindowInsets = WindowInsets(0, 0, 0, 0),
                         bottomBar = {
                             if (showBottomBar) {
                                 SubscriberBottomNav(
@@ -442,13 +485,12 @@ class MainActivity : ComponentActivity() {
                         val loginViewModel = remember(backStackEntry, sessionManager) {
                             ViewModelProvider(
                                 backStackEntry,
-                                object : androidx.lifecycle.ViewModelProvider.Factory {
-                                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                                        return LoginViewModel(
-                                            authService = com.aeu.boxapplication.data.remote.RetrofitClient.authApiService,
-                                            sessionManager = sessionManager
-                                        ) as T
-                                    }
+                                typedViewModelFactory<LoginViewModel> {
+                                    LoginViewModel(
+                                        authService = com.aeu.boxapplication.data.remote.RetrofitClient.authApiService,
+                                        sessionManager = sessionManager,
+                                        context = context
+                                    )
                                 }
                             )[LoginViewModel::class.java]
                         }
@@ -509,13 +551,11 @@ class MainActivity : ComponentActivity() {
                         val subscriptionViewModel = remember(backStackEntry, sessionManager) {
                             ViewModelProvider(
                                 backStackEntry,
-                                object : androidx.lifecycle.ViewModelProvider.Factory {
-                                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                                        return SubscriptionViewModel(
-                                            authService = RetrofitClient.authApiService,
-                                            sessionManager = sessionManager
-                                        ) as T
-                                    }
+                                typedViewModelFactory<SubscriptionViewModel> {
+                                    SubscriptionViewModel(
+                                        authService = RetrofitClient.authApiService,
+                                        sessionManager = sessionManager
+                                    )
                                 }
                             )[SubscriptionViewModel::class.java]
                         }
@@ -542,6 +582,7 @@ class MainActivity : ComponentActivity() {
 
                     composable(Screen.ExplorePlans.route) {
                         ShopProductsScreen(
+                            navController = navController,
                             viewModel = sharedShopProductsViewModel,
                             onSelectPlan = { selectedPlan ->
                                 val defaultOption = defaultFrequencyOption(selectedPlan)
@@ -570,13 +611,11 @@ class MainActivity : ComponentActivity() {
                         val subscriptionViewModel = remember(backStackEntry, sessionManager) {
                             ViewModelProvider(
                                 backStackEntry,
-                                object : androidx.lifecycle.ViewModelProvider.Factory {
-                                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                                        return SubscriptionViewModel(
-                                            authService = RetrofitClient.authApiService,
-                                            sessionManager = sessionManager
-                                        ) as T
-                                    }
+                                typedViewModelFactory<SubscriptionViewModel> {
+                                    SubscriptionViewModel(
+                                        authService = RetrofitClient.authApiService,
+                                        sessionManager = sessionManager
+                                    )
                                 }
                             )[SubscriptionViewModel::class.java]
                         }
@@ -636,13 +675,11 @@ class MainActivity : ComponentActivity() {
                         val subscriptionViewModel = remember(backStackEntry, sessionManager) {
                             ViewModelProvider(
                                 backStackEntry,
-                                object : androidx.lifecycle.ViewModelProvider.Factory {
-                                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                                        return SubscriptionViewModel(
-                                            authService = RetrofitClient.authApiService,
-                                            sessionManager = sessionManager
-                                        ) as T
-                                    }
+                                typedViewModelFactory<SubscriptionViewModel> {
+                                    SubscriptionViewModel(
+                                        authService = RetrofitClient.authApiService,
+                                        sessionManager = sessionManager
+                                    )
                                 }
                             )[SubscriptionViewModel::class.java]
                         }
@@ -867,6 +904,7 @@ class MainActivity : ComponentActivity() {
                     }
                     composable(Screen.ShopProducts.route) {
                         ShopProductsScreen(
+                            navController = navController,
                             viewModel = sharedShopProductsViewModel,
                             onSelectPlan = { selectedPlan ->
                                 val defaultOption = defaultFrequencyOption(selectedPlan)
@@ -1118,6 +1156,7 @@ fun SubscriberBottomNav(
     NavigationBar(
         modifier = modifier,
         containerColor = Color.White,
+        contentColor = Color(0xFF4B5563),
         tonalElevation = 0.dp,
     ) {
         SubscriberBottomNavTab(
