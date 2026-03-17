@@ -2,6 +2,7 @@ package com.aeu.boxapplication.presentation.subscriber
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.horizontalScroll
@@ -199,7 +200,11 @@ fun SubscriberHomeScreen(
                         onExplore = { navController.navigate(Screen.ShopProducts.route) }
                     )
                 } else {
-                    SubscriptionListItem(subscription = activeSubscription)
+                    SubscriptionListItem(
+                        subscription = activeSubscription,
+                        shipment = dashboard?.latestShipment,
+                        onShipmentClick = { navController.navigate(Screen.OrderHistory.route) }
+                    )
                 }
             }
         }
@@ -631,13 +636,23 @@ private fun ShipmentProgressBar(
 }
 
 @Composable
-private fun SubscriptionListItem(subscription: DashboardSubscriptionResponse) {
+private fun SubscriptionListItem(
+    subscription: DashboardSubscriptionResponse,
+    shipment: DashboardShipmentResponse?,
+    onShipmentClick: () -> Unit
+) {
     val statusColor = subscriptionStatusColor(subscription.billingStatus)
+    val shipmentStatus = shipment?.status?.uppercase(Locale.US) ?: "PENDING"
+    val shipmentColor = when (shipmentStatus) {
+        "DELIVERED" -> Color(0xFF1E7E34)
+        "SHIPPED" -> Color(0xFF0B74D6)
+        else -> Color(0xFFB57A00)
+    }
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(94.dp)
+            .height(110.dp)
             .padding(vertical = 5.dp),
         shape = RoundedCornerShape(16.dp),
         color = HomeCard,
@@ -687,6 +702,23 @@ private fun SubscriptionListItem(subscription: DashboardSubscriptionResponse) {
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 3.dp)
                 )
+
+                shipment?.let {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Surface(
+                        modifier = Modifier.clickable(onClick = onShipmentClick),
+                        shape = RoundedCornerShape(8.dp),
+                        color = shipmentColor.copy(alpha = 0.16f)
+                    ) {
+                        Text(
+                            text = shipmentStatusLabel(it.status),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            fontSize = 10.sp,
+                            color = shipmentColor,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
 
             Surface(
@@ -702,6 +734,14 @@ private fun SubscriptionListItem(subscription: DashboardSubscriptionResponse) {
                 )
             }
         }
+    }
+}
+
+private fun shipmentStatusLabel(status: String): String {
+    return when (status.uppercase(Locale.US)) {
+        "DELIVERED" -> "Delivered"
+        "SHIPPED" -> "In Transit"
+        else -> "Packed"
     }
 }
 

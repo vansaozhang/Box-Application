@@ -94,22 +94,6 @@ interface ApiService {
         @Body request: InventoryRequest
     ): Response<InventoryResponse>
     
-    // Shipment
-    @GET("shipments")
-    suspend fun getShipments(@Query("page") page: Int): Response<List<ShipmentResponse>>
-    
-    @GET("shipments/{id}")
-    suspend fun getShipment(@Path("id") shipmentId: String): Response<ShipmentResponse>
-    
-    @POST("shipments/generate-manifest")
-    suspend fun generateShipmentManifest(): Response<ShipmentResponse>
-    
-    @PUT("shipments/{id}/status")
-    suspend fun updateShipmentStatus(
-        @Path("id") shipmentId: String,
-        @Body status: Map<String, String>
-    ): Response<ShipmentResponse>
-    
     // Coupons
     @GET("coupons")
     suspend fun getCoupons(): Response<List<CouponResponse>>
