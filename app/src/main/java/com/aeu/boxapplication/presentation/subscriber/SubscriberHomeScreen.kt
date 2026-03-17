@@ -201,9 +201,7 @@ fun SubscriberHomeScreen(
                     )
                 } else {
                     SubscriptionListItem(
-                        subscription = activeSubscription,
-                        shipment = dashboard?.latestShipment,
-                        onShipmentClick = { navController.navigate(Screen.OrderHistory.route) }
+                        subscription = activeSubscription
                     )
                 }
             }
@@ -540,8 +538,7 @@ private fun TrackingCard(
 
     Surface(
         modifier = Modifier
-            .fillMaxWidth()
-            .height(174.dp),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         color = HomeCard,
         tonalElevation = 0.dp,
@@ -637,17 +634,9 @@ private fun ShipmentProgressBar(
 
 @Composable
 private fun SubscriptionListItem(
-    subscription: DashboardSubscriptionResponse,
-    shipment: DashboardShipmentResponse?,
-    onShipmentClick: () -> Unit
+    subscription: DashboardSubscriptionResponse
 ) {
     val statusColor = subscriptionStatusColor(subscription.billingStatus)
-    val shipmentStatus = shipment?.status?.uppercase(Locale.US) ?: "PENDING"
-    val shipmentColor = when (shipmentStatus) {
-        "DELIVERED" -> Color(0xFF1E7E34)
-        "SHIPPED" -> Color(0xFF0B74D6)
-        else -> Color(0xFFB57A00)
-    }
 
     Surface(
         modifier = Modifier
@@ -703,22 +692,7 @@ private fun SubscriptionListItem(
                     modifier = Modifier.padding(top = 3.dp)
                 )
 
-                shipment?.let {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Surface(
-                        modifier = Modifier.clickable(onClick = onShipmentClick),
-                        shape = RoundedCornerShape(8.dp),
-                        color = shipmentColor.copy(alpha = 0.16f)
-                    ) {
-                        Text(
-                            text = shipmentStatusLabel(it.status),
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            fontSize = 10.sp,
-                            color = shipmentColor,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+
             }
 
             Surface(
@@ -741,7 +715,8 @@ private fun shipmentStatusLabel(status: String): String {
     return when (status.uppercase(Locale.US)) {
         "DELIVERED" -> "Delivered"
         "SHIPPED" -> "In Transit"
-        else -> "Packed"
+        "PACKED" -> "Packed"
+        else -> "Order Placed"
     }
 }
 
@@ -858,7 +833,8 @@ private fun SectionTitle(text: String) {
 
 private fun defaultShipmentSteps(): List<DashboardShipmentStepResponse> {
     return listOf(
-        DashboardShipmentStepResponse("PACKED", "Packed", completed = false, current = true),
+        DashboardShipmentStepResponse("PENDING", "Order Placed", completed = false, current = false),
+        DashboardShipmentStepResponse("PACKED", "Packed", completed = false, current = false),
         DashboardShipmentStepResponse("SHIPPED", "Shipped", completed = false, current = false),
         DashboardShipmentStepResponse("DELIVERED", "Delivered", completed = false, current = false)
     )
@@ -868,7 +844,8 @@ private fun shipmentStatusTitle(shipment: DashboardShipmentResponse?): String {
     return when (shipment?.status?.uppercase(Locale.US)) {
         "DELIVERED" -> "Delivered"
         "SHIPPED" -> "In Transit"
-        "PENDING" -> "Packed"
+        "PACKED" -> "Packed"
+        "PENDING" -> "Order Placed"
         else -> "No active shipment"
     }
 }
@@ -885,7 +862,8 @@ private fun shipmentStatusSubtitle(shipment: DashboardShipmentResponse?): String
     return when (shipment.status.uppercase(Locale.US)) {
         "DELIVERED" -> "Delivered on $displayDate"
         "SHIPPED" -> "Arriving $displayDate"
-        else -> "Packed on ${formatShortDate(shipment.shipmentDate) ?: displayDate}"
+        "PACKED" -> "Packed on ${formatShortDate(shipment.shipmentDate) ?: displayDate}"
+        else -> "Order placed on ${formatShortDate(shipment.shipmentDate) ?: displayDate}"
     }
 }
 

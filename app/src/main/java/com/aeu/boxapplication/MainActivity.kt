@@ -267,10 +267,23 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            // Refresh dashboard and history whenever a shipment status notification
+            // arrives while the app is already in the foreground.
+            LaunchedEffect(sharedSubscriberHomeViewModel, sharedHistoryViewModel) {
+                com.aeu.boxapplication.core.notifications.AppRefreshChannel.shipmentUpdated.collect {
+                    sharedSubscriberHomeViewModel.loadDashboard(forceRefresh = true)
+                    sharedHistoryViewModel.loadHistory(forceRefresh = true)
+                }
+            }
+
             DisposableEffect(lifecycleOwner, authToken) {
                 val observer = LifecycleEventObserver { _, event ->
                     if (event == Lifecycle.Event.ON_START && !authToken.isNullOrBlank()) {
                         hasHandledAutoAddressPrompt = false
+                    }
+                    if (event == Lifecycle.Event.ON_RESUME && !authToken.isNullOrBlank()) {
+                        sharedSubscriberHomeViewModel.loadDashboard(forceRefresh = true)
+                        sharedHistoryViewModel.loadHistory(forceRefresh = true)
                     }
                 }
                 lifecycleOwner.lifecycle.addObserver(observer)

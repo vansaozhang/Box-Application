@@ -34,43 +34,50 @@ class BoxFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        
+
         Log.d(TAG, "Message received from: ${message.from}")
-        
-        val handledNotificationPayload = message.notification?.let { notification ->
+
+        // Show notification banner from notification payload (if present)
+        message.notification?.let { notification ->
             val title = notification.title ?: "Box Subscription"
             val body = notification.body ?: ""
-            
             showNotification(title, body, message.data)
-            true
-        } ?: false
-        
+        }
+
+        // Always process data payload for app-level side effects (e.g. UI refresh).
+        // This runs even when a notification payload was already shown above.
         if (message.data.isNotEmpty()) {
             Log.d(TAG, "Message data: ${message.data}")
-            if (!handledNotificationPayload) {
-                handleDataMessage(message.data)
-            }
+            handleDataMessage(message.data, showNotificationIfNeeded = message.notification == null)
         }
     }
 
-    private fun handleDataMessage(data: Map<String, String>) {
+    private fun handleDataMessage(data: Map<String, String>, showNotificationIfNeeded: Boolean = true) {
         val type = data["type"] ?: return
-        
+
         when (type) {
             "order_success" -> {
-                val title = data["title"] ?: "Order Successful!"
-                val body = data["body"] ?: "Your order has been confirmed"
-                showNotification(title, body, data)
+                if (showNotificationIfNeeded) {
+                    val title = data["title"] ?: "Order Successful!"
+                    val body = data["body"] ?: "Your order has been confirmed"
+                    showNotification(title, body, data)
+                }
             }
             "shipment" -> {
-                val title = data["title"] ?: "Order Shipped"
-                val body = data["body"] ?: "Your order has been shipped"
-                showNotification(title, body, data)
+                if (showNotificationIfNeeded) {
+                    val title = data["title"] ?: "Order Shipped"
+                    val body = data["body"] ?: "Your order has been shipped"
+                    showNotification(title, body, data)
+                }
+                // Signal any active screen to refresh shipment status immediately
+                AppRefreshChannel.notifyShipmentUpdated()
             }
             "renewal_reminder" -> {
-                val title = data["title"] ?: "Renewal Reminder"
-                val body = data["body"] ?: "Your subscription will renew soon"
-                showNotification(title, body, data)
+                if (showNotificationIfNeeded) {
+                    val title = data["title"] ?: "Renewal Reminder"
+                    val body = data["body"] ?: "Your subscription will renew soon"
+                    showNotification(title, body, data)
+                }
             }
         }
     }

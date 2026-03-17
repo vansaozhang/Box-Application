@@ -30,7 +30,7 @@ class SubscriberHomeViewModel(
     private var loadedToken: String? = null
 
     fun loadDashboard(forceRefresh: Boolean = false) {
-        if (uiState.isLoading) {
+        if (uiState.isLoading && !forceRefresh) {
             return
         }
 
