@@ -10,5 +10,6 @@ data class SubscriptionPlan(
     val features: List<String>,
     val productCount: Int,
     val isActive: Boolean,
-    val imageUrl: String?
+    val imageUrl: String?,
+    val products: List<Product> = emptyList()
 )

@@ -47,6 +47,7 @@ import com.aeu.boxapplication.presentation.subscriber.SubscriberProfileViewModel
 import com.aeu.boxapplication.ui.components.AppGlobalLoadingEffect
 import com.aeu.boxapplication.ui.components.AppNotificationPosition
 import com.aeu.boxapplication.ui.components.AppPrimaryButton
+import com.aeu.boxapplication.ui.components.AppStatusBanner
 import com.aeu.boxapplication.ui.components.AppStatusTone
 import com.aeu.boxapplication.ui.components.AppTextField
 import com.aeu.boxapplication.ui.components.LocalAppNotificationHostState
@@ -62,21 +63,42 @@ private val AddAddressPrimary = Color(0xFF1E88E5)
 @Composable
 fun AddShippingAddressScreen(
     navController: NavController,
-    viewModel: SubscriberProfileViewModel
+    viewModel: SubscriberProfileViewModel,
+    editingAddressId: String? = null
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val uiState = viewModel.uiState
     val notificationHostState = LocalAppNotificationHostState.current
-    var address by rememberSaveable { mutableStateOf("") }
-    var phone by rememberSaveable { mutableStateOf("") }
-    var showErrors by rememberSaveable { mutableStateOf(false) }
-    var isResolvingCurrentLocation by rememberSaveable { mutableStateOf(false) }
-    var locationHelperMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    val isEditMode = !editingAddressId.isNullOrBlank()
+    val editingAddress = viewModel.findAddress(editingAddressId)
+    val fallbackProfilePhone = uiState.profile?.phoneNumber.orEmpty()
+    val isMissingEditAddress = isEditMode && !uiState.isLoading && editingAddress == null
+    var address by rememberSaveable(editingAddressId) { mutableStateOf("") }
+    var phone by rememberSaveable(editingAddressId) { mutableStateOf("") }
+    var showErrors by rememberSaveable(editingAddressId) { mutableStateOf(false) }
+    var isResolvingCurrentLocation by rememberSaveable(editingAddressId) { mutableStateOf(false) }
+    var locationHelperMessage by rememberSaveable(editingAddressId) { mutableStateOf<String?>(null) }
+    var didPrefillEditValues by rememberSaveable(editingAddressId) { mutableStateOf(false) }
 
-    LaunchedEffect(uiState.profile?.phoneNumber) {
+    LaunchedEffect(Unit) {
+        viewModel.loadProfile()
+    }
+
+    LaunchedEffect(fallbackProfilePhone, isEditMode) {
+        if (isEditMode) {
+            return@LaunchedEffect
+        }
         if (phone.isBlank()) {
-            phone = uiState.profile?.phoneNumber.orEmpty()
+            phone = fallbackProfilePhone
+        }
+    }
+
+    LaunchedEffect(editingAddress?.id, fallbackProfilePhone, isEditMode) {
+        if (isEditMode && editingAddress != null && !didPrefillEditValues) {
+            address = editingAddress.address
+            phone = editingAddress.phone?.takeIf { it.isNotBlank() } ?: fallbackProfilePhone
+            didPrefillEditValues = true
         }
     }
 
@@ -85,7 +107,8 @@ fun AddShippingAddressScreen(
     } else {
         null
     }
-    val phoneDigits = phone.filter { it.isDigit() }
+    val effectivePhone = phone.trim().takeUnless { it.isBlank() } ?: fallbackProfilePhone
+    val phoneDigits = effectivePhone.filter { it.isDigit() }
     val phoneError = if (showErrors && phoneDigits.length !in 8..15) {
         "Phone number should be 8 to 15 digits."
     } else {
@@ -125,7 +148,11 @@ fun AddShippingAddressScreen(
         }
     }
 
-    AppGlobalLoadingEffect(isVisible = uiState.isSavingAddress || isResolvingCurrentLocation)
+    AppGlobalLoadingEffect(
+        isVisible = uiState.isSavingAddress ||
+            isResolvingCurrentLocation ||
+            (isEditMode && uiState.isLoading && editingAddress == null)
+    )
 
     Scaffold(
         containerColor = Color.White,
@@ -133,7 +160,7 @@ fun AddShippingAddressScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "Add Address",
+                        text = if (isEditMode) "Edit Address" else "Add Address",
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = AddAddressTitle
@@ -157,38 +184,66 @@ fun AddShippingAddressScreen(
                 shadowElevation = 8.dp
             ) {
                 AppPrimaryButton(
-                    text = "Save Address",
+                    text = if (isEditMode) "Update Address" else "Save Address",
                     onClick = saveClick@{
                         showErrors = true
-                        if (!isFormValid) {
+                        if (!isFormValid || isMissingEditAddress) {
                             return@saveClick
                         }
 
-                        viewModel.addShippingAddress(
-                            address = address,
-                            phone = phone,
-                            onSuccess = {
-                                notificationHostState.show(
-                                    title = "Address saved",
-                                    message = "It is now your default shipping address until you save another one.",
-                                    tone = AppStatusTone.Success,
-                                    label = "Saved",
-                                    position = AppNotificationPosition.Top
-                                )
-                                navController.popBackStack()
-                            },
-                            onError = { saveError ->
-                                notificationHostState.show(
-                                    title = "Address not saved",
-                                    message = saveError,
-                                    tone = AppStatusTone.Error,
-                                    label = "Address",
-                                    position = AppNotificationPosition.Top
-                                )
-                            }
-                        )
+                        if (isEditMode) {
+                            viewModel.updateShippingAddress(
+                                addressId = editingAddressId.orEmpty(),
+                                address = address,
+                                phone = phone,
+                                onSuccess = {
+                                    notificationHostState.show(
+                                        title = "Address updated",
+                                        message = "Your delivery address changes are now saved.",
+                                        tone = AppStatusTone.Success,
+                                        label = "Updated",
+                                        position = AppNotificationPosition.Top
+                                    )
+                                    navController.popBackStack()
+                                },
+                                onError = { saveError ->
+                                    notificationHostState.show(
+                                        title = "Address not updated",
+                                        message = saveError,
+                                        tone = AppStatusTone.Error,
+                                        label = "Address",
+                                        position = AppNotificationPosition.Top
+                                    )
+                                }
+                            )
+                        } else {
+                            viewModel.addShippingAddress(
+                                address = address,
+                                phone = phone,
+                                onSuccess = {
+                                    notificationHostState.show(
+                                        title = "Address saved",
+                                        message = "It is now your default shipping address until you save another one.",
+                                        tone = AppStatusTone.Success,
+                                        label = "Saved",
+                                        position = AppNotificationPosition.Top
+                                    )
+                                    navController.popBackStack()
+                                },
+                                onError = { saveError ->
+                                    notificationHostState.show(
+                                        title = "Address not saved",
+                                        message = saveError,
+                                        tone = AppStatusTone.Error,
+                                        label = "Address",
+                                        position = AppNotificationPosition.Top
+                                    )
+                                }
+                            )
+                        }
                     },
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                    enabled = !isMissingEditAddress,
                     isLoading = uiState.isSavingAddress
                 )
             }
@@ -210,8 +265,20 @@ fun AddShippingAddressScreen(
                     .padding(horizontal = 20.dp, vertical = 18.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+            if (isMissingEditAddress) {
+                AppStatusBanner(
+                    title = "Address unavailable",
+                    message = "We couldn't find that saved address to edit anymore.",
+                    tone = AppStatusTone.Error
+                )
+            }
+
             Text(
-                text = "Use your current location or enter the address manually. If your account already has a phone number, we use it as the delivery contact automatically.",
+                text = if (isEditMode) {
+                    "Update this saved delivery address or refresh it from your current location."
+                } else {
+                    "Use your current location or enter the address manually. If your account already has a phone number, we use it as the delivery contact automatically."
+                },
                 color = AddAddressBody,
                 fontSize = 14.sp,
                 lineHeight = 20.sp
@@ -295,9 +362,13 @@ fun AddShippingAddressScreen(
             AppTextField(
                 value = phone,
                 onValueChange = { phone = it },
-                label = "Phone Number",
+                label = "Delivery Contact",
                 leadingIcon = Icons.Outlined.Call,
-                placeholder = "Contact number for delivery",
+                placeholder = if (fallbackProfilePhone.isNotBlank()) {
+                    "Leave blank to use your account phone"
+                } else {
+                    "Contact number for delivery"
+                },
                 keyboardType = KeyboardType.Phone,
                 isError = phoneError != null,
                 errorMessage = phoneError

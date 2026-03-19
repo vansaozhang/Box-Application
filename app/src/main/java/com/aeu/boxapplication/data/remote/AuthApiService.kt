@@ -23,8 +23,10 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Multipart
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Part
+import retrofit2.http.Path
 import retrofit2.http.PUT
 import retrofit2.http.Query
 
@@ -94,6 +96,13 @@ interface AuthApiService {
         @Body request: CreateMyAddressRequest
     ): Response<SubscriberAddressResponse>
 
+    @PATCH("addresses/me/{id}")
+    suspend fun updateMyAddress(
+        @Header("Authorization") authHeader: String,
+        @Path("id") addressId: String,
+        @Body request: CreateMyAddressRequest
+    ): Response<SubscriberAddressResponse>
+
     @POST("subscriptions/subscribe")
     suspend fun subscribeToPlan(
         @Header("Authorization") authHeader: String,
@@ -110,6 +119,21 @@ interface AuthApiService {
     suspend fun confirmStripeSubscription(
         @Header("Authorization") authHeader: String,
         @Body request: ConfirmStripeSubscriptionRequest
+    ): Response<SubscriptionApiResponse>
+
+    @PUT("stripe/subscriptions/me/pause")
+    suspend fun pauseMySubscription(
+        @Header("Authorization") authHeader: String
+    ): Response<SubscriptionApiResponse>
+
+    @PUT("stripe/subscriptions/me/resume")
+    suspend fun resumeMySubscription(
+        @Header("Authorization") authHeader: String
+    ): Response<SubscriptionApiResponse>
+
+    @PUT("stripe/subscriptions/me/cancel")
+    suspend fun cancelMySubscription(
+        @Header("Authorization") authHeader: String
     ): Response<SubscriptionApiResponse>
 
     @PUT("notifications/fcm-token")

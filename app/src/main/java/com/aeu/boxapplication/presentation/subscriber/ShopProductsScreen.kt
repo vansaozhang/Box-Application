@@ -16,8 +16,10 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -63,6 +65,7 @@ private val ShopBody = Color(0xFF7B8794)
 private val ShopStroke = Color(0xFFE3E8EF)
 private val ShopTint = Color(0xFFEAF3FF)
 private val ShopBackground = Color(0xFFF3F5F9)
+private val ShopFeatureTint = Color(0xFFF5F8FC)
 val BoxlyTeal = Color(0xFF1CE5D1)
 val BoxlyBackground = Color(0xFFF8FAFB)
 val BoxlyDarkText = Color(0xFF1A1C1E)
@@ -212,6 +215,7 @@ private fun TopHeader() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .statusBarsPadding()
             .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -257,7 +261,7 @@ private fun SearchBarSection(
             Icon(Icons.Default.Search, contentDescription = null, tint = ShopBody)
         },
         singleLine = true,
-        shape = RoundedCornerShape(25.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = OutlinedTextFieldDefaults.colors(
             focusedContainerColor = Color.White,
             unfocusedContainerColor = Color.White,
@@ -286,7 +290,7 @@ private fun CategoryChipsSection(
             val isSelected = category == selectedCategory
             Surface(
                 modifier = Modifier.padding(end = 8.dp),
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(16.dp),
                 color = if (isSelected) ShopPrimary else Color.White,
                 border = BorderStroke(1.dp, ShopStroke)
             ) {
@@ -321,17 +325,17 @@ private fun FeaturedBoxCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(if (isCompact) 228.dp else 250.dp)
+            .heightIn(min = if (isCompact) 250.dp else 276.dp)
             .padding(horizontal = horizontalPadding),
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(18.dp),
         color = Color.White,
         border = BorderStroke(1.dp, ShopStroke)
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
+                    .height(if (isCompact) 138.dp else 158.dp)
             ) {
                 if (!plan.imageUrl.isNullOrBlank()) {
                     AsyncImage(
@@ -383,6 +387,22 @@ private fun FeaturedBoxCard(
                         fontSize = if (isCompact) 22.sp else 26.sp,
                         fontWeight = FontWeight.Bold
                     )
+                    if (!plan.category.isBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Surface(
+                            shape = RoundedCornerShape(999.dp),
+                            color = Color.White.copy(alpha = 0.16f),
+                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f))
+                        ) {
+                            Text(
+                                text = plan.category.uppercase(),
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
                 }
             }
 
@@ -400,34 +420,51 @@ private fun FeaturedBoxCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(if (isCompact) 10.dp else 14.dp))
+                Spacer(modifier = Modifier.height(if (isCompact) 12.dp else 16.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            text = plan.priceLabel,
-                            color = ShopTitle,
-                            fontSize = if (isCompact) 22.sp else 26.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = plan.periodLabel,
-                            color = ShopBody,
-                            fontSize = 13.sp,
-                            modifier = Modifier.padding(start = 4.dp, bottom = 3.dp)
-                        )
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Star,
+                                contentDescription = null,
+                                tint = ShopPrimary,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Text(
+                                text = plan.ratingLabel,
+                                color = ShopTitle,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
+                        }
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            Text(
+                                text = plan.priceLabel,
+                                color = ShopTitle,
+                                fontSize = if (isCompact) 24.sp else 28.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = plan.periodLabel,
+                                color = ShopBody,
+                                fontSize = 13.sp,
+                                modifier = Modifier.padding(start = 4.dp, bottom = 3.dp)
+                            )
+                        }
                     }
                     Button(
                         onClick = { onSelectPlan(plan) },
-                        modifier = Modifier.height(if (isCompact) 40.dp else 44.dp),
+                        modifier = Modifier.height(if (isCompact) 42.dp else 46.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = ShopPrimary),
                         shape = RoundedCornerShape(14.dp)
                     ) {
                         Text(
-                            text = "Choose Delivery",
+                            text = "View Plan",
                             color = Color.White,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = if (isCompact) 12.sp else 14.sp
@@ -451,18 +488,18 @@ private fun SubscriptionItem(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = if (isCompact) 6.dp else 8.dp),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(18.dp),
         color = Color.White,
         border = BorderStroke(1.dp, ShopStroke)
     ) {
         Row(
-            modifier = Modifier.padding(if (isCompact) 10.dp else 12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.Top
         ) {
             Box(
                 modifier = Modifier
-                    .size(if (isCompact) 88.dp else 100.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .size(if (isCompact) 96.dp else 108.dp)
+                    .clip(RoundedCornerShape(14.dp))
                     .background(Color(0xFFF1F5F9))
             ) {
                 if (!plan.imageUrl.isNullOrBlank()) {
@@ -512,17 +549,40 @@ private fun SubscriptionItem(
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
                 ) {
-                    Text(
-                        text = plan.title,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = if (isCompact) 15.sp else 16.sp,
-                        color = ShopTitle,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = plan.title,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = if (isCompact) 16.sp else 18.sp,
+                            color = ShopTitle,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        if (!plan.category.isBlank()) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Surface(
+                                shape = RoundedCornerShape(999.dp),
+                                color = ShopFeatureTint
+                            ) {
+                                Text(
+                                    text = plan.category,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = ShopPrimary,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(start = 12.dp, top = 2.dp)
+                    ) {
                         Icon(
                             Icons.Default.Star,
                             contentDescription = null,
@@ -538,25 +598,39 @@ private fun SubscriptionItem(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = plan.subtitle,
-                    fontSize = if (isCompact) 11.sp else 12.sp,
+                    fontSize = if (isCompact) 12.sp else 13.sp,
                     color = ShopBody,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(if (isCompact) 6.dp else 8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Spacer(modifier = Modifier.height(if (isCompact) 10.dp else 12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = plan.priceLabel,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = if (isCompact) 18.sp else 20.sp,
+                            color = ShopTitle
+                        )
+                        Text(
+                            text = plan.periodLabel,
+                            fontSize = 11.sp,
+                            color = ShopBody,
+                            modifier = Modifier.padding(start = 3.dp, bottom = 2.dp)
+                        )
+                    }
                     Text(
-                        text = plan.priceLabel,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = if (isCompact) 15.sp else 16.sp,
-                        color = ShopTitle
-                    )
-                    Text(
-                        text = plan.periodLabel,
-                        fontSize = 10.sp,
-                        color = ShopBody
+                        text = "View plan",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = ShopPrimary
                     )
                 }
             }
@@ -572,7 +646,7 @@ private fun EmptyCatalogCard(
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = Color.White,
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, ShopStroke)
     ) {
         Column(

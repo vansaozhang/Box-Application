@@ -55,12 +55,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.aeu.boxapplication.core.utils.PendingPlanOption
-import com.aeu.boxapplication.core.utils.PendingPlanSelection
 import com.aeu.boxapplication.core.utils.SessionManager
 import com.aeu.boxapplication.data.remote.RetrofitClient
 import com.aeu.boxapplication.data.remote.getMySubscriptionSafely
@@ -80,7 +81,6 @@ import com.aeu.boxapplication.presentation.profile.AddShippingAddressScreen
 import com.aeu.boxapplication.presentation.profile.hasLocationPermission
 import com.aeu.boxapplication.presentation.profile.resolveCurrentAddress
 import com.aeu.boxapplication.presentation.profile.ShippingAddressScreen
-import com.aeu.boxapplication.presentation.subscription.BillingFrequencyOptionUi
 import com.aeu.boxapplication.presentation.subscription.ConfirmSubscriptionScreen
 import com.aeu.boxapplication.presentation.subscription.SubscriptionsEmptyScreen
 import com.aeu.boxapplication.presentation.subscription.SubscriptionViewModel
@@ -621,29 +621,73 @@ class MainActivity : ComponentActivity() {
                             navController = navController,
                             viewModel = sharedShopProductsViewModel,
                             onSelectPlan = { selectedPlan ->
-                                val defaultOption = defaultFrequencyOption(selectedPlan)
-                                sessionManager.savePendingPlan(
-                                    planId = defaultOption.id,
-                                    planName = selectedPlan.title,
-                                    planPrice = defaultOption.price,
-                                    planPeriod = defaultOption.period,
-                                    planFeatures = selectedPlan.features,
-                                    planOptions = selectedPlan.frequencyOptions.map { option ->
-                                        PendingPlanOption(
-                                            id = option.id,
-                                            label = option.label,
-                                            price = option.priceLabel,
-                                            period = option.periodLabel,
-                                            frequencyInDays = option.frequencyInDays
-                                        )
-                                    }
-                                )
-                                navController.navigate(Screen.ConfirmSubscription.route)
+                                navController.navigate(Screen.PlanDetails.createRoute(selectedPlan.id))
                             }
                         )
                     }
 
+                    composable(
+                        route = Screen.PlanDetails.route,
+                        arguments = listOf(navArgument("planId") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val planId = backStackEntry.arguments?.getString("planId").orEmpty()
+                        val allPlans = sharedShopProductsViewModel.uiState.plans +
+                            listOfNotNull(sharedShopProductsViewModel.uiState.featuredPlan)
+                        val plan = allPlans.firstOrNull { it.id == planId }
+                        if (plan != null) {
+                            PlanDetailsScreen(
+                                plan = plan,
+                                onBack = { navController.popBackStack() },
+                                hasCurrentSubscription = activeSubscriptionCount > 0,
+                                onManageCurrentSubscription = {
+                                    navController.navigate(Screen.SubscribDetail.route)
+                                },
+                                onSubscribe = { selectedPlan, selectedFrequencyOption ->
+                                    val selectedOption = selectedFrequencyOption?.let {
+                                        PendingPlanOption(
+                                            id = it.id,
+                                            label = it.label,
+                                            price = it.priceLabel,
+                                            period = it.periodLabel,
+                                            frequencyInDays = it.frequencyInDays
+                                        )
+                                    } ?: defaultFrequencyOption(selectedPlan)
+                                    sessionManager.savePendingPlan(
+                                        planId = selectedOption.id,
+                                        planName = selectedPlan.title,
+                                        planPrice = selectedOption.price,
+                                        planPeriod = selectedOption.period,
+                                        planFeatures = selectedPlan.features,
+                                        planOptions = selectedPlan.frequencyOptions.map { option ->
+                                            PendingPlanOption(
+                                                id = option.id,
+                                                label = option.label,
+                                                price = option.priceLabel,
+                                                period = option.periodLabel,
+                                                frequencyInDays = option.frequencyInDays
+                                            )
+                                        }
+                                    )
+                                    navController.navigate(Screen.ConfirmSubscription.route)
+                                }
+                            )
+                        } else {
+                            navController.popBackStack()
+                        }
+                    }
+
                     composable(Screen.ConfirmSubscription.route) { backStackEntry ->
+                        if (activeSubscriptionCount > 0) {
+                            LaunchedEffect(activeSubscriptionCount) {
+                                sessionManager.clearPendingPlan()
+                                navController.navigate(Screen.SubscribDetail.route) {
+                                    popUpTo(Screen.ConfirmSubscription.route) { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            }
+                            return@composable
+                        }
+
                         val subscriptionViewModel = remember(backStackEntry, sessionManager) {
                             ViewModelProvider(
                                 backStackEntry,
@@ -656,16 +700,10 @@ class MainActivity : ComponentActivity() {
                             )[SubscriptionViewModel::class.java]
                         }
                         val pendingPlan = sessionManager.getPendingPlanSelection()
-                        val frequencyOptions = pendingPlan?.options.orEmpty()
-                        var selectedBillingOptionId by rememberSaveable(pendingPlan?.id) {
-                            mutableStateOf(pendingPlan?.id)
-                        }
-                        val selectedBillingOption = frequencyOptions.firstOrNull { it.id == selectedBillingOptionId }
-                            ?: frequencyOptions.firstOrNull()
-                        val selectedPlanId = selectedBillingOption?.id ?: pendingPlan?.id
+                        val selectedPlanId = pendingPlan?.id
                         val selectedPlanName = pendingPlan?.name ?: "Subscription"
-                        val selectedPlanPrice = selectedBillingOption?.price ?: pendingPlan?.price ?: "$19"
-                        val selectedPlanPeriod = selectedBillingOption?.period ?: pendingPlan?.period ?: "/mo"
+                        val selectedPlanPrice = pendingPlan?.price ?: "$19"
+                        val selectedPlanPeriod = pendingPlan?.period ?: "/mo"
 
                         ConfirmSubscriptionScreen(
                             onBack = { navController.popBackStack() },
@@ -674,40 +712,30 @@ class MainActivity : ComponentActivity() {
                                 if (selectedPlanId.isNullOrBlank()) {
                                     subscriptionViewModel.setError("Please select a plan before confirming.")
                                 } else {
-                                    sessionManager.savePendingPlan(
-                                        planId = selectedPlanId,
-                                        planName = selectedPlanName,
-                                        planPrice = selectedPlanPrice,
-                                        planPeriod = selectedPlanPeriod,
-                                        planFeatures = pendingPlan?.features.orEmpty(),
-                                        planOptions = frequencyOptions
-                                    )
                                     navController.navigate(Screen.PaymentDetails.route)
                                 }
                             },
                             selectedPlanName = selectedPlanName,
                             selectedPlanPrice = selectedPlanPrice,
                             selectedPlanPeriod = selectedPlanPeriod,
-                            selectedPlanFeatures = resolvePendingPlanFeatures(
-                                pendingPlan = pendingPlan,
-                                fallbackPlanName = selectedPlanName
-                            ),
-                            billingOptions = frequencyOptions.map { option ->
-                                BillingFrequencyOptionUi(
-                                    id = option.id,
-                                    label = option.label,
-                                    price = option.price,
-                                    period = option.period
-                                )
-                            },
-                            selectedBillingOptionId = selectedBillingOption?.id,
-                            onSelectBillingOption = { selectedBillingOptionId = it },
+                            selectedPlanFeatures = pendingPlan?.features.orEmpty(),
                             isSubmitting = subscriptionViewModel.isSubmitting,
                             errorMessage = subscriptionViewModel.errorMessage
                         )
                     }
 
                     composable(Screen.PaymentDetails.route) { backStackEntry ->
+                        if (activeSubscriptionCount > 0) {
+                            LaunchedEffect(activeSubscriptionCount) {
+                                sessionManager.clearPendingPlan()
+                                navController.navigate(Screen.SubscribDetail.route) {
+                                    popUpTo(Screen.PaymentDetails.route) { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            }
+                            return@composable
+                        }
+
                         val subscriptionViewModel = remember(backStackEntry, sessionManager) {
                             ViewModelProvider(
                                 backStackEntry,
@@ -943,24 +971,7 @@ class MainActivity : ComponentActivity() {
                             navController = navController,
                             viewModel = sharedShopProductsViewModel,
                             onSelectPlan = { selectedPlan ->
-                                val defaultOption = defaultFrequencyOption(selectedPlan)
-                                sessionManager.savePendingPlan(
-                                    planId = defaultOption.id,
-                                    planName = selectedPlan.title,
-                                    planPrice = defaultOption.price,
-                                    planPeriod = defaultOption.period,
-                                    planFeatures = selectedPlan.features,
-                                    planOptions = selectedPlan.frequencyOptions.map { option ->
-                                        PendingPlanOption(
-                                            id = option.id,
-                                            label = option.label,
-                                            price = option.priceLabel,
-                                            period = option.periodLabel,
-                                            frequencyInDays = option.frequencyInDays
-                                        )
-                                    }
-                                )
-                                navController.navigate(Screen.ConfirmSubscription.route)
+                                navController.navigate(Screen.PlanDetails.createRoute(selectedPlan.id))
                             }
                         )
                     }
@@ -993,7 +1004,19 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.AddShipAddress.route) {
                         AddShippingAddressScreen(
                             navController = navController,
-                            viewModel = sharedProfileViewModel
+                            viewModel = sharedProfileViewModel,
+                            editingAddressId = null
+                        )
+                    }
+
+                    composable(
+                        route = Screen.EditShipAddress.route,
+                        arguments = listOf(navArgument("addressId") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        AddShippingAddressScreen(
+                            navController = navController,
+                            viewModel = sharedProfileViewModel,
+                            editingAddressId = backStackEntry.arguments?.getString("addressId")
                         )
                     }
 
@@ -1093,50 +1116,6 @@ private fun defaultFrequencyOption(plan: ShopPlanUiModel): PendingPlanOption {
         period = selectedOption.periodLabel,
         frequencyInDays = selectedOption.frequencyInDays
     )
-}
-
-private fun selectedPlanFeatures(planName: String): List<String> {
-    return when (planName.lowercase()) {
-        "the wellness box" -> listOf(
-            "6 organic self-care essentials",
-            "Monthly wellness curation",
-            "Free doorstep delivery"
-        )
-
-        "eco-home essentials" -> listOf(
-            "Zero-waste home supplies",
-            "Thoughtfully sourced eco picks",
-            "Monthly refill-ready bundle"
-        )
-
-        "gamer's loot" -> listOf(
-            "Premium gaming accessories",
-            "High-performance gear picks",
-            "Late-night snack extras"
-        )
-
-        "snack stash express" -> listOf(
-            "Sweet and savory snack rotation",
-            "Seasonal limited-edition treats",
-            "Quick monthly delivery"
-        )
-
-        "glow ritual box" -> listOf(
-            "Beauty and skincare essentials",
-            "Glow-focused monthly routine",
-            "Exclusive editor picks"
-        )
-
-        else -> listOf("Standard subscription access")
-    }
-}
-
-private fun resolvePendingPlanFeatures(
-    pendingPlan: PendingPlanSelection?,
-    fallbackPlanName: String
-): List<String> {
-    return pendingPlan?.features?.takeIf { it.isNotEmpty() }
-        ?: selectedPlanFeatures(fallbackPlanName)
 }
 
 private sealed class PendingStripeConfirmation {

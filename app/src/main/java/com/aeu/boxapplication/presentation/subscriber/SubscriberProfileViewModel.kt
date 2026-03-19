@@ -282,6 +282,92 @@ class SubscriberProfileViewModel(
         }
     }
 
+    fun updateShippingAddress(
+        addressId: String,
+        address: String,
+        phone: String? = null,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        if (uiState.isSavingAddress) {
+            return
+        }
+
+        val normalizedAddress = address.trim()
+        val normalizedPhone = (phone?.trim().takeUnless { it.isNullOrBlank() }
+            ?: uiState.profile?.phoneNumber?.trim().orEmpty())
+        val phoneDigits = normalizedPhone.filter { it.isDigit() }
+        val token = sessionManager.getAuthToken()
+
+        val validationError = when {
+            token.isNullOrBlank() -> "Please login again to update this address."
+            addressId.isBlank() -> "This address is unavailable right now."
+            normalizedAddress.length < 8 -> "Enter a full delivery address."
+            phoneDigits.length !in 8..15 -> "Enter a valid phone number."
+            else -> null
+        }
+
+        if (validationError != null) {
+            onError(validationError)
+            return
+        }
+
+        viewModelScope.launch {
+            uiState = uiState.copy(isSavingAddress = true, errorMessage = null)
+            try {
+                val response = authService.updateMyAddress(
+                    authHeader = "Bearer $token",
+                    addressId = addressId,
+                    request = CreateMyAddressRequest(
+                        phone = normalizedPhone,
+                        address = normalizedAddress
+                    )
+                )
+
+                if (response.isSuccessful) {
+                    response.body()?.let { updatedAddress ->
+                        val didExist = remoteAddresses.any { it.id == updatedAddress.id }
+                        remoteAddresses = if (didExist) {
+                            remoteAddresses.map { existing ->
+                                if (existing.id == updatedAddress.id) updatedAddress else existing
+                            }
+                        } else {
+                            listOf(updatedAddress) + remoteAddresses
+                        }
+                    }
+                    uiState = uiState.copy(
+                        isSavingAddress = false,
+                        addresses = buildAddressUiModels(remoteAddresses),
+                        errorMessage = null
+                    )
+                    onSuccess()
+                } else {
+                    val serverMessage = extractServerMessage(response.errorBody()?.string())
+                        ?: "Failed to update your address."
+                    uiState = uiState.copy(
+                        isSavingAddress = false,
+                        errorMessage = serverMessage
+                    )
+                    onError(serverMessage)
+                }
+            } catch (error: Exception) {
+                val message = mapExceptionToMessage(error)
+                uiState = uiState.copy(
+                    isSavingAddress = false,
+                    errorMessage = message
+                )
+                onError(message)
+            }
+        }
+    }
+
+    fun findAddress(addressId: String?): SubscriberAddressUiModel? {
+        if (addressId.isNullOrBlank()) {
+            return null
+        }
+        return uiState.addresses.firstOrNull { it.id == addressId }
+    }
+
     fun memberSinceLabel(): String {
         val createdAt = uiState.profile?.createdAt ?: return "Member"
         return runCatching {

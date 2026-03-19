@@ -614,9 +614,11 @@ private fun toPaymentErrorContent(rawMessage: String): PaymentErrorContent {
 
     return when {
         "already have an active subscription" in normalized ||
-            "already has an active subscription" in normalized -> PaymentErrorContent(
-            title = "Subscription already active",
-            message = "This account already has an active subscription. Manage it from Home instead of starting a new one."
+            "already has an active subscription" in normalized ||
+            "already have a current subscription" in normalized ||
+            "already has a current subscription" in normalized -> PaymentErrorContent(
+            title = "Current subscription exists",
+            message = "This account already has a current subscription. Manage it from Home before starting another."
         )
         "card number is incorrect" in normalized -> PaymentErrorContent(
             title = "Card number is invalid",

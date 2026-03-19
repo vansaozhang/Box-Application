@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.aeu.boxapplication.core.utils.CurrencyUtils
 import com.aeu.boxapplication.core.utils.SessionManager
 import com.aeu.boxapplication.data.remote.AuthApiService
+import com.aeu.boxapplication.data.remote.dto.response.ProductApiResponse
 import com.aeu.boxapplication.data.remote.dto.response.SubscriptionPlanFrequencyOptionResponse
 import com.aeu.boxapplication.data.remote.dto.response.SubscriptionPlanStorefrontItemResponse
 import kotlinx.coroutines.launch
@@ -37,7 +38,8 @@ data class ShopPlanUiModel(
     val ratingLabel: String,
     val isFeatured: Boolean,
     val features: List<String>,
-    val frequencyOptions: List<ShopPlanFrequencyOptionUiModel>
+    val frequencyOptions: List<ShopPlanFrequencyOptionUiModel>,
+    val products: List<ShopProductUiModel> = emptyList()
 )
 
 data class ShopPlanFrequencyOptionUiModel(
@@ -47,6 +49,17 @@ data class ShopPlanFrequencyOptionUiModel(
     val price: Double,
     val priceLabel: String,
     val periodLabel: String
+)
+
+data class ShopProductUiModel(
+    val id: String,
+    val name: String,
+    val description: String?,
+    val category: String?,
+    val price: Double,
+    val priceLabel: String,
+    val imageUrl: String?,
+    val sku: String?
 )
 
 data class ShopProductsUiState(
@@ -263,7 +276,21 @@ class ShopProductsViewModel(
             ratingLabel = String.format(Locale.US, "%.1f", rating),
             isFeatured = isFeatured,
             features = features.orEmpty(),
-            frequencyOptions = frequencyOptions.orEmpty().map { it.toUiModel() }
+            frequencyOptions = frequencyOptions.orEmpty().map { it.toUiModel() },
+            products = products.orEmpty().map { it.toUiModel() }
+        )
+    }
+
+    private fun ProductApiResponse.toUiModel(): ShopProductUiModel {
+        return ShopProductUiModel(
+            id = id,
+            name = name,
+            description = description,
+            category = category,
+            price = price,
+            priceLabel = CurrencyUtils.formatPrice(price),
+            imageUrl = imageUrl,
+            sku = sku
         )
     }
 

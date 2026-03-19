@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.ArrowForward
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -69,6 +71,10 @@ private val HomePrimary = Color(0xFF2F6CE5)
 private val HomeTitle = Color(0xFF111827)
 private val HomeBody = Color(0xFF64748B)
 private val HomeStroke = Color(0xFFE6EAF0)
+private val HomeTint = Color(0xFFEAF3FF)
+private val HomeHeroTop = Color(0xFFFDFEFF)
+private val HomeHeroBottom = Color(0xFFE7F0FF)
+private val HomeSuccess = Color(0xFF16A34A)
 private val HomePending = Color(0xFFF59E0B)
 private val HomeError = Color(0xFFDC2626)
 
@@ -107,7 +113,11 @@ fun SubscriberHomeScreen(
         containerColor = HomeBackground,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            DashboardHeader(userName = userName)
+            DashboardHeader(
+                userName = userName,
+                activeSubscriptionCount = activeSubscriptions.size,
+                latestShipment = dashboard?.latestShipment
+            )
         }
     ) { padding ->
         Box(
@@ -123,6 +133,7 @@ fun SubscriberHomeScreen(
                         flingBehavior = ScrollableDefaults.flingBehavior()
                     )
                     .padding(horizontal = 16.dp)
+                    .padding(top = 8.dp)
                     .padding(bottom = 24.dp)
             ) {
                 if (uiState.isLoading && dashboard != null) {
@@ -146,11 +157,15 @@ fun SubscriberHomeScreen(
                 }
 
                 if (hasActiveSubscription) {
+                    DashboardSummaryRow(
+                        activeSubscriptionCount = activeSubscriptions.size,
+                        shipment = dashboard?.latestShipment
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
                     BillingCard(
-                        billing = dashboard?.billing,
-                        onViewDetails = {
-                            navController.navigate(Screen.SubscribDetail.route)
-                        }
+                        billing = dashboard?.billing
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -171,27 +186,25 @@ fun SubscriberHomeScreen(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    SectionTitle(if (hasActiveSubscription) "Your Subscription" else "Why subscribe")
-                    TextButton(
-                        onClick = {
-                            if (hasActiveSubscription) {
-                                navController.navigate(Screen.SubscribDetail.route)
-                            } else {
-                                navController.navigate(Screen.ShopProducts.route)
-                            }
-                        }
+                if (hasActiveSubscription) {
+                    SectionTitle("Your Subscription")
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = if (hasActiveSubscription) "Manage" else "See plans",
-                            color = HomePrimary,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        SectionTitle("Why subscribe")
+                        TextButton(
+                            onClick = { navController.navigate(Screen.ShopProducts.route) }
+                        ) {
+                            Text(
+                                text = "See plans",
+                                color = HomePrimary,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 }
 
@@ -201,7 +214,8 @@ fun SubscriberHomeScreen(
                     )
                 } else {
                     SubscriptionListItem(
-                        subscription = activeSubscription
+                        subscription = activeSubscription,
+                        onClick = { navController.navigate(Screen.SubscribDetail.route) }
                     )
                 }
             }
@@ -210,53 +224,217 @@ fun SubscriberHomeScreen(
 }
 
 @Composable
-private fun DashboardHeader(userName: String) {
-    Row(
+private fun DashboardHeader(
+    userName: String,
+    activeSubscriptionCount: Int,
+    latestShipment: DashboardShipmentResponse?
+) {
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = Color.Transparent,
+        border = BorderStroke(1.dp, HomeStroke)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
-                    .background(HomePrimary.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
+        Box(
+            modifier = Modifier
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(HomeHeroTop, HomeHeroBottom)
+                    )
+                )
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    tint = HomePrimary,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(10.dp))
-            Column {
-                Text(
-                    text = "DASHBOARD",
-                    fontSize = 10.sp,
-                    color = HomePrimary,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Welcome, $userName",
-                    fontSize = 17.sp,
-                    color = HomeTitle,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(HomePrimary.copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint = HomePrimary,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(14.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "DASHBOARD",
+                            fontSize = 11.sp,
+                            color = HomePrimary,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Welcome, $userName",
+                            fontSize = 28.sp,
+                            color = HomeTitle,
+                            fontWeight = FontWeight.ExtraBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "Your billing, shipments, and plan updates in one place.",
+                            modifier = Modifier.padding(top = 4.dp),
+                            fontSize = 13.sp,
+                            color = HomeBody,
+                            lineHeight = 19.sp
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    DashboardHeaderChip(
+                        text = if (activeSubscriptionCount > 0) {
+                            "$activeSubscriptionCount active plan" +
+                                if (activeSubscriptionCount > 1) "s" else ""
+                        } else {
+                            "No active plan"
+                        }
+                    )
+                    DashboardHeaderChip(
+                        text = latestShipment?.let(::shipmentStatusTitle) ?: "No shipment yet",
+                        accent = if (latestShipment != null) HomeSuccess else HomeBody
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
+private fun DashboardHeaderChip(
+    text: String,
+    accent: Color = HomePrimary
+) {
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = Color.White.copy(alpha = 0.92f),
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.14f))
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            color = accent,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+@Composable
+private fun DashboardSummaryRow(
+    activeSubscriptionCount: Int,
+    shipment: DashboardShipmentResponse?
+) {
+    val shipmentDate = formatShortDate(shipment?.estimatedDeliveryDate ?: shipment?.shipmentDate)
+        ?: "Not scheduled"
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        SummaryMetricCard(
+            modifier = Modifier.weight(1f),
+            icon = Icons.Default.ShoppingCart,
+            title = "Active plans",
+            value = activeSubscriptionCount.toString(),
+            subtitle = if (activeSubscriptionCount == 1) "subscription running" else "subscriptions running",
+            accent = HomePrimary
+        )
+        SummaryMetricCard(
+            modifier = Modifier.weight(1f),
+            icon = Icons.Default.LocalShipping,
+            title = "Shipment",
+            value = shipment?.let(::shipmentStatusTitle) ?: "Queued",
+            subtitle = shipmentDate,
+            accent = if (shipment != null) HomeSuccess else HomePending
+        )
+    }
+}
+
+@Composable
+private fun SummaryMetricCard(
+    modifier: Modifier = Modifier,
+    icon: ImageVector,
+    title: String,
+    value: String,
+    subtitle: String,
+    accent: Color
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = HomeCard,
+        border = BorderStroke(1.dp, HomeStroke)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(accent.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = accent,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = title.uppercase(Locale.US),
+                    fontSize = 10.sp,
+                    color = HomeBody,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Text(
+                text = value,
+                modifier = Modifier.padding(top = 12.dp),
+                fontSize = 20.sp,
+                color = HomeTitle,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = subtitle,
+                modifier = Modifier.padding(top = 2.dp),
+                fontSize = 12.sp,
+                color = HomeBody,
+                lineHeight = 17.sp
+            )
+        }
+    }
+}
+
+@Composable
 private fun BillingCard(
-    billing: DashboardBillingResponse?,
-    onViewDetails: () -> Unit
+    billing: DashboardBillingResponse?
 ) {
     val hasSubscriptions = (billing?.subscriptionCount ?: 0) > 0
     val billingDate = formatLongDate(billing?.nextBillingDate) ?: "No upcoming billing yet"
@@ -268,9 +446,8 @@ private fun BillingCard(
 
     Surface(
         modifier = Modifier
-            .fillMaxWidth()
-            .height(176.dp),
-        shape = RoundedCornerShape(20.dp),
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
         color = HomeCard,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
@@ -278,56 +455,124 @@ private fun BillingCard(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 18.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.DateRange,
-                    contentDescription = null,
-                    tint = HomePrimary,
-                    modifier = Modifier.size(14.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SectionEyebrow(
+                    icon = Icons.Default.DateRange,
+                    label = "Next billing"
                 )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "NEXT BILLING DATE",
-                    fontSize = 11.sp,
-                    color = HomePrimary,
-                    fontWeight = FontWeight.Bold
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                StatusBadge(
+                    text = if (hasSubscriptions) {
+                        "${billing?.subscriptionCount ?: 0} ACTIVE"
+                    } else {
+                        "READY"
+                    },
+                    color = if (hasSubscriptions) HomePrimary else HomePending
                 )
             }
 
-            Column {
-                Text(
-                    text = billingDate,
-                    fontSize = 21.sp,
-                    color = HomeTitle,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = totalCharge,
-                    fontSize = 13.sp,
-                    color = HomeBody,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
-            }
+            Text(
+                text = billingDate,
+                modifier = Modifier.padding(top = 18.dp),
+                fontSize = 30.sp,
+                color = HomeTitle,
+                fontWeight = FontWeight.ExtraBold,
+                lineHeight = 34.sp
+            )
+            Text(
+                text = totalCharge,
+                fontSize = 14.sp,
+                color = HomeBody,
+                modifier = Modifier.padding(top = 4.dp),
+                lineHeight = 20.sp
+            )
 
-            Button(
-                onClick = onViewDetails,
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(46.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = HomePrimary)
+                    .padding(top = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = if (hasSubscriptions) "View Details" else "Browse Boxes",
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp
+                DashboardStatTile(
+                    modifier = Modifier.weight(1f),
+                    label = "Total due",
+                    value = CurrencyUtils.formatPrice(billing?.totalAmount ?: 0.0)
+                )
+                DashboardStatTile(
+                    modifier = Modifier.weight(1f),
+                    label = "Plans billed",
+                    value = if (hasSubscriptions) {
+                        "${billing?.subscriptionCount ?: 0} active"
+                    } else {
+                        "Choose one"
+                    }
                 )
             }
+
+        }
+    }
+}
+
+@Composable
+private fun SectionEyebrow(
+    icon: ImageVector,
+    label: String
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = HomePrimary,
+            modifier = Modifier.size(14.dp)
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = label.uppercase(Locale.US),
+            fontSize = 11.sp,
+            color = HomePrimary,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun DashboardStatTile(
+    modifier: Modifier = Modifier,
+    label: String,
+    value: String
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = HomeTint.copy(alpha = 0.55f),
+        border = BorderStroke(1.dp, HomeStroke)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)
+        ) {
+            Text(
+                text = label.uppercase(Locale.US),
+                fontSize = 10.sp,
+                color = HomeBody,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = value,
+                modifier = Modifier.padding(top = 4.dp),
+                fontSize = 15.sp,
+                color = HomeTitle,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
@@ -336,7 +581,7 @@ private fun BillingCard(
 private fun EmptyDashboardHeroCard(onExplore: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(18.dp),
         color = HomeCard,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
@@ -346,7 +591,7 @@ private fun EmptyDashboardHeroCard(onExplore: () -> Unit) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .background(
                         Brush.linearGradient(
                             colors = listOf(Color(0xFF6DB7FF), HomePrimary, Color(0xFF1D3F8F))
@@ -439,7 +684,7 @@ private fun HeroTag(label: String) {
 private fun DeliveryPreviewCard() {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         color = HomeCard,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
@@ -534,12 +779,12 @@ private fun TrackingCard(
     onTrack: () -> Unit
 ) {
     val steps = shipment?.steps ?: defaultShipmentSteps()
-    val progress = shipment?.progress?.toFloat() ?: 0f
+    val shipmentAccent = shipmentStatusColor(shipment?.status)
 
     Surface(
         modifier = Modifier
             .fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(18.dp),
         color = HomeCard,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
@@ -547,66 +792,96 @@ private fun TrackingCard(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 18.dp)
         ) {
-            Row(verticalAlignment = Alignment.Top) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "TRACK YOUR SHIPMENT",
-                        fontSize = 11.sp,
-                        color = HomePrimary,
-                        fontWeight = FontWeight.Bold
+                    SectionEyebrow(
+                        icon = Icons.Default.LocalShipping,
+                        label = "Shipment progress"
                     )
                     Text(
                         text = shipmentStatusTitle(shipment),
-                        fontSize = 18.sp,
+                        fontSize = 24.sp,
                         color = HomeTitle,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 2.dp)
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.padding(top = 10.dp)
                     )
                     Text(
                         text = shipmentStatusSubtitle(shipment),
-                        fontSize = 13.sp,
-                        color = HomeBody
+                        fontSize = 14.sp,
+                        color = HomeBody,
+                        modifier = Modifier.padding(top = 4.dp),
+                        lineHeight = 20.sp
                     )
                 }
 
-                Button(
-                    onClick = onTrack,
-                    enabled = shipment != null,
-                    modifier = Modifier.height(42.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = HomePrimary)
+                StatusBadge(
+                    text = shipmentBadgeLabel(shipment?.status),
+                    color = shipmentAccent
+                )
+            }
+
+            shipment?.subscriptionName?.takeIf { it.isNotBlank() }?.let { subscriptionName ->
+                Text(
+                    text = subscriptionName,
+                    modifier = Modifier.padding(top = 12.dp),
+                    fontSize = 14.sp,
+                    color = HomeTitle,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            if (!shipment?.trackingNumber.isNullOrBlank()) {
+                Surface(
+                    modifier = Modifier.padding(top = 12.dp),
+                    shape = RoundedCornerShape(999.dp),
+                    color = shipmentAccent.copy(alpha = 0.10f)
                 ) {
-                    Text("Track", fontSize = 13.sp, color = Color.White)
+                    Text(
+                        text = "Tracking ${shipment?.trackingNumber}",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        fontSize = 12.sp,
+                        color = shipmentAccent,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
 
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 6.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    steps.forEach { step ->
-                        Text(
-                            text = step.label,
-                            fontSize = 11.sp,
-                            color = if (step.current) HomePrimary else HomeBody,
-                            fontWeight = if (step.current) FontWeight.Bold else FontWeight.Normal
-                        )
-                    }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                steps.forEach { step ->
+                    ShipmentStepCard(
+                        step = step,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
+            }
 
-                ShipmentProgressBar(
-                    progress = progress,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
+            Button(
+                onClick = onTrack,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp)
+                    .height(46.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = HomeTint,
+                    contentColor = HomePrimary
+                )
+            ) {
+                Text(
+                    text = if (shipment != null) "Track Shipment" else "Open History",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
@@ -614,109 +889,215 @@ private fun TrackingCard(
 }
 
 @Composable
-private fun ShipmentProgressBar(
-    progress: Float,
+private fun ShipmentStepCard(
+    step: DashboardShipmentStepResponse,
     modifier: Modifier = Modifier
 ) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(50.dp))
-            .background(HomePrimary.copy(alpha = 0.14f))
+    val semanticAccent = shipmentStepColor(step.key)
+    val accent = when {
+        step.current -> semanticAccent
+        step.completed -> semanticAccent
+        else -> HomeBody
+    }
+    val background = when {
+        step.current -> semanticAccent.copy(alpha = 0.12f)
+        step.completed -> semanticAccent.copy(alpha = 0.06f)
+        else -> Color.White
+    }
+    val borderColor = when {
+        step.current -> semanticAccent.copy(alpha = 0.30f)
+        step.completed -> semanticAccent.copy(alpha = 0.14f)
+        else -> HomeStroke
+    }
+    val labelColor = when {
+        step.current || step.completed -> HomeTitle
+        else -> HomeBody
+    }
+
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = background,
+        border = BorderStroke(1.dp, borderColor)
     ) {
-        Box(
+        Column(
             modifier = Modifier
-                .fillMaxWidth(progress.coerceIn(0f, 1f))
-                .height(8.dp)
-                .background(HomePrimary, RoundedCornerShape(50.dp))
-        )
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(accent)
+            )
+            Text(
+                text = step.label,
+                modifier = Modifier.padding(top = 8.dp),
+                fontSize = 11.sp,
+                color = labelColor,
+                fontWeight = if (step.current) FontWeight.Bold else FontWeight.Medium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 
 @Composable
 private fun SubscriptionListItem(
-    subscription: DashboardSubscriptionResponse
+    subscription: DashboardSubscriptionResponse,
+    onClick: () -> Unit
 ) {
     val statusColor = subscriptionStatusColor(subscription.billingStatus)
 
     Surface(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(110.dp)
-            .padding(vertical = 5.dp),
-        shape = RoundedCornerShape(16.dp),
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(18.dp),
         color = HomeCard,
         shadowElevation = 0.dp,
         border = BorderStroke(1.dp, HomeStroke)
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(HomePrimary.copy(alpha = 0.10f)),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(HomePrimary.copy(alpha = 0.10f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ShoppingCart,
+                        contentDescription = null,
+                        tint = HomePrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "CURRENT PLAN",
+                        fontSize = 10.sp,
+                        color = HomePrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = subscription.name,
+                        fontSize = 22.sp,
+                        color = HomeTitle,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                StatusBadge(
+                    text = subscription.billingStatus.uppercase(Locale.US),
+                    color = statusColor
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                DashboardStatTile(
+                    modifier = Modifier.weight(1f),
+                    label = "Price",
+                    value = formatSubscriptionPrice(subscription)
+                )
+                DashboardStatTile(
+                    modifier = Modifier.weight(1f),
+                    label = "Renews",
+                    value = formatShortDate(subscription.rechargeDate) ?: "TBD"
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 14.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "View details",
+                    color = HomePrimary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.width(6.dp))
                 Icon(
-                    imageVector = Icons.Default.ShoppingCart,
+                    imageVector = Icons.Outlined.ArrowForward,
                     contentDescription = null,
                     tint = HomePrimary,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = subscription.name,
-                    fontSize = 14.sp,
-                    color = HomeTitle,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = "Recharge Date: ${formatShortDate(subscription.rechargeDate) ?: "TBD"}",
-                    fontSize = 11.sp,
-                    color = HomeBody,
-                    modifier = Modifier.padding(top = 1.dp)
-                )
-                Text(
-                    text = formatSubscriptionPrice(subscription),
-                    fontSize = 13.sp,
-                    color = HomePrimary,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 3.dp)
-                )
-
-
-            }
-
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = statusColor.copy(alpha = 0.12f)
-            ) {
-                Text(
-                    text = subscription.billingStatus.uppercase(Locale.US),
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    fontSize = 10.sp,
-                    color = statusColor,
-                    fontWeight = FontWeight.Bold
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }
     }
 }
 
-private fun shipmentStatusLabel(status: String): String {
-    return when (status.uppercase(Locale.US)) {
-        "DELIVERED" -> "Delivered"
-        "SHIPPED" -> "In Transit"
-        "PACKED" -> "Packed"
-        else -> "Order Placed"
+@Composable
+private fun StatusBadge(
+    text: String,
+    color: Color
+) {
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = color.copy(alpha = 0.14f),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.18f))
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+            fontSize = 10.sp,
+            color = color,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+private fun shipmentStatusColor(status: String?): Color {
+    return when (status?.uppercase(Locale.US)) {
+        "DELIVERED" -> HomeSuccess
+        "SHIPPED" -> HomePrimary
+        "PACKED" -> HomePending
+        "PENDING" -> HomePending
+        else -> HomeBody
+    }
+}
+
+private fun shipmentBadgeLabel(status: String?): String {
+    return when (status?.uppercase(Locale.US)) {
+        "DELIVERED" -> "DELIVERED"
+        "SHIPPED" -> "IN TRANSIT"
+        "PACKED" -> "PACKED"
+        else -> "PENDING"
+    }
+}
+
+private fun shipmentStepColor(key: String): Color {
+    return when (key.uppercase(Locale.US)) {
+        "PENDING" -> HomePrimary
+        "PACKED" -> HomePending
+        "SHIPPED" -> Color(0xFF0EA5E9)
+        "DELIVERED" -> HomeSuccess
+        else -> HomePrimary
     }
 }
 
@@ -726,7 +1107,7 @@ private fun EmptySubscriptionsCard(onExplore: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         color = HomeCard,
         border = BorderStroke(1.dp, HomeStroke)
     ) {

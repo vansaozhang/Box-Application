@@ -29,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -152,10 +153,14 @@ fun ShippingAddressScreen(
             } else {
                 uiState.addresses.forEach { address ->
                     AddressCard(
+                        id = address.id,
                         label = address.label,
                         address = address.address,
                         phoneNumber = address.phone,
-                        isDefault = address.isPrimary
+                        isDefault = address.isPrimary,
+                        onEditClick = {
+                            navController.navigate(Screen.EditShipAddress.createRoute(address.id))
+                        }
                     )
                 }
             }
@@ -165,10 +170,12 @@ fun ShippingAddressScreen(
 
 @Composable
 private fun AddressCard(
+    id: String,
     label: String,
     address: String,
     phoneNumber: String?,
-    isDefault: Boolean
+    isDefault: Boolean,
+    onEditClick: (String) -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -203,17 +210,33 @@ private fun AddressCard(
                     Text(text = label, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = AddressTitle)
                 }
 
-                if (isDefault) {
-                    Surface(
-                        color = AddressTint,
-                        shape = RoundedCornerShape(8.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (isDefault) {
+                        Surface(
+                            color = AddressTint,
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                "RECENT",
+                                color = AddressPrimary,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                    TextButton(
+                        onClick = { onEditClick(id) },
+                        contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)
                     ) {
                         Text(
-                            "RECENT",
+                            text = "Edit",
                             color = AddressPrimary,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }

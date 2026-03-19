@@ -3,6 +3,8 @@ package com.aeu.boxapplication.presentation.subscription
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -151,6 +153,7 @@ fun ExplorePlansScreen(
                         price = plan.priceLabel,
                         period = plan.periodLabel,
                         features = plan.features,
+                        products = plan.products,
                         buttonText = "Select ${plan.name}",
                         onSelect = { onSelectPlan(plan) },
                         highlight = plan.name.equals("Pro", ignoreCase = true),
@@ -283,6 +286,7 @@ private fun PlanCard(
     price: String,
     period: String,
     features: List<PlanFeatureUi>,
+    products: List<ProductUiModel> = emptyList(),
     buttonText: String,
     onSelect: () -> Unit,
     highlight: Boolean = false,
@@ -372,6 +376,44 @@ private fun PlanCard(
                     highlight = highlight && feature.included
                 )
                 Spacer(modifier = Modifier.height(6.dp))
+            }
+
+            if (products.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(Color(0xFFE9EFF6))
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = "What's inside",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF7B8794)
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    products.forEach { product ->
+                        Surface(
+                            color = Color(0xFFF1F7FF),
+                            shape = RoundedCornerShape(20.dp)
+                        ) {
+                            Text(
+                                text = product.name,
+                                fontSize = 11.sp,
+                                color = Color(0xFF1E88E5),
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))

@@ -1,6 +1,5 @@
 package com.aeu.boxapplication.data.remote
 
-import com.aeu.boxapplication.core.network.ApiService
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 

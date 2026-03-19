@@ -22,18 +22,26 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -72,8 +80,71 @@ fun SubscriptionDetailsScreen(
     }
 
     AppGlobalLoadingEffect(
-        isVisible = dashboardState.isLoading && subscription == null && profileState.profile == null
+        isVisible = dashboardState.isManagingSubscription ||
+            (dashboardState.isLoading && subscription == null && profileState.profile == null)
     )
+
+    var pendingAction by rememberSaveable { mutableStateOf<SubscriptionAction?>(null) }
+
+    pendingAction?.let { action ->
+        AlertDialog(
+            onDismissRequest = {
+                if (!dashboardState.isManagingSubscription) {
+                    pendingAction = null
+                }
+            },
+            title = {
+                Text(
+                    text = when (action) {
+                        SubscriptionAction.Pause -> "Pause subscription?"
+                        SubscriptionAction.Resume -> "Resume subscription?"
+                        SubscriptionAction.Cancel -> "Cancel subscription?"
+                    }
+                )
+            },
+            text = {
+                Text(
+                    text = when (action) {
+                        SubscriptionAction.Pause ->
+                            "This will stop future deliveries until you resume the subscription."
+                        SubscriptionAction.Resume ->
+                            "This will restart billing and deliveries for your current plan."
+                        SubscriptionAction.Cancel ->
+                            "This cancels the current subscription immediately. You can subscribe again later."
+                    }
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        when (action) {
+                            SubscriptionAction.Pause -> homeViewModel.pauseCurrentSubscription()
+                            SubscriptionAction.Resume -> homeViewModel.resumeCurrentSubscription()
+                            SubscriptionAction.Cancel -> homeViewModel.cancelCurrentSubscription()
+                        }
+                        pendingAction = null
+                    },
+                    enabled = !dashboardState.isManagingSubscription
+                ) {
+                    Text(
+                        text = when (action) {
+                            SubscriptionAction.Pause -> "Pause"
+                            SubscriptionAction.Resume -> "Resume"
+                            SubscriptionAction.Cancel -> "Cancel subscription"
+                        }
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { pendingAction = null },
+                    enabled = !dashboardState.isManagingSubscription
+                ) {
+                    Text("Keep current")
+                }
+            }
+        )
+    }
 
     Scaffold(
         containerColor = Color.White,
@@ -98,31 +169,6 @@ fun SubscriptionDetailsScreen(
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
             )
-        },
-        bottomBar = {
-            Box(modifier = Modifier.padding(20.dp)) {
-                Button(
-                    onClick = {
-                        if (subscription == null) {
-                            navController.navigate(Screen.ShopProducts.route)
-                        } else {
-                            navController.navigate(Screen.ShipAddress.route)
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = DetailsPrimary)
-                ) {
-                    Text(
-                        if (subscription == null) "Browse Boxes" else "Manage Shipping Address",
-                        color = Color.White,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp
-                    )
-                }
-            }
         }
     ) { padding ->
         Box(
@@ -158,7 +204,7 @@ fun SubscriptionDetailsScreen(
 
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp),
+                shape = RoundedCornerShape(18.dp),
                 color = Color.White,
                 border = BorderStroke(1.dp, DetailsStroke)
             ) {
@@ -205,6 +251,81 @@ fun SubscriptionDetailsScreen(
             Spacer(modifier = Modifier.height(18.dp))
 
             DetailSectionCard(
+                title = "Manage Subscription",
+                icon = Icons.Outlined.Settings
+            ) {
+                Text(
+                    text = when (subscription.status.uppercase()) {
+                        "PAUSED" -> "Your plan is paused. Resume when you're ready to start deliveries again."
+                        else -> "Make changes to your current plan or update where your deliveries go."
+                    },
+                    color = DetailsBody,
+                    fontSize = 13.sp,
+                    lineHeight = 19.sp
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                Button(
+                    onClick = {
+                        pendingAction = if (subscription.status.uppercase() == "PAUSED") {
+                            SubscriptionAction.Resume
+                        } else {
+                            SubscriptionAction.Pause
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    enabled = !dashboardState.isManagingSubscription,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = DetailsPrimary)
+                ) {
+                    Text(
+                        text = if (dashboardState.isManagingSubscription) {
+                            "Updating..."
+                        } else if (subscription.status.uppercase() == "PAUSED") {
+                            "Resume Subscription"
+                        } else {
+                            "Pause Subscription"
+                        },
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedButton(
+                    onClick = { navController.navigate(Screen.ShipAddress.route) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    enabled = !dashboardState.isManagingSubscription,
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, DetailsStroke),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = DetailsTitle)
+                ) {
+                    Text(
+                        text = "Manage Shipping Address",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedButton(
+                    onClick = { pendingAction = SubscriptionAction.Cancel },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    enabled = !dashboardState.isManagingSubscription,
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, Color(0xFFF3C2C2)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFB42318))
+                ) {
+                    Text(
+                        text = "Cancel Subscription",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            DetailSectionCard(
                 title = "Shipping Address",
                 icon = Icons.Outlined.LocationOn
             ) {
@@ -249,7 +370,7 @@ private fun DetailSectionCard(
             .fillMaxWidth()
             .padding(bottom = 14.dp),
         color = DetailsBackground,
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, DetailsStroke)
     ) {
         Column(modifier = Modifier.padding(16.dp), content = {
@@ -288,7 +409,7 @@ private fun DetailRow(label: String, value: String) {
 private fun EmptySubscriptionState(onExplore: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(18.dp),
         color = Color.White,
         border = BorderStroke(1.dp, DetailsStroke)
     ) {
@@ -335,4 +456,10 @@ private fun frequencyLabel(days: Int): String {
         days == 7 -> "/wk"
         else -> "/mo"
     }
+}
+
+private enum class SubscriptionAction {
+    Pause,
+    Resume,
+    Cancel
 }

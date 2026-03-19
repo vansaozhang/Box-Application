@@ -15,6 +15,7 @@ import java.net.SocketTimeoutException
 
 data class SubscriberHomeUiState(
     val isLoading: Boolean = false,
+    val isManagingSubscription: Boolean = false,
     val dashboard: SubscriberDashboardResponse? = null,
     val errorMessage: String? = null,
     val isAuthenticationError: Boolean = false
@@ -48,41 +49,38 @@ class SubscriberHomeViewModel(
         viewModelScope.launch {
             uiState = uiState.copy(isLoading = true, errorMessage = null)
             try {
-                val response = authService.getSubscriberDashboard("Bearer $token")
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    if (body != null) {
-                        loadedToken = token
-                        uiState = SubscriberHomeUiState(dashboard = body)
-                    } else {
-                        uiState = uiState.copy(
-                            isLoading = false,
-                            errorMessage = "Dashboard data is unavailable right now."
-                        )
-                    }
-                } else {
-                    // Check if it's an authentication error (expired token)
-                    if (response.code() == 401 || response.code() == 403) {
-                        sessionManager.clearSession()
-                        uiState = uiState.copy(
-                            isLoading = false,
-                            isAuthenticationError = true,
-                            errorMessage = "Your session has expired. Please login again."
-                        )
-                    } else {
-                        uiState = uiState.copy(
-                            isLoading = false,
-                            errorMessage = extractServerMessage(response.errorBody()?.string())
-                                ?: "Failed to load dashboard."
-                        )
-                    }
-                }
+                refreshDashboardState(token)
             } catch (error: Exception) {
                 uiState = uiState.copy(
                     isLoading = false,
+                    isManagingSubscription = false,
                     errorMessage = mapExceptionToMessage(error)
                 )
             }
+        }
+    }
+
+    fun pauseCurrentSubscription() {
+        performSubscriptionAction(
+            fallbackMessage = "Failed to pause subscription."
+        ) { token ->
+            authService.pauseMySubscription("Bearer $token")
+        }
+    }
+
+    fun resumeCurrentSubscription() {
+        performSubscriptionAction(
+            fallbackMessage = "Failed to resume subscription."
+        ) { token ->
+            authService.resumeMySubscription("Bearer $token")
+        }
+    }
+
+    fun cancelCurrentSubscription() {
+        performSubscriptionAction(
+            fallbackMessage = "Failed to cancel subscription."
+        ) { token ->
+            authService.cancelMySubscription("Bearer $token")
         }
     }
 
@@ -93,6 +91,94 @@ class SubscriberHomeViewModel(
 
     fun dismissError() {
         uiState = uiState.copy(errorMessage = null)
+    }
+
+    private fun performSubscriptionAction(
+        fallbackMessage: String,
+        action: suspend (token: String) -> retrofit2.Response<*>
+    ) {
+        if (uiState.isManagingSubscription) {
+            return
+        }
+
+        val token = sessionManager.getAuthToken()
+        if (token.isNullOrBlank()) {
+            uiState = uiState.copy(errorMessage = "Please login again to manage your subscription.")
+            return
+        }
+
+        viewModelScope.launch {
+            uiState = uiState.copy(isManagingSubscription = true, errorMessage = null)
+            try {
+                val response = action(token)
+                if (response.isSuccessful) {
+                    refreshDashboardState(token)
+                } else {
+                    if (response.code() == 401 || response.code() == 403) {
+                        sessionManager.clearSession()
+                        uiState = uiState.copy(
+                            isLoading = false,
+                            isManagingSubscription = false,
+                            isAuthenticationError = true,
+                            errorMessage = "Your session has expired. Please login again."
+                        )
+                    } else {
+                        uiState = uiState.copy(
+                            isLoading = false,
+                            isManagingSubscription = false,
+                            errorMessage = extractServerMessage(response.errorBody()?.string())
+                                ?: fallbackMessage
+                        )
+                    }
+                }
+            } catch (error: Exception) {
+                uiState = uiState.copy(
+                    isLoading = false,
+                    isManagingSubscription = false,
+                    errorMessage = mapExceptionToMessage(error)
+                )
+            }
+        }
+    }
+
+    private suspend fun refreshDashboardState(token: String) {
+        val response = authService.getSubscriberDashboard("Bearer $token")
+        if (response.isSuccessful) {
+            val body = response.body()
+            if (body != null) {
+                loadedToken = token
+                uiState = uiState.copy(
+                    isLoading = false,
+                    isManagingSubscription = false,
+                    dashboard = body,
+                    errorMessage = null,
+                    isAuthenticationError = false
+                )
+            } else {
+                uiState = uiState.copy(
+                    isLoading = false,
+                    isManagingSubscription = false,
+                    errorMessage = "Dashboard data is unavailable right now."
+                )
+            }
+        } else {
+            if (response.code() == 401 || response.code() == 403) {
+                sessionManager.clearSession()
+                uiState = uiState.copy(
+                    isLoading = false,
+                    isManagingSubscription = false,
+                    isAuthenticationError = true,
+                    errorMessage = "Your session has expired. Please login again."
+                )
+            } else {
+                uiState = uiState.copy(
+                    isLoading = false,
+                    isManagingSubscription = false,
+                    errorMessage = extractServerMessage(response.errorBody()?.string())
+                        ?: "Failed to load dashboard."
+                )
+            }
+        }
     }
 
     private fun mapExceptionToMessage(error: Exception): String {

@@ -54,7 +54,10 @@ data class SubscriptionPlanStorefrontItemResponse(
     val rating: Double,
 
     @SerializedName("is_featured")
-    val isFeatured: Boolean
+    val isFeatured: Boolean,
+
+    @SerializedName("products")
+    val products: List<ProductApiResponse>? = null
 )
 
 data class SubscriptionPlanFrequencyOptionResponse(

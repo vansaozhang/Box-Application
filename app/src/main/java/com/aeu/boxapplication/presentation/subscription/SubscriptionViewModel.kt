@@ -28,13 +28,22 @@ data class PlanFeatureUi(
     val included: Boolean
 )
 
+data class ProductUiModel(
+    val id: String,
+    val name: String,
+    val category: String?,
+    val price: String,
+    val imageUrl: String?
+)
+
 data class PlanUiModel(
     val id: String,
     val name: String,
     val subtitle: String,
     val priceLabel: String,
     val periodLabel: String,
-    val features: List<PlanFeatureUi>
+    val features: List<PlanFeatureUi>,
+    val products: List<ProductUiModel> = emptyList()
 )
 
 class SubscriptionViewModel(
@@ -291,8 +300,11 @@ class SubscriptionViewModel(
 
         val normalized = extracted.lowercase(Locale.US)
         return when {
-            "already has an active subscription" in normalized ->
-                "You already have an active subscription."
+            "already have an active subscription" in normalized ||
+            "already has an active subscription" in normalized ||
+                "already have a current subscription" in normalized ||
+                "already has a current subscription" in normalized ->
+                "You already have a current subscription."
 
             else -> extracted
         }
@@ -312,7 +324,18 @@ private fun SubscriptionPlanApiResponse.toUi(cycle: BillingCycle): PlanUiModel {
         subtitle = subtitleFor(name),
         priceLabel = "$$priceValue",
         periodLabel = cycle.periodLabel,
-        features = featuresFor(name)
+        features = featuresFor(name),
+        products = products.orEmpty().map { p ->
+            val pPrice = if (p.price % 1.0 == 0.0) p.price.toInt().toString()
+                         else String.format(Locale.US, "%.2f", p.price)
+            ProductUiModel(
+                id = p.id,
+                name = p.name,
+                category = p.category,
+                price = "$$pPrice",
+                imageUrl = p.imageUrl
+            )
+        }
     )
 }
 
